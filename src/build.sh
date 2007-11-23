@@ -5,41 +5,66 @@ if [ "${WRKDIRPREFIX}" = "" ] ; then
 	export WRKDIRPREFIX=$(pwd)
 fi
 
-ARCHS="i386 amd64 powerpc"
+ARCHS="i386"
 
-echo "Please Insert a FreeBSD 6.3 CD, and specify the device node. (ex. cd0)"
-echo " -- OR --
+echo "Please insert a FreeBSD 6.3-BETA2 CD, and specify the device node. (ex. cd0)"
+echo " -- OR --"
 echo "Enter the path of the release files (/home/user/blah)" 
-read -p "[acd0] > " NODE
 
-case "${NODE}" in
-	/*)
-		echo "${NODE}"
-	;;
-	?cd*)
-		echo "${NODE}"
-	*)
+until [ "${DONE}" = "done" ]
+do
+	read -p "[acd0] > " NODE
+
+	case "${NODE}" in
+		/*)
+			if [ -d "${NODE}/6.3-BETA2" ] ; then
+				export FBSD_DISTDIR="${NODE}/6.3-BETA2"
+				DONE=done
+			fi
+		;;
+		?cd*)
+
+		;;
+		*)
 		
-	;;
-e
-sac
-#
-#for TARGET in ${ARCHS}
-#do
-#	chflags -R noschg ${WRKDIRPREFIX}/${TARGET}
-#	rm -r ${WRKDIRPREFIX}/${TARGET}
-#	rm -r /tmp/${TARGET}
-#	mkdir -p ${WRKDIRPREFIX}/${TARGET}/usr/src
-#	export DESTDIR=${WRKDIRPREFIX}/${TARGET}
-#	cd /mnt/6.3-BETA2/src/
-#	for dist in *.aa
-#	do
-#		distfile=$(echo ${dist} | cut -d \. -f 1)
-#		echo ${distfile}
-#		echo ${DESTDIR}
-#		cat ${distfile}.?? | gunzip | tar -xpf - -v -C ${DESTDIR}/usr/src
-#	done
-#done
+		;;
+	esac
+done
+
+
+for TARGET in ${ARCHS}
+do
+	export DESTDIR=${WRKDIRPREFIX}/${TARGET}
+	if [ -d "${DESTDIR}" ] ; then
+		case "${CLEAN}" in
+			[yY][eE][sS])
+				chflags -R noschg ${WRKDIRPREFIX}/${TARGET}
+				rm -rf ${WRKDIRPREFIX}/${TARGET}
+			;;
+		esac
+	fi
+	for distset in base kernels src
+	do
+		cd ${FBSD_DISTDIR}/${distset}
+		for dist in *.aa
+		do
+			distfile=$(echo ${dist} | cut -d \. -f 1)
+			case "${distset}" in
+				src)
+					mkdir -p ${DESTDIR}/usr/src
+					cat ${distfile}.?? | gunzip | tar -xpf - -C ${DESTDIR}/usr/src/
+				;;
+				kernels)
+					mkdir -p ${DESTDIR}/boot
+					cat ${distfile}.?? | gunzip | tar -xpf - -C ${DESTDIR}/boot/
+				;;
+				*)
+					cat ${distfile}.?? | gunzip | tar -xpf - -C ${DESTDIR}/
+				;;
+			esac
+		done
+	done
+done
 
 #for TARGET in ${ARCHS}
 #do
