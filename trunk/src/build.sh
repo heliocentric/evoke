@@ -13,8 +13,10 @@ echo "Enter the path of the release files (/home/user/blah)"
 
 until [ "${DONE}" = "done" ]
 do
+	if [ -f "${WRKDIRPREFIX}/6.3-BETA2-i386-disc1.iso" ] ; then
+		echo "insert mount iso"
+	fi
 	read -p "[acd0] > " NODE
-
 	case "${NODE}" in
 		/*)
 			if [ -d "${NODE}/6.3-BETA2" ] ; then
@@ -66,23 +68,23 @@ do
 	done
 done
 
-#for TARGET in ${ARCHS}
-#do
-#	export WORKDIR=${WRKDIRPREFIX}/${TARGET}
-#	export TARGET
-#	export TARGET_ARCH="${TARGET}"
-#	export MAKEOBJDIRPREFIX=/tmp/${TARGET}
-#	cd ${WORKDIR}/usr/src/sys/boot/
-#	export BOOTPATH="/.boot/0.1r2/${TARGET}"
-#	mkdir -p ${WORKDIR}${BOOTPATH}
-#	for file in $(cat ${WRKDIRPREFIX}/bootlist)
-#	do
-#	    echo "${WORKDIR}/${i}"
-#	    sed -i .bak "s!/boot!${BOOTPATH}!g" ${WORKDIR}/${file}
-#	done
-#	sed -i .bak '/pxe_setnfshandle(rootpath);/d' ${WORKDIR}/usr/src/sys/boot/i386/libi386/pxe.c
-#	cd ${WORKDIR}/usr/src/
-#	make -DLOADER_TFTP_SUPPORT -DLOADER_BZIP2_SUPPORT LOADER_FIREWIRE_SUPPORT="yes" buildworld
-#	make DESTDIR=${WORKDIR} installworld
-#	rm -r /tmp/${TARGET}
-#done
+for TARGET in ${ARCHS}
+do
+	export WORKDIR=${WRKDIRPREFIX}/${TARGET}
+	export TARGET
+	export TARGET_ARCH="${TARGET}"
+	export MAKEOBJDIRPREFIX=/tmp/${TARGET}
+	rm -rf /tmp/${TARGET} 2>/dev/null
+	cd ${WORKDIR}/usr/src/sys/boot/
+	export BOOTPATH="/.boot/0.1r2/${TARGET}"
+	mkdir -p ${WORKDIR}${BOOTPATH}
+	for file in $(cat ${WRKDIRPREFIX}/bootlist)
+	do
+	    sed -i .bak "s!/boot!${BOOTPATH}!g" ${WORKDIR}/${file}
+	done
+	sed -i .bak '/pxe_setnfshandle(rootpath);/d' ${WORKDIR}/usr/src/sys/boot/i386/libi386/pxe.c
+	cd ${WORKDIR}/usr/src/
+	make -DLOADER_TFTP_SUPPORT -DLOADER_BZIP2_SUPPORT LOADER_FIREWIRE_SUPPORT="yes" buildworld
+	make DESTDIR=${WORKDIR} installworld
+	rm -r /tmp/${TARGET} 2>/dev/null
+done
