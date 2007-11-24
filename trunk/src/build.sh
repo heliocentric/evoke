@@ -1,6 +1,12 @@
 #!/bin/sh
 # $Id$
 
+priv () {
+	if [ "${USE_SUDO}" = "YES" ] ; then
+		sudo $*
+	fi
+}
+
 if [ "${WRKDIRPREFIX}" = "" ] ; then
 	export WRKDIRPREFIX=$(pwd)
 fi
@@ -18,17 +24,14 @@ do
 	fi
 	read -p "[acd0] > " NODE
 	case "${NODE}" in
-		/*)
-			if [ -d "${NODE}/6.3-BETA2" ] ; then
-				export FBSD_DISTDIR="${NODE}/6.3-BETA2"
-				DONE=done
-			fi
-		;;
 		?cd*)
 
 		;;
 		*)
-		
+			if [ -d "${NODE}/6.3-BETA2" ] ; then
+				export FBSD_DISTDIR="${NODE}/6.3-BETA2"
+				DONE=done
+			fi
 		;;
 	esac
 done
@@ -85,6 +88,6 @@ do
 	sed -i .bak '/pxe_setnfshandle(rootpath);/d' ${WORKDIR}/usr/src/sys/boot/i386/libi386/pxe.c
 	cd ${WORKDIR}/usr/src/
 	make -DLOADER_TFTP_SUPPORT -DLOADER_BZIP2_SUPPORT LOADER_FIREWIRE_SUPPORT="yes" buildworld
-	make DESTDIR=${WORKDIR} installworld
+	priv make DESTDIR=${WORKDIR} installworld
 	rm -r /tmp/${TARGET} 2>/dev/null
 done
