@@ -45,8 +45,8 @@ do
 	if [ -d "${DESTDIR}" ] ; then
 		case "${CLEAN}" in
 			[yY][eE][sS])
-				chflags -R noschg ${WRKDIRPREFIX}/${TARGET}
-				rm -rf ${WRKDIRPREFIX}/${TARGET}
+				chflags -R noschg ${DESTDIR}
+				rm -rf ${DESTDIR}
 			;;
 		esac
 	fi
@@ -66,6 +66,7 @@ do
 					cat ${distfile}.?? | gunzip | tar -xpf - -C ${DESTDIR}/boot/
 				;;
 				*)
+					mkdir -p ${DESTDIR}
 					cat ${distfile}.?? | gunzip | tar -xpf - -C ${DESTDIR}/
 				;;
 			esac
