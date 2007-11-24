@@ -4,6 +4,8 @@
 priv () {
 	if [ "${USE_SUDO}" = "YES" ] ; then
 		sudo $*
+	else
+		$*
 	fi
 }
 
@@ -77,17 +79,16 @@ do
 	export TARGET
 	export TARGET_ARCH="${TARGET}"
 	export MAKEOBJDIRPREFIX=/tmp/${TARGET}
-	rm -rf /tmp/${TARGET} 2>/dev/null
+#	rm -rf /tmp/${TARGET} 2>/dev/null
 	cd ${WORKDIR}/usr/src/sys/boot/
 	export BOOTPATH="/.boot/0.1r2/${TARGET}"
 	mkdir -p ${WORKDIR}${BOOTPATH}
 	for file in $(cat ${WRKDIRPREFIX}/bootlist)
 	do
-	    sed -i .bak "s!/boot!${BOOTPATH}!g" ${WORKDIR}/${file}
+	    sed -i .bak "s_/boot_${BOOTPATH}_g" ${WORKDIR}/${file}
 	done
 	sed -i .bak '/pxe_setnfshandle(rootpath);/d' ${WORKDIR}/usr/src/sys/boot/i386/libi386/pxe.c
 	cd ${WORKDIR}/usr/src/
-	make -DLOADER_TFTP_SUPPORT -DLOADER_BZIP2_SUPPORT LOADER_FIREWIRE_SUPPORT="yes" buildworld
+	make -DNO_CLEAN -DLOADER_TFTP_SUPPORT -DLOADER_BZIP2_SUPPORT LOADER_FIREWIRE_SUPPORT="yes" buildworld
 	priv make DESTDIR=${WORKDIR} installworld
-	rm -r /tmp/${TARGET} 2>/dev/null
 done
