@@ -83,13 +83,19 @@ do
 #	rm -rf /tmp/${TARGET} 2>/dev/null
 	cd ${WORKDIR}/usr/src/sys/boot/
 	export BOOTPATH="/.boot/0.1r2/${TARGET}"
-	mkdir -p ${WORKDIR}${BOOTPATH}
-	for file in $(cat ${WRKDIRPREFIX}/bootlist)
+	for file in $(find ./ -not -type d)
 	do
-	    sed -i .bak "s_/boot_${BOOTPATH}_g" ${WORKDIR}/${file}
+	    sed -i .bak "s_\"/boot/kernel_\"${BOOTPATH}/GENERIC_g" ${file}
+	    sed -i .bak "s_\"/boot/loader_\"${BOOTPATH}/loader_g" ${file}
 	done
 	sed -i .bak '/pxe_setnfshandle(rootpath);/d' ${WORKDIR}/usr/src/sys/boot/i386/libi386/pxe.c
 	cd ${WORKDIR}/usr/src/
-	make -DNO_CLEAN -DLOADER_TFTP_SUPPORT -DLOADER_BZIP2_SUPPORT LOADER_FIREWIRE_SUPPORT="yes" buildworld
-	priv make DESTDIR=${WORKDIR} installworld
+	make  -DLOADER_TFTP_SUPPORT -DLOADER_BZIP2_SUPPORT LOADER_FIREWIRE_SUPPORT="yes" buildworld
+	export DESTDIR=${WRKDIRPREFIX}/stage/${TARGET}
+	rm -rf ${DESTDIR} 2>/dev/null
+	mkdir -p ${DESTDIR}
+	priv make installworld
+	mkdir -p ${DESTDIR}/usr/src
+	priv mount_nullfs ${WORKDIR}/usr/src/ ${DESTDIR}/usr/src/
+	umount ${DESTDIR}/usr/src
 done
