@@ -50,6 +50,7 @@ do
 			;;
 		esac
 	fi
+	chflags -R noschg ${DESTDIR}
 	for distset in base kernels src
 	do
 		cd ${FBSD_DISTDIR}/${distset}
@@ -73,14 +74,17 @@ do
 		done
 	done
 done
-
+export BOOTDIR=${WRKDIRPREFIX}/bdir
+export FSDIR=${WRKDIRPREFIX}/fsdir
 for TARGET in ${ARCHS}
 do
 	export WORKDIR=${WRKDIRPREFIX}/${TARGET}
 	export TARGET
 	export TARGET_ARCH="${TARGET}"
 	export MAKEOBJDIRPREFIX=/tmp/${TARGET}
-#	rm -rf /tmp/${TARGET} 2>/dev/null
+	if [ "${NO_CLEAN}" = "" ] ; then
+		rm -rf /tmp/${TARGET} 2>/dev/null
+	fi
 	cd ${WORKDIR}/usr/src/sys/boot/
 	export BOOTPATH="/.boot/0.1r2/${TARGET}"
 	for file in $(find ./ -not -type d)
@@ -90,12 +94,18 @@ do
 	done
 	sed -i .bak '/pxe_setnfshandle(rootpath);/d' ${WORKDIR}/usr/src/sys/boot/i386/libi386/pxe.c
 	cd ${WORKDIR}/usr/src/
-	make  -DLOADER_TFTP_SUPPORT -DLOADER_BZIP2_SUPPORT LOADER_FIREWIRE_SUPPORT="yes" buildworld
+	if [ "${NO_CLEAN}" = "" ] ; then
+		make  -DLOADER_TFTP_SUPPORT -DLOADER_BZIP2_SUPPORT LOADER_FIREWIRE_SUPPORT="yes" buildworld
+	fi
 	export DESTDIR=${WRKDIRPREFIX}/stage/${TARGET}
 	rm -rf ${DESTDIR} 2>/dev/null
 	mkdir -p ${DESTDIR}
 	priv make installworld
 	mkdir -p ${DESTDIR}/usr/src
 	priv mount_nullfs ${WORKDIR}/usr/src/ ${DESTDIR}/usr/src/
+	mkdir -p ${BOOTDIR}/.boot/0.1r2/${TARGET}
+	mkdir -p ${FSDIR}/FreeBSD6/${TARGET}/bin
+	cd ${WORKDIR}/rescue/
+	tar -cf - * | tar -xf - -C ${FSDIR}/FreeBSD6/${TARGET}/bin
 	umount ${DESTDIR}/usr/src
 done
