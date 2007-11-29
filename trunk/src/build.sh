@@ -155,5 +155,5 @@ do
 	gzip -9 root.fs	
 	echo " [DONE]"
 
-	umount ${DESTDIR}/usr/src
+#	umount ${DESTDIR}/usr/src
 done
