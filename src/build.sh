@@ -108,7 +108,7 @@ do
 	echo -n " * Building World....."
 	cd ${WORKDIR}/usr/src/
 	if [ "${NO_CLEAN}" = "" ] ; then
-#		make  -DNO_CLEAN -DLOADER_TFTP_SUPPORT -DLOADER_BZIP2_SUPPORT LOADER_FIREWIRE_SUPPORT="yes" buildworld 2>>${ERRFILE} >>${ERRFILE}
+		make  -DNO_CLEAN -DLOADER_TFTP_SUPPORT -DLOADER_BZIP2_SUPPORT LOADER_FIREWIRE_SUPPORT="yes" buildworld 2>>${ERRFILE} >>${ERRFILE}
 	fi
 	echo " [DONE]"
 
@@ -125,6 +125,8 @@ do
 	for i in GENERIC SMP
 	do
 		cd ${DESTDIR}/boot/${i}/
+		rm -r *.bz2
+		rm g_md.kp
 		bzip2 *
 	done
 
@@ -145,6 +147,7 @@ do
 
 	echo -n " * Populating FSDIR=${FSDIR}....."
 	cd ${BOOTDIR}${BOOTPATH}
+	rm -r root.fs*
 	makefs root.fs ${FSDIR}
 	gzip -9 root.fs	
 	echo " [DONE]"
