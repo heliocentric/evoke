@@ -14,16 +14,18 @@ if [ "${WRKDIRPREFIX}" = "" ] ; then
 fi
 
 ARCHS="i386"
+VERSION="6.3-RC1"
+
 # Choose dist source
 
-echo "Please insert a FreeBSD 6.3-BETA2 CD, and specify the device node. (ex. cd0)"
+echo "Please insert a FreeBSD ${VERSION} CD, and specify the device node. (ex. cd0)"
 echo " -- OR --"
 echo "Enter the path of the release files (/home/user/blah)" 
 
 
 until [ "${DONE}" = "done" ]
 do
-	if [ -f "${WRKDIRPREFIX}/6.3-BETA2-i386-disc1.iso" ] ; then
+	if [ -f "${WRKDIRPREFIX}/${VERSION}-i386-disc1.iso" ] ; then
 		echo "insert mount iso"
 	fi
 	read -p "[acd0] > " NODE
@@ -32,8 +34,8 @@ do
 
 		;;
 		*)
-			if [ -d "${NODE}/6.3-BETA2" ] ; then
-				export FBSD_DISTDIR="${NODE}/6.3-BETA2"
+			if [ -d "${NODE}/${VERSION}" ] ; then
+				export FBSD_DISTDIR="${NODE}/${VERSION}"
 				DONE=done
 			fi
 		;;
@@ -115,10 +117,11 @@ do
 	echo -n " * Populating DESTDIR=${DESTDIR}....."
 	export DESTDIR=${WRKDIRPREFIX}/${TARGET}
 	mkdir -p ${DESTDIR}
-	priv make distribution 2>>${ERRFILE} >>${ERRFILE}
+	priv make hierarchy
 	priv make installworld 2>>${ERRFILE} >>${ERRFILE}
+	priv make distribution 2>>${ERRFILE} >>${ERRFILE}
 	mkdir -p ${DESTDIR}/usr/src
-	priv mount_nullfs ${WORKDIR}/usr/src/ ${DESTDIR}/usr/src/ 2>>${ERRFILE} >>${ERRFILE}
+#	priv mount_nullfs ${WORKDIR}/usr/src/ ${DESTDIR}/usr/src/ 2>>${ERRFILE} >>${ERRFILE}
 	echo " [DONE]"
 
 	echo -n " * Compressing Kernel ....."
@@ -133,9 +136,9 @@ do
 	echo " [DONE]"
 
 	echo -n " * Populating BOOTPATH=${BOOTPATH}....."
-	mkdir -p ${BOOTPATH} 2>>${ERRFILE} >>${ERRFILE}
+	mkdir -p ${BOOTDIR}/${BOOTPATH} 2>>${ERRFILE} >>${ERRFILE}
 	cd ${DESTDIR}/boot/
-	tar -cf - * | tar -xvf - -C ${BOOTPATH} 2>>${ERRFILE} >>${ERRFILE}
+	tar -cf - * | tar -xvf - -C ${BOOTDIR}/${BOOTPATH} 2>>${ERRFILE} >>${ERRFILE}
 	echo " [DONE]"
 
 
