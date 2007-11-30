@@ -81,7 +81,7 @@ done
 export ERRFILE=${WRKDIRPREFIX}/error.log
 export BOOTDIR=${WRKDIRPREFIX}/bdir
 export FSDIR=${WRKDIRPREFIX}/fsdir
-
+rm -r ${BOOTDIR}
 for TARGET in ${ARCHS}
 do
 	export WORKDIR=${WRKDIRPREFIX}/${TARGET}
@@ -89,13 +89,13 @@ do
 	export TARGET_ARCH="${TARGET}"
 	export MAKEOBJDIRPREFIX=/tmp/${TARGET}
 
-	echo -n " * Cleaning up object files....."
+	echo -n " * Cleaning up object files ....."
 	if [ "${NO_CLEAN}" = "" ] ; then
-		rm -rf /tmp/${TARGET} 2>/dev/null
+		rm -rf /tmp/${TARGET} 2>${ERRFILE}
 	fi
 	echo " [DONE]"
 
-	echo -n " * Patching World....."
+	echo -n " * Patching World ....."
 	cd ${WORKDIR}/usr/src/sys/boot/
 	export BOOTPATH="/.boot/0.1r2/${TARGET}"
 	for file in $(find ./ -not -type d)
@@ -107,17 +107,17 @@ do
 	echo " [DONE]"
 
 
-	echo -n " * Building World....."
+	echo -n " * Building World ....."
 	cd ${WORKDIR}/usr/src/
 	if [ "${NO_CLEAN}" = "" ] ; then
 		make  -DNO_CLEAN -DLOADER_TFTP_SUPPORT -DLOADER_BZIP2_SUPPORT LOADER_FIREWIRE_SUPPORT="yes" buildworld 2>>${ERRFILE} >>${ERRFILE}
 	fi
 	echo " [DONE]"
 
-	echo -n " * Populating DESTDIR=${DESTDIR}....."
+	echo -n " * Populating DESTDIR=${DESTDIR} ....."
 	export DESTDIR=${WRKDIRPREFIX}/${TARGET}
 	mkdir -p ${DESTDIR}
-	priv make hierarchy
+	priv make hierarchy 2>>${ERRFILE} >>${ERRFILE}
 	priv make installworld 2>>${ERRFILE} >>${ERRFILE}
 	priv make distribution 2>>${ERRFILE} >>${ERRFILE}
 	mkdir -p ${DESTDIR}/usr/src
@@ -129,31 +129,36 @@ do
 	do
 		cd ${DESTDIR}/boot/${i}/
 		rm -r *.bz2
-		rm g_md.kp
-		bzip2 *
+		rm g_md.ko
+		bzip2 kernel acpi.ko dcons.ko dcons_crom.ko
+		rm -r *.ko
 	done
 
 	echo " [DONE]"
 
-	echo -n " * Populating BOOTPATH=${BOOTPATH}....."
+	echo -n " * Populating BOOTPATH=${BOOTPATH} ....."
 	mkdir -p ${BOOTDIR}/${BOOTPATH} 2>>${ERRFILE} >>${ERRFILE}
 	cd ${DESTDIR}/boot/
 	tar -cf - * | tar -xvf - -C ${BOOTDIR}/${BOOTPATH} 2>>${ERRFILE} >>${ERRFILE}
 	echo " [DONE]"
-
-
-	echo -n " * Populating FSDIR=${FSDIR}....."
-	mkdir -p ${FSDIR}/FreeBSD6/${TARGET}/bin 2>>${ERRFILE} >>${ERRFILE}
-	cd ${WORKDIR}/rescue/
-	tar -cf - * | tar -xf - -C ${FSDIR}/FreeBSD6/${TARGET}/bin 2>>${ERRFILE} >>${ERRFILE}
-	echo " [DONE]"
-
-	echo -n " * Populating FSDIR=${FSDIR}....."
-	cd ${BOOTDIR}${BOOTPATH}
-	rm -r root.fs*
-	makefs root.fs ${FSDIR}
-	gzip -9 root.fs	
-	echo " [DONE]"
-
-#	umount ${DESTDIR}/usr/src
 done
+
+echo -n " * Populating FSDIR=${FSDIR} ....."
+mkdir -p ${FSDIR}/FreeBSD6/${TARGET}/bin 2>>${ERRFILE} >>${ERRFILE}
+cd ${WORKDIR}/rescue/
+tar -cf - * | tar -xf - -C ${FSDIR}/FreeBSD6/${TARGET}/bin 2>>${ERRFILE} >>${ERRFILE}
+echo " [DONE]"
+
+echo -n " * Creating root.fs ....."
+cd ${BOOTDIR}/.boot/0.1r2/
+rm -r root.fs* 2>>${ERRFILE} >>${ERRFILE}
+makefs root.fs ${FSDIR} 2>>${ERRFILE} >>${ERRFILE}
+gzip -9 root.fs	2>>${ERRFILE} >>${ERRFILE}
+echo " [DONE]"
+
+echo -n " * Making ISO image ....."
+cd ${WRKDIRPREFIX}
+mkisofs -b $(echo ${BOOTPATH} | cut -c 2-100)/cdboot -no-emul-boot -r -J -V DamnSmallBSD-HEAD -publisher "www.damnsmallbsd.org" -o dsbsd.iso ${BOOTDIR} 2>>${ERRFILE} >>${ERRFILE}
+echo " [DONE]"
+
+
