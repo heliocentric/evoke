@@ -82,6 +82,8 @@ export ERRFILE=${WRKDIRPREFIX}/error.log
 export BOOTDIR=${WRKDIRPREFIX}/bdir
 export FSDIR=${WRKDIRPREFIX}/fsdir
 rm -r ${BOOTDIR}
+rm -r ${FSDIR}
+
 for TARGET in ${ARCHS}
 do
 	export WORKDIR=${WRKDIRPREFIX}/${TARGET}
@@ -104,6 +106,7 @@ do
 	    sed -i .bak "s_\"/boot/loader_\"${BOOTPATH}/loader_g" ${file} 2>>${ERRFILE} >>${ERRFILE}
 	done
 	sed -i .bak '/pxe_setnfshandle(rootpath);/d' ${WORKDIR}/usr/src/sys/boot/i386/libi386/pxe.c 2>>${ERRFILE} >>${ERRFILE}
+	cp ${WRKDIRPREFIX}/lazybox.Makefile ${WORKDIR}/usr/src/rescue/rescue/Makefile
 	echo " [DONE]"
 
 
@@ -118,6 +121,7 @@ do
 	export DESTDIR=${WRKDIRPREFIX}/${TARGET}
 	mkdir -p ${DESTDIR}
 	priv make hierarchy 2>>${ERRFILE} >>${ERRFILE}
+	mkdir -p ${DESTDIR}/FreeBSD6/${TARGET}/bin
 	priv make installworld 2>>${ERRFILE} >>${ERRFILE}
 	priv make distribution 2>>${ERRFILE} >>${ERRFILE}
 	mkdir -p ${DESTDIR}/usr/src
@@ -125,7 +129,7 @@ do
 	echo " [DONE]"
 
 	echo -n " * Compressing Kernel ....."
-	for i in GENERIC SMP
+	for i in GENERIC
 	do
 		cd ${DESTDIR}/boot/${i}/
 		rm -r *.bz2
@@ -139,13 +143,21 @@ do
 	echo -n " * Populating BOOTPATH=${BOOTPATH} ....."
 	mkdir -p ${BOOTDIR}/${BOOTPATH} 2>>${ERRFILE} >>${ERRFILE}
 	cd ${DESTDIR}/boot/
-	tar -cf - * | tar -xvf - -C ${BOOTDIR}/${BOOTPATH} 2>>${ERRFILE} >>${ERRFILE}
+	tar -cf - --exclude SMP * | tar -xvf - -C ${BOOTDIR}/${BOOTPATH} 2>>${ERRFILE} >>${ERRFILE}
+	echo >${BOOTDIR}/${BOOTPATH}/loader.conf << EOF
+kernel="GENERIC"
+mfsroot_load="YES"
+mfsroot_type="md_preload"
+mfsroot_name="/.boot/0.1r2/root.fs.gz"
+dcons_load="YES"
+dcons_crom_load="YES"
+EOF
 	echo " [DONE]"
 done
 
 echo -n " * Populating FSDIR=${FSDIR} ....."
 mkdir -p ${FSDIR}/FreeBSD6/${TARGET}/bin 2>>${ERRFILE} >>${ERRFILE}
-cd ${WORKDIR}/rescue/
+cd ${WORKDIR}/FreeBSD6/${TARGET}/bin
 tar -cf - * | tar -xf - -C ${FSDIR}/FreeBSD6/${TARGET}/bin 2>>${ERRFILE} >>${ERRFILE}
 echo " [DONE]"
 
