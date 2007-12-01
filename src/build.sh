@@ -99,12 +99,13 @@ do
 
 	echo -n " * Patching World ....."
 	cd ${WORKDIR}/usr/src/sys/boot/
-	export BOOTPATH="/.boot/0.1r2/${TARGET}"
-	for file in $(find ./ -not -type d)
-	do
-	    sed -i .bak "s_\"/boot/kernel_\"${BOOTPATH}/GENERIC_g" ${file} 2>>${ERRFILE} >>${ERRFILE}
-	    sed -i .bak "s_\"/boot/loader_\"${BOOTPATH}/loader_g" ${file} 2>>${ERRFILE} >>${ERRFILE}
-	done
+	export BOOTPATH="/boot/"
+#	for file in $(find ./ -not -type d -not -name .bak)
+#	do
+#	    sed -i .bak "s_\"/boot/kernel_\"${BOOTPATH}/GENERIC_g" ${file} 2>>${ERRFILE} >>${ERRFILE}
+#	    sed -i .bak "s_\"/boot/loader_\"${BOOTPATH}/loader_g" ${file} 2>>${ERRFILE} >>${ERRFILE}
+#	    sed -i .bak "s_\"/BOOT/LOADER_\"/.BOOT/0.1R2/I386/LOADER_g" ${file} 2>>${ERRFILE} >>${ERRFILE}
+#	done
 	sed -i .bak '/pxe_setnfshandle(rootpath);/d' ${WORKDIR}/usr/src/sys/boot/i386/libi386/pxe.c 2>>${ERRFILE} >>${ERRFILE}
 	cp ${WRKDIRPREFIX}/lazybox.Makefile ${WORKDIR}/usr/src/rescue/rescue/Makefile
 	echo " [DONE]"
@@ -145,12 +146,12 @@ do
 	cd ${DESTDIR}/boot/
 	tar -cf - --exclude SMP * | tar -xvf - -C ${BOOTDIR}/${BOOTPATH} 2>>${ERRFILE} >>${ERRFILE}
 	echo >${BOOTDIR}/${BOOTPATH}/loader.conf << EOF
-kernel="GENERIC"
-mfsroot_load="YES"
-mfsroot_type="md_preload"
-mfsroot_name="/.boot/0.1r2/root.fs.gz"
-dcons_load="YES"
-dcons_crom_load="YES"
+	kernel="GENERIC"
+	mfsroot_load="YES"
+	mfsroot_type="md_preload"
+	mfsroot_name="${BOOTPATH}/root.fs.gz"
+	dcons_load="YES"
+	dcons_crom_load="YES"
 EOF
 	echo " [DONE]"
 done
@@ -162,7 +163,7 @@ tar -cf - * | tar -xf - -C ${FSDIR}/FreeBSD6/${TARGET}/bin 2>>${ERRFILE} >>${ERR
 echo " [DONE]"
 
 echo -n " * Creating root.fs ....."
-cd ${BOOTDIR}/.boot/0.1r2/
+cd ${BOOTDIR}/${BOOTPATH}
 rm -r root.fs* 2>>${ERRFILE} >>${ERRFILE}
 makefs root.fs ${FSDIR} 2>>${ERRFILE} >>${ERRFILE}
 gzip -9 root.fs	2>>${ERRFILE} >>${ERRFILE}
