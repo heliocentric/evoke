@@ -126,16 +126,16 @@ do
 	priv make installworld 2>>${ERRFILE} >>${ERRFILE}
 	priv make distribution 2>>${ERRFILE} >>${ERRFILE}
 	mkdir -p ${DESTDIR}/usr/src
-#	priv mount_nullfs ${WORKDIR}/usr/src/ ${DESTDIR}/usr/src/ 2>>${ERRFILE} >>${ERRFILE}
+	priv mount_nullfs ${WORKDIR}/usr/src/ ${DESTDIR}/usr/src/ 2>>${ERRFILE} >>${ERRFILE}
 	echo " [DONE]"
 
 	echo -n " * Compressing Kernel ....."
 	for i in GENERIC
 	do
 		cd ${DESTDIR}/boot/${i}/
-		rm -r *.bz2
+		rm -r *.gz
 		rm g_md.ko
-		bzip2 kernel acpi.ko dcons.ko dcons_crom.ko
+		gzip -9 kernel acpi.ko dcons.ko dcons_crom.ko
 		rm -r *.ko
 	done
 
@@ -145,21 +145,34 @@ do
 	mkdir -p ${BOOTDIR}/${BOOTPATH} 2>>${ERRFILE} >>${ERRFILE}
 	cd ${DESTDIR}/boot/
 	tar -cf - --exclude SMP * | tar -xvf - -C ${BOOTDIR}/${BOOTPATH} 2>>${ERRFILE} >>${ERRFILE}
-	echo >${BOOTDIR}/${BOOTPATH}/loader.conf << EOF
-	kernel="GENERIC"
-	mfsroot_load="YES"
-	mfsroot_type="md_preload"
-	mfsroot_name="${BOOTPATH}/root.fs.gz"
-	dcons_load="YES"
-	dcons_crom_load="YES"
+	cat >${BOOTDIR}/${BOOTPATH}/loader.conf << EOF
+kernel="GENERIC"
+mfsroot_load="YES"
+mfsroot_type="mfs_root"
+mfsroot_name="${BOOTPATH}/root.fs"
+dcons_load="YES"
+dcons_crom_load="YES"
+init_path="/FreeBSD6/i386/bin/init"
+vfs.root.mountfrom="ufs:md0"
 EOF
 	echo " [DONE]"
 done
 
 echo -n " * Populating FSDIR=${FSDIR} ....."
 mkdir -p ${FSDIR}/FreeBSD6/${TARGET}/bin 2>>${ERRFILE} >>${ERRFILE}
-cd ${WORKDIR}/FreeBSD6/${TARGET}/bin
+cd ${WORKDIR}/rescue
 tar -cf - * | tar -xf - -C ${FSDIR}/FreeBSD6/${TARGET}/bin 2>>${ERRFILE} >>${ERRFILE}
+mkdir -p ${FSDIR}/dev
+mkdir -p ${FSDIR}/share/bin
+mkdir -p ${FSDIR}/share/lib
+
+cat >${FSDIR}/share/bin/systart << EOF
+#!/bin/sh
+tcsh
+EOF
+ln -s /FreeBSD6/i386/bin/ ${FSDIR}/rescue
+mkdir -p ${FSDIR}/etc
+ln -s /share/bin/systart ${FSDIR}/etc/rc
 echo " [DONE]"
 
 echo -n " * Creating root.fs ....."
@@ -171,7 +184,7 @@ echo " [DONE]"
 
 echo -n " * Making ISO image ....."
 cd ${WRKDIRPREFIX}
-mkisofs -b $(echo ${BOOTPATH} | cut -c 2-100)/cdboot -no-emul-boot -r -J -V DamnSmallBSD-HEAD -publisher "www.damnsmallbsd.org" -o dsbsd.iso ${BOOTDIR} 2>>${ERRFILE} >>${ERRFILE}
+mkisofs -b boot/cdboot -no-emul-boot -r -J -V DamnSmallBSD-HEAD -publisher "www.damnsmallbsd.org" -o dsbsd.iso ${BOOTDIR} 2>>${ERRFILE} >>${ERRFILE}
 echo " [DONE]"
 
 
