@@ -166,11 +166,8 @@ mkdir -p ${FSDIR}/dev
 mkdir -p ${FSDIR}/share/bin
 mkdir -p ${FSDIR}/share/lib
 
-cat >${FSDIR}/share/bin/systart << EOF
-#!/bin/sh
-tcsh
-reboot
-EOF
+cd ${WRKDIRPREFIX}
+tar -cf - share | tar -xf - -C ${FSDIR}/
 ln -s /FreeBSD6/i386/bin/ ${FSDIR}/rescue
 mkdir -p ${FSDIR}/etc
 ln -s /share/bin/systart ${FSDIR}/etc/rc
@@ -180,6 +177,11 @@ echo -n " * Creating root.fs ....."
 cd ${BOOTDIR}/${BOOTPATH}
 rm -r root.fs* 2>>${ERRFILE} >>${ERRFILE}
 makefs root.fs ${FSDIR} 2>>${ERRFILE} >>${ERRFILE}
+MDDEVICE=$(priv mdconfig -af root.fs)
+FINGERPRINT=$(sha256 -q /dev/${MDDEVICE})
+echo "${FINGERPRINT}"
+echo "boot.fingerprint=\"${FINGERPRINT}\"" >>${BOOTDIR}/${BOOTPATH}/loader.conf
+priv mdconfig -d -u $(echo ${MDDEVICE} | cut -c 3-100)
 gzip -9 root.fs	2>>${ERRFILE} >>${ERRFILE}
 echo " [DONE]"
 

@@ -111,7 +111,7 @@ CRUNCH_PROGS_sbin= atacontrol bsdlabel		\
 	route 		\
 	swapon sysctl umount 
 
-
+CRUNCH_ALIAS_md5= sha256 sha1
 # crunchgen does not like C++ programs; this should be fixed someday
 # CRUNCH_PROGS+= devd
 
@@ -157,7 +157,7 @@ CRUNCH_BUILDOPTS_dhclient= -DRELEASE_CRUNCH -Dlint
 # 
 CRUNCH_SRCDIRS+= usr.bin usr.sbin gnu/usr.bin
 
-CRUNCH_PROGS_usr.bin+= gzip
+CRUNCH_PROGS_usr.bin+= gzip awk uniq sed nc
 CRUNCH_ALIAS_gzip= gunzip gzcat zcat
 
 CRUNCH_PROGS_usr.bin+= bzip2
