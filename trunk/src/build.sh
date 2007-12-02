@@ -114,7 +114,7 @@ do
 	echo -n " * Building World ....."
 	cd ${WORKDIR}/usr/src/
 	if [ "${NO_CLEAN}" = "" ] ; then
-		make  -DLOADER_TFTP_SUPPORT LOADER_BZIP2_SUPPORT="yes" buildworld 2>>${ERRFILE} >>${ERRFILE}
+		make  -DLOADER_TFTP_SUPPORT buildworld 2>>${ERRFILE} >>${ERRFILE}
 	fi
 	echo " [DONE]"
 
@@ -133,9 +133,9 @@ do
 	for i in GENERIC
 	do
 		cd ${DESTDIR}/boot/${i}/
-		rm -r *.bz2 2>/dev/null
+		rm -r *.gz 2>/dev/null
 		rm g_md.ko
-		bzip2 kernel acpi.ko dcons.ko dcons_crom.ko
+		gzip -9 kernel acpi.ko dcons.ko dcons_crom.ko
 		rm -r *.ko
 	done
 
