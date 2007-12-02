@@ -169,16 +169,18 @@ CRUNCH_LIBS+= -larchive
 
 CRUNCH_PROGS_usr.bin+= ee
 
-CRUNCH_PROGS_usr.bin+= id
+;CRUNCH_PROGS_usr.bin+= id
 CRUNCH_ALIAS_id= groups whoami
 
 CRUNCH_PROGS_gnu/usr.bin+= grep
 CRUNCH_LIBS+= -lgnuregex
 
+CRUNCH_PROGS_usr.sbin+= dconschat
+
 CRUNCH_PROGS_usr.bin+= less tail head
 CRUNCH_ALIAS_less= more
 #CRUNCH_PROGS_usr.bin+= ssh
-#CRUNCH_LIBS+= -lssh -lgssapi -lcrypto -lcrypt -lpam -lasn1 -lkrb5 -lroken -lcom_err
+CRUNCH_LIBS+= -lssh -lgssapi -lcrypto -lcrypt -lpam -lasn1 -lkrb5 -lroken -lcom_err
 ##################################################################
 # Programs from stock /usr/sbin
 # 
