@@ -64,9 +64,9 @@ CRUNCH_LIBS+= ${.OBJDIR}/../librescue/*.o
 # /usr/include/paths.h as well!  You were warned!
 #
 CRUNCH_SRCDIRS+= bin
-CRUNCH_PROGS_bin= cat chio chmod date dd df echo 	\
+CRUNCH_PROGS_bin= cat chmod date dd df echo 	\
 	 expr kenv kill ln ls mkdir mv ps pwd 	\
-	 realpath rm sh stty test
+	 rm sh stty test
 CRUNCH_LIBS+= -lcrypt -ledit -lkvm -lm -lutil
 .if !defined(NO_CRYPT) && !defined(NO_OPENSSL)
 CRUNCH_LIBS+= -lcrypto
@@ -99,7 +99,7 @@ CRUNCH_SUPPRESS_LINK_-tcsh= 1
 #
 CRUNCH_SRCDIRS+= sbin
 CRUNCH_PROGS_sbin= atacontrol bsdlabel		\
-	camcontrol clri devfs dmesg			\
+	camcontrol devfs dmesg			\
 	fsck_ffs fsck_msdosfs 	\
 	ifconfig init 				\
 	kldconfig kldload kldstat kldunload 			\
