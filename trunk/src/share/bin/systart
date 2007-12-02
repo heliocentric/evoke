@@ -1,0 +1,13 @@
+#!/bin/sh
+# $Id
+ROOTFINGERPRINT=$(kenv -q boot.fingerprint)
+
+echo -n "Verifying root filesystem ..... "
+if [ "${ROOTFINGERPRINT}" != "" ] ; then
+	if [ "${ROOTFINGERPRINT}" != "$(sha256 -q /dev/md0)" ] ; then
+		echo "[FAILED]"
+	fi
+fi
+echo "[DONE]"
+tcsh
+reboot
