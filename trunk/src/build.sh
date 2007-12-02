@@ -114,7 +114,7 @@ do
 	echo -n " * Building World ....."
 	cd ${WORKDIR}/usr/src/
 	if [ "${NO_CLEAN}" = "" ] ; then
-		make  -DNO_CLEAN -DLOADER_TFTP_SUPPORT -DLOADER_BZIP2_SUPPORT LOADER_FIREWIRE_SUPPORT="yes" buildworld 2>>${ERRFILE} >>${ERRFILE}
+		make  -DLOADER_TFTP_SUPPORT LOADER_BZIP2_SUPPORT="yes" buildworld 2>>${ERRFILE} >>${ERRFILE}
 	fi
 	echo " [DONE]"
 
@@ -122,20 +122,20 @@ do
 	export DESTDIR=${WRKDIRPREFIX}/${TARGET}
 	mkdir -p ${DESTDIR}
 	priv make hierarchy 2>>${ERRFILE} >>${ERRFILE}
-	mkdir -p ${DESTDIR}/FreeBSD6/${TARGET}/bin
+	rm -r ${DESTDIR}/rescue/*
 	priv make installworld 2>>${ERRFILE} >>${ERRFILE}
 	priv make distribution 2>>${ERRFILE} >>${ERRFILE}
 	mkdir -p ${DESTDIR}/usr/src
-	priv mount_nullfs ${WORKDIR}/usr/src/ ${DESTDIR}/usr/src/ 2>>${ERRFILE} >>${ERRFILE}
+#	priv mount_nullfs ${WORKDIR}/usr/src/ ${DESTDIR}/usr/src/ 2>>${ERRFILE} >>${ERRFILE}
 	echo " [DONE]"
 
 	echo -n " * Compressing Kernel ....."
 	for i in GENERIC
 	do
 		cd ${DESTDIR}/boot/${i}/
-		rm -r *.gz
+		rm -r *.bz2 2>/dev/null
 		rm g_md.ko
-		gzip -9 kernel acpi.ko dcons.ko dcons_crom.ko
+		bzip2 kernel acpi.ko dcons.ko dcons_crom.ko
 		rm -r *.ko
 	done
 

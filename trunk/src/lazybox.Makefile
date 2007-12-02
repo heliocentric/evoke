@@ -154,7 +154,7 @@ CRUNCH_BUILDOPTS_dhclient= -DRELEASE_CRUNCH -Dlint
 ##################################################################
 # Programs from stock /usr/bin
 # 
-CRUNCH_SRCDIRS+= usr.bin
+CRUNCH_SRCDIRS+= usr.bin usr.sbin
 
 CRUNCH_PROGS_usr.bin+= gzip
 CRUNCH_ALIAS_gzip= gunzip gzcat zcat
@@ -171,6 +171,8 @@ CRUNCH_PROGS_usr.bin+= ee
 CRUNCH_PROGS_usr.bin+= id
 CRUNCH_ALIAS_id= groups whoami
 
+#CRUNCH_PROGS_usr.bin+= ssh
+#CRUNCH_LIBS+= -lssh -lgssapi -lcrypto -lcrypt -lpam -lasn1 -lkrb5 -lroken -lcom_err
 ##################################################################
 # Programs from stock /usr/sbin
 # 
