@@ -169,6 +169,7 @@ mkdir -p ${FSDIR}/share/lib
 cat >${FSDIR}/share/bin/systart << EOF
 #!/bin/sh
 tcsh
+reboot
 EOF
 ln -s /FreeBSD6/i386/bin/ ${FSDIR}/rescue
 mkdir -p ${FSDIR}/etc
