@@ -11,5 +11,25 @@ if [ "${ROOTFINGERPRINT}" != "" ] ; then
 fi
 echo "[DONE]"
 
+echo -n "Remounting root filesystem R/W ..... "
+mount -o update,rw /dev/md0 / 2>/dev/null >/dev/null
+echo "[DONE]"
+
+echo -n "Grabbing root password from loader.conf ..... "
+RPASSWD=$(kenv -q boot.rootpassword)
+if [ "${RPASSWD}" = "" ] ; then
+	echo "[FAILED]"
+	echo -n "Setting password to 'password' ..... "
+	RPASSWD='$1$1QgK4Xsg$.PInGIAb4c0nznxpRkUPk.'
+	echo "[DONE]"
+else
+	echo "[DONE]"
+fi
+
+echo -n "Creating root account ..... "
+echo "root:${RPASSWD}:0:0::0:0:Super-User:/:/bin/tcsh" >/etc/master.passwd
+pwd_mkdb /etc/master.passwd
+echo "[DONE]"
+
 tcsh
 reboot
