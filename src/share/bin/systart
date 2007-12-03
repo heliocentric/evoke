@@ -1,6 +1,6 @@
 #!/bin/sh
 # $Id
-ROOTFINGERPRINT=$(kenv -q boot.fingerprint)
+ROOTFINGERPRINT=$(kenv -q dsbsd.fingerprint)
 
 echo -n "Verifying root filesystem ..... "
 if [ "${ROOTFINGERPRINT}" != "" ] ; then
@@ -16,7 +16,7 @@ mount -o update,rw /dev/md0 / 2>/dev/null >/dev/null
 echo "[DONE]"
 
 echo -n "Grabbing root password from loader.conf ..... "
-RPASSWD=$(kenv -q boot.rootpassword)
+RPASSWD=$(kenv -q dsbsd.rootpassword)
 if [ "${RPASSWD}" = "" ] ; then
 	echo "[FAILED]"
 	echo -n "Setting password to 'password' ..... "
