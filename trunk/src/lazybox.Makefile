@@ -132,7 +132,7 @@ CRUNCH_BUILDOPTS_dhclient= -DRELEASE_CRUNCH -Dlint
 # 
 CRUNCH_SRCDIRS+= usr.bin usr.sbin gnu/usr.bin libexec
 
-CRUNCH_PROGS_usr.bin+= gzip awk uniq sed nc bzip2 tar ee id less tail head login ftp tftp
+CRUNCH_PROGS_usr.bin+= gzip awk uniq sed nc bzip2 tar ee id less tail head login ftp tftp top
 CRUNCH_ALIAS_gzip= gunzip gzcat zcat
 CRUNCH_ALIAS_bzip2= bunzip2 bzcat
 CRUNCH_ALIAS_id= groups whoami
