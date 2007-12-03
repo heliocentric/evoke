@@ -182,7 +182,7 @@ rm -r root.fs* 2>>${ERRFILE} >>${ERRFILE}
 makefs root.fs ${FSDIR} 2>>${ERRFILE} >>${ERRFILE}
 MDDEVICE=$(priv mdconfig -af root.fs)
 FINGERPRINT=$(sha256 -q /dev/${MDDEVICE})
-echo "boot.fingerprint=\"${FINGERPRINT}\"" >>${BOOTDIR}/${BOOTPATH}/loader.conf
+echo "dsbsd.fingerprint=\"${FINGERPRINT}\"" >>${BOOTDIR}/${BOOTPATH}/loader.conf
 priv mdconfig -d -u $(echo ${MDDEVICE} | cut -c 3-100)
 gzip -9 root.fs	2>>${ERRFILE} >>${ERRFILE}
 echo " [DONE]"
