@@ -122,7 +122,8 @@ do
 	export DESTDIR=${WRKDIRPREFIX}/${TARGET}
 	mkdir -p ${DESTDIR}
 	priv make hierarchy 2>>${ERRFILE} >>${ERRFILE}
-	rm -r ${DESTDIR}/rescue/*
+	rm -r ${DESTDIR}/rescue
+	mkdir -p ${DESTDIR}/rescue
 	priv make installworld 2>>${ERRFILE} >>${ERRFILE}
 	priv make distribution 2>>${ERRFILE} >>${ERRFILE}
 	mkdir -p ${DESTDIR}/usr/src
@@ -165,7 +166,9 @@ tar -cf - * | tar -xf - -C ${FSDIR}/FreeBSD6/${TARGET}/bin 2>>${ERRFILE} >>${ERR
 mkdir -p ${FSDIR}/dev
 mkdir -p ${FSDIR}/share/bin
 mkdir -p ${FSDIR}/share/lib
-
+mkdir -p ${FSDIR}/lib/geom/
+cd ${DESTDIR}/lib/geom/
+tar -cf - * | tar -xf - -C ${FSDIR}/lib/geom/
 cd ${WRKDIRPREFIX}
 tar -cf - share | tar -xf - -C ${FSDIR}/
 ln -s /FreeBSD6/i386/bin/ ${FSDIR}/rescue
@@ -179,7 +182,6 @@ rm -r root.fs* 2>>${ERRFILE} >>${ERRFILE}
 makefs root.fs ${FSDIR} 2>>${ERRFILE} >>${ERRFILE}
 MDDEVICE=$(priv mdconfig -af root.fs)
 FINGERPRINT=$(sha256 -q /dev/${MDDEVICE})
-echo "${FINGERPRINT}"
 echo "boot.fingerprint=\"${FINGERPRINT}\"" >>${BOOTDIR}/${BOOTPATH}/loader.conf
 priv mdconfig -d -u $(echo ${MDDEVICE} | cut -c 3-100)
 gzip -9 root.fs	2>>${ERRFILE} >>${ERRFILE}

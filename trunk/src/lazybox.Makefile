@@ -53,8 +53,8 @@ CRUNCH_LIBS+= ${.OBJDIR}/../librescue/*.o
 
 
 
-CRUNCH_LIBS+= -lssh -lcrypt -ledit -lkvm -lm -lbsdxml -lcam -lcurses -lipsec -lipx -lsbuf -lufs -lz -ll -lgssapi -lbsm -lpam -lkrb5 -lroken -lasn1 -lcom_err -lbz2 -lgnuregex -lutil -larchive -lcrypto -lutil -ltacplus -lradius -lypclnt -lopie -lmd -lwrap
-CRUNCH_LIBS_SO+= -lgeom
+CRUNCH_LIBS+= -lssh -lcrypt -ledit -lkvm -lm -lbsdxml -lcam -lcurses -lipsec -lipx -lsbuf -lufs -lz -ll -lgssapi -lbsm -lpam -lkrb5 -lroken -lasn1 -lcom_err -lbz2 -lgnuregex -lutil -lgeom -larchive -lcrypto -lutil -ltacplus -lradius -lypclnt -lopie -lmd -lwrap
+#CRUNCH_LIBS_SO+= -lgeom
 
 ###################################################################
 # Programs from stock /bin
@@ -88,10 +88,10 @@ CRUNCH_SUPPRESS_LINK_-tcsh= 1
 # headers in addition to the standard 'paths.h' header.
 #
 CRUNCH_SRCDIRS+= sbin
-CRUNCH_PROGS_sbin= atacontrol bsdlabel camcontrol devfs dmesg fsck_ffs fsck_msdosfs ifconfig init kldconfig kldload kldstat kldunload md5 mdconfig mdmfs mount mount_nullfs newfs ping reboot route swapon sysctl umount 
+CRUNCH_PROGS_sbin= atacontrol bsdlabel camcontrol devfs dmesg fsck_ffs fsck_msdosfs ifconfig init kldconfig kldload kldstat kldunload md5 mdconfig mdmfs mount mount_nullfs newfs ping reboot route swapon sysctl umount geom
 CRUNCH_ALIAS_md5= sha256 sha1
 CRUNCH_ALIAS_reboot= halt
-
+CRUNCH_ALOAS_geom= gmirror gconcat gstripe geli
 # crunchgen does not like C++ programs; this should be fixed someday
 #CRUNCH_PROGS_sbin+= devd
 
