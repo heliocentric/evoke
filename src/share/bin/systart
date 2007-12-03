@@ -6,8 +6,10 @@ echo -n "Verifying root filesystem ..... "
 if [ "${ROOTFINGERPRINT}" != "" ] ; then
 	if [ "${ROOTFINGERPRINT}" != "$(sha256 -q /dev/md0)" ] ; then
 		echo "[FAILED]"
+		reboot
 	fi
 fi
 echo "[DONE]"
+
 tcsh
 reboot
