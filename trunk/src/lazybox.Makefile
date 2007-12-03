@@ -175,7 +175,7 @@ CRUNCH_ALIAS_id= groups whoami
 CRUNCH_PROGS_gnu/usr.bin+= grep
 CRUNCH_LIBS+= -lgnuregex
 
-CRUNCH_PROGS_usr.sbin+= dconschat
+CRUNCH_PROGS_usr.sbin+= dconschat jail jexec jls
 
 CRUNCH_PROGS_usr.bin+= less tail head
 CRUNCH_ALIAS_less= more
