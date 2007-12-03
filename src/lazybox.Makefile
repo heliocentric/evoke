@@ -130,9 +130,9 @@ CRUNCH_BUILDOPTS_dhclient= -DRELEASE_CRUNCH -Dlint
 ##################################################################
 # Programs from stock /usr/bin
 # 
-CRUNCH_SRCDIRS+= usr.bin usr.sbin gnu/usr.bin
+CRUNCH_SRCDIRS+= usr.bin usr.sbin gnu/usr.bin libexec
 
-CRUNCH_PROGS_usr.bin+= gzip awk uniq sed nc bzip2 tar ee id less tail head
+CRUNCH_PROGS_usr.bin+= gzip awk uniq sed nc bzip2 tar ee id less tail head login ftp tftp
 CRUNCH_ALIAS_gzip= gunzip gzcat zcat
 CRUNCH_ALIAS_bzip2= bunzip2 bzcat
 CRUNCH_ALIAS_id= groups whoami
@@ -148,7 +148,7 @@ CRUNCH_SRCDIRS+= secure/usr.bin secure/usr.sbin
 
 CRUNCH_PROGS_secure/usr.bin+= ssh
 CRUNCH_PROGS_secure/usr.sbin+= sshd
-
+CRUNCH_PROGS_libexec+= getty tftpd ftpd
 ##################################################################
 # Programs from stock /usr/sbin
 # 
