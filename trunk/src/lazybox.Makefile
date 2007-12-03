@@ -5,13 +5,6 @@
 PROG=	lazybox
 BINDIR?=/rescue
 
-# Shell scripts need #! line to be edited from /bin/sh to /rescue/sh
-SCRIPTS= nextboot_FIXED
-SCRIPTSNAME_nextboot_FIXED= nextboot
-nextboot_FIXED: ../../sbin/reboot/nextboot.sh
-	sed '1s/\/bin\//\/rescue\//' ${.ALLSRC} > ${.TARGET}
-CLEANFILES+= nextboot_FIXED
-
 SCRIPTS+= dhclient_FIXED
 SCRIPTSNAME_dhclient_FIXED= dhclient-script
 dhclient_FIXED: ../../sbin/dhclient/dhclient-script
@@ -58,6 +51,11 @@ CRUNCH_BUILDOPTS+= CRUNCH_CFLAGS=-DRESCUE
 # regular lib entries from libc and friends.
 CRUNCH_LIBS+= ${.OBJDIR}/../librescue/*.o
 
+
+
+CRUNCH_LIBS+= -lssh -lcrypt -ledit -lkvm -lm -lbsdxml -lcam -lcurses -lipsec -lipx -lsbuf -lufs -lz -ll -lgssapi -lbsm -lpam -lkrb5 -lroken -lasn1 -lcom_err -lbz2 -lgnuregex -lutil -larchive -lcrypto -lutil -ltacplus -lradius -lypclnt -lopie -lmd -lwrap
+CRUNCH_LIBS_SO+= -lgeom
+
 ###################################################################
 # Programs from stock /bin
 #
@@ -65,13 +63,7 @@ CRUNCH_LIBS+= ${.OBJDIR}/../librescue/*.o
 # /usr/include/paths.h as well!  You were warned!
 #
 CRUNCH_SRCDIRS+= bin
-CRUNCH_PROGS_bin= cat chmod date dd df echo 	\
-	 expr kenv kill ln ls mkdir mv ps pwd 	\
-	 rm sh stty test
-CRUNCH_LIBS+= -lcrypt -ledit -lkvm -lm -lutil
-.if !defined(NO_CRYPT) && !defined(NO_OPENSSL)
-CRUNCH_LIBS+= -lcrypto
-.endif
+CRUNCH_PROGS_bin= cat chmod date dd df echo expr kenv kill ln ls mkdir mv ps pwd rm sh stty test csh
 
 # Additional options for specific programs
 CRUNCH_ALIAS_test= [
@@ -82,12 +74,9 @@ CRUNCH_ALIAS_ln= link
 CRUNCH_ALIAS_rm= unlink
 
 
-.if !defined(NO_TCSH)
-CRUNCH_PROGS_bin+= csh
 CRUNCH_ALIAS_csh= -csh tcsh -tcsh
 CRUNCH_SUPPRESS_LINK_-csh= 1
 CRUNCH_SUPPRESS_LINK_-tcsh= 1
-.endif
 
 ###################################################################
 # Programs from standard /sbin
@@ -99,30 +88,17 @@ CRUNCH_SUPPRESS_LINK_-tcsh= 1
 # headers in addition to the standard 'paths.h' header.
 #
 CRUNCH_SRCDIRS+= sbin
-CRUNCH_PROGS_sbin= atacontrol bsdlabel		\
-	camcontrol devfs dmesg			\
-	fsck_ffs fsck_msdosfs 	\
-	ifconfig init 				\
-	kldconfig kldload kldstat kldunload 			\
-	md5 mdconfig mdmfs mount	\
-	mount_nullfs			\
-	newfs		\
-	ping reboot			\
-	route 		\
-	swapon sysctl umount 
-
+CRUNCH_PROGS_sbin= atacontrol bsdlabel camcontrol devfs dmesg fsck_ffs fsck_msdosfs ifconfig init kldconfig kldload kldstat kldunload md5 mdconfig mdmfs mount mount_nullfs newfs ping reboot route swapon sysctl umount 
 CRUNCH_ALIAS_md5= sha256 sha1
-# crunchgen does not like C++ programs; this should be fixed someday
-# CRUNCH_PROGS+= devd
+CRUNCH_ALIAS_reboot= halt
 
-CRUNCH_LIBS+= -lbsdxml -lcam -lcurses -lipsec -lipx \
-	-lgeom -lmd -lsbuf -lufs -lz -ll
+# crunchgen does not like C++ programs; this should be fixed someday
+#CRUNCH_PROGS_sbin+= devd
+
 
 .if ${MACHINE_ARCH} == "i386"
 CRUNCH_PROGS_sbin+= fdisk
 CRUNCH_ALIAS_bsdlabel= disklabel
-#CRUNCH_PROGS+= mount_nwfs mount_smbfs
-#CRUNCH_LIBS+= -lncp -lsmb
 .endif
 
 .if ${MACHINE} == "pc98"
@@ -146,7 +122,6 @@ CRUNCH_PROGS_sbin+= fdisk
 CRUNCH_ALIAS_bsdlabel= disklabel
 .endif
 
-CRUNCH_ALIAS_reboot= halt
 
 # dhclient has historically been troublesome...
 CRUNCH_PROGS_sbin+= dhclient
@@ -157,30 +132,23 @@ CRUNCH_BUILDOPTS_dhclient= -DRELEASE_CRUNCH -Dlint
 # 
 CRUNCH_SRCDIRS+= usr.bin usr.sbin gnu/usr.bin
 
-CRUNCH_PROGS_usr.bin+= gzip awk uniq sed nc
+CRUNCH_PROGS_usr.bin+= gzip awk uniq sed nc bzip2 tar ee id less tail head
 CRUNCH_ALIAS_gzip= gunzip gzcat zcat
-
-CRUNCH_PROGS_usr.bin+= bzip2
 CRUNCH_ALIAS_bzip2= bunzip2 bzcat
-CRUNCH_LIBS+= -lbz2
-
-CRUNCH_PROGS_usr.bin+= tar
-CRUNCH_LIBS+= -larchive
-
-CRUNCH_PROGS_usr.bin+= ee
-
-;CRUNCH_PROGS_usr.bin+= id
 CRUNCH_ALIAS_id= groups whoami
+CRUNCH_ALIAS_less= more
+
 
 CRUNCH_PROGS_gnu/usr.bin+= grep
-CRUNCH_LIBS+= -lgnuregex
 
 CRUNCH_PROGS_usr.sbin+= dconschat jail jexec jls
 
-CRUNCH_PROGS_usr.bin+= less tail head
-CRUNCH_ALIAS_less= more
-#CRUNCH_PROGS_usr.bin+= ssh
-CRUNCH_LIBS+= -lssh -lgssapi -lcrypto -lcrypt -lpam -lasn1 -lkrb5 -lroken -lcom_err
+
+CRUNCH_SRCDIRS+= secure/usr.bin secure/usr.sbin
+
+CRUNCH_PROGS_secure/usr.bin+= ssh
+CRUNCH_PROGS_secure/usr.sbin+= sshd
+
 ##################################################################
 # Programs from stock /usr/sbin
 # 
@@ -230,6 +198,9 @@ $(CONF): Makefile
 	echo \# Auto-generated, do not edit >$(.TARGET)
 .ifdef CRUNCH_BUILDOPTS
 	echo buildopts $(CRUNCH_BUILDOPTS) >>$(.TARGET)
+.endif
+.ifdef CRUNCH_LIBS_SO
+	echo libs_so $(CRUNCH_LIBS_SO) >>$(.TARGET)
 .endif
 .ifdef CRUNCH_LIBS
 	echo libs $(CRUNCH_LIBS) >>$(.TARGET)
