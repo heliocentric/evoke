@@ -48,9 +48,7 @@ do
 	export DESTDIR=${WRKDIRPREFIX}/${TARGET}
 	chflags -R noschg ${DESTDIR}
 	if [ -d "${DESTDIR}" ] ; then
-		if [ "${NO_CLEAN}" = "" ] ; then
 			rm -rf ${DESTDIR}
-		fi
 	fi
 	for distset in base kernels src
 	do
@@ -107,6 +105,8 @@ do
 #	    sed -i .bak "s_\"/BOOT/LOADER_\"/.BOOT/0.1R2/I386/LOADER_g" ${file} 2>>${ERRFILE} >>${ERRFILE}
 #	done
 	sed -i .bak '/pxe_setnfshandle(rootpath);/d' ${WORKDIR}/usr/src/sys/boot/i386/libi386/pxe.c 2>>${ERRFILE} >>${ERRFILE}
+	sed -i .bak "s_\"/rescue_\"/FreeBSD-6/${TARGET}/bin_g" ${WORKDIR}/usr/src/include/paths.h 2>>${ERRFILE} >>${ERRFILE}
+	sed -i .bak "s_\"/etc/rc_\"/share/bin/systart_g" ${WORKDIR}/usr/src/sbin/init/pathnames.h 2>>${ERRFILE} >>${ERRFILE}
 	cp ${WRKDIRPREFIX}/lazybox.Makefile ${WORKDIR}/usr/src/rescue/rescue/Makefile
 	echo " [DONE]"
 
@@ -124,8 +124,8 @@ do
 	priv make hierarchy 2>>${ERRFILE} >>${ERRFILE}
 	rm -r ${DESTDIR}/rescue
 	mkdir -p ${DESTDIR}/rescue
-	priv make installworld 2>>${ERRFILE} >>${ERRFILE}
-	priv make distribution 2>>${ERRFILE} >>${ERRFILE}
+	priv make installworld SUBDIR_OVERRIDE="rescue" 2>>${ERRFILE} >>${ERRFILE}
+#	priv make distribution 2>>${ERRFILE} >>${ERRFILE}
 	mkdir -p ${DESTDIR}/usr/src
 #	priv mount_nullfs ${WORKDIR}/usr/src/ ${DESTDIR}/usr/src/ 2>>${ERRFILE} >>${ERRFILE}
 	echo " [DONE]"
@@ -136,7 +136,7 @@ do
 		cd ${DESTDIR}/boot/${i}/
 		rm -r *.gz 2>/dev/null
 		rm g_md.ko
-		gzip -9 kernel acpi.ko dcons.ko dcons_crom.ko
+		gzip -9 kernel acpi.ko dcons.ko dcons_crom.ko nullfs.ko
 		rm -r *.ko
 	done
 
@@ -153,28 +153,32 @@ mfsroot_type="mfs_root"
 mfsroot_name="${BOOTPATH}/root.fs"
 dcons_load="YES"
 dcons_crom_load="YES"
-init_path="/FreeBSD6/i386/bin/init"
+geom_label_load="YES"
+nullfs_load="YES"
+init_path="/FreeBSD-6/i386/bin/init"
 vfs.root.mountfrom="ufs:md0"
 EOF
 	echo " [DONE]"
+
+	echo -n " * Populating FSDIR (FreeBSD-6/${TARGET}) ....."
+	mkdir -p ${FSDIR}/FreeBSD-6/${TARGET}/bin 2>>${ERRFILE} >>${ERRFILE}
+	cd ${WORKDIR}/rescue
+	tar -cf - * | tar -xf - -C ${FSDIR}/FreeBSD-6/${TARGET}/bin/ 2>>${ERRFILE} >>${ERRFILE}
+	mkdir -p ${FSDIR}/share/lib
+	cp ${WORKDIR}/usr/share/misc/termcap ${FSDIR}/share/lib/termcap.real
+	ln -s termcap.real ${FSDIR}/share/lib/termcap
+	echo " [DONE]"
 done
 
-echo -n " * Populating FSDIR=${FSDIR} ....."
-mkdir -p ${FSDIR}/FreeBSD6/${TARGET}/bin 2>>${ERRFILE} >>${ERRFILE}
-cd ${WORKDIR}/rescue
-tar -cf - * | tar -xf - -C ${FSDIR}/FreeBSD6/${TARGET}/bin 2>>${ERRFILE} >>${ERRFILE}
+echo -n " * Populating FSDIR (shared) ....."
 mkdir -p ${FSDIR}/dev
-mkdir -p ${FSDIR}/share/bin
-mkdir -p ${FSDIR}/share/lib
-mkdir -p ${FSDIR}/lib/geom/
-cd ${DESTDIR}/lib/geom/
-tar -cf - * | tar -xf - -C ${FSDIR}/lib/geom/
+mkdir -p ${FSDIR}/bin
+mkdir -p ${FSDIR}/tmp
+mkdir -p ${FSDIR}/etc
 cd ${WRKDIRPREFIX}
 tar -cf - share | tar -xf - -C ${FSDIR}/
-ln -s /FreeBSD6/i386/bin/ ${FSDIR}/rescue
-mkdir -p ${FSDIR}/etc
-ln -s /share/bin/systart ${FSDIR}/etc/rc
 echo " [DONE]"
+
 
 echo -n " * Creating root.fs ....."
 cd ${BOOTDIR}/${BOOTPATH}
