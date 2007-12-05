@@ -50,30 +50,12 @@ do
 	if [ -d "${DESTDIR}" ] ; then
 			rm -rf ${DESTDIR}
 	fi
-	for distset in base kernels src
-	do
-		cd ${FBSD_DISTDIR}/${distset}
-		for dist in *.aa
-		do
-			distfile=$(echo ${dist} | cut -d \. -f 1)
-			echo -n " * Extracting ${distset}/${distfile} ....."
-			case "${distset}" in
-				src)
-					mkdir -p ${DESTDIR}/usr/src
-					cat ${distfile}.?? | gunzip | tar -xpf - -C ${DESTDIR}/usr/src/
-				;;
-				kernels)
-					mkdir -p ${DESTDIR}/boot
-					cat ${distfile}.?? | gunzip | tar -xpf - -C ${DESTDIR}/boot/
-				;;
-				*)
-					mkdir -p ${DESTDIR}
-					cat ${distfile}.?? | gunzip | tar -xpf - -C ${DESTDIR}/
-				;;
-			esac
-			echo " [DONE]"
-		done
-	done
+	mkdir -p ${DESTDIR}
+	SRCDIR="${FBSD_DISTDIR}" DISTS="base kernels src" ${WRKDIRPREFIX}/share/bin/distextract
+	ERROR="$?"
+	if [ "${ERROR}" != "0" ] ; then
+		echo "Error code: ${ERROR}"
+	fi
 done
 
 export ERRFILE=${WRKDIRPREFIX}/error.log
@@ -165,8 +147,9 @@ EOF
 	cd ${WORKDIR}/rescue
 	tar -cf - * | tar -xf - -C ${FSDIR}/FreeBSD-6/${TARGET}/bin/ 2>>${ERRFILE} >>${ERRFILE}
 	mkdir -p ${FSDIR}/share/lib
-	cp ${WORKDIR}/usr/share/misc/termcap ${FSDIR}/share/lib/termcap.real
-	ln -s termcap.real ${FSDIR}/share/lib/termcap
+	mkdir -p ${FSDIR}/usr/share/misc
+	cp ${WORKDIR}/usr/share/misc/termcap ${FSDIR}/share/lib/termcap
+	ln -s /share/lib/termcap ${FSDIR}/usr/share/misc/
 	echo " [DONE]"
 done
 
