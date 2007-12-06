@@ -109,7 +109,7 @@ RSAAuthentication no
 Match User *
 	ForceCommand dconschat
 EOF
-sshd -f /tmp/lib/sshd.conf 2>/dev/null
+/bin/sshd -f /tmp/lib/sshd.conf 2>/dev/null
 echo "[DONE]"
 
 echo -n "Starting ftpd							"

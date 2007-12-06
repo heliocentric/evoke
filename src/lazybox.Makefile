@@ -146,7 +146,7 @@ CRUNCH_PROGS_usr.sbin+= dconschat jail jexec jls pwd_mkdb pciconf usbdevs fwcont
 
 CRUNCH_SRCDIRS+= secure/usr.bin secure/usr.sbin
 
-CRUNCH_PROGS_secure/usr.bin+= ssh
+CRUNCH_PROGS_secure/usr.bin+= ssh ssh-keygen
 CRUNCH_PROGS_secure/usr.sbin+= sshd
 CRUNCH_PROGS_libexec+= getty tftpd ftpd
 ##################################################################
