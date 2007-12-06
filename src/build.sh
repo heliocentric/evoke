@@ -128,7 +128,7 @@ do
 	echo -n " * Populating BOOTPATH=${BOOTPATH} ....."
 	mkdir -p ${BOOTDIR}/${BOOTPATH} 2>>${ERRFILE} >>${ERRFILE}
 	cd ${DESTDIR}/boot/
-	tar -cf - --exclude SMP * | tar -xvf - -C ${BOOTDIR}/${BOOTPATH} 2>>${ERRFILE} >>${ERRFILE}
+	tar -cf - --exclude SMP --exclude loader.old * | tar -xvf - -C ${BOOTDIR}/${BOOTPATH} 2>>${ERRFILE} >>${ERRFILE}
 	cat >${BOOTDIR}/${BOOTPATH}/loader.conf << EOF
 kernel="GENERIC"
 mfsroot_load="YES"
@@ -159,6 +159,7 @@ mkdir -p ${FSDIR}/dev
 mkdir -p ${FSDIR}/bin
 mkdir -p ${FSDIR}/tmp
 mkdir -p ${FSDIR}/etc
+mkdir -p ${FSDIR}/var
 cd ${WRKDIRPREFIX}
 tar -cf - share | tar -xf - -C ${FSDIR}/
 echo " [DONE]"

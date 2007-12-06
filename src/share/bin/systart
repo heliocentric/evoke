@@ -32,6 +32,7 @@ echo "[DONE]"
 echo -n "Creating /tmp							"
 mdmfs -s4m md /tmp
 mkdir /tmp/lib
+mount_nullfs /tmp /var
 mount_nullfs -o union,ro /share/lib/ /etc/
 mount_nullfs -o union,ro /tmp/lib/ /etc/
 echo "[DONE]"
@@ -47,8 +48,9 @@ else
 	echo "[DONE]"
 fi
 
-echo -n "Creating root account						"
+echo -n "Creating master.passwd						"
 echo "root:${RPASSWD}:0:0::0:0:Super-User:/:/bin/tcsh" >>/tmp/lib/master.passwd
+echo "nobody:NOTREALPASSWORD:1:1::0:0:nobody:/tmp/empty:/dev/null" >>/tmp/lib/master.passwd
 pwd_mkdb -d /tmp/lib/ /tmp/lib/master.passwd 2>/dev/null
 echo "[DONE]"
 
@@ -97,7 +99,7 @@ fi
 echo "[DONE]"
 
 echo -n "Starting sshd							"
-ssh-keygen -t dsa -f /tmp/lib/ssh_key -N
+ssh-keygen -t dsa -f /tmp/lib/ssh_key -N ''
 cat >/tmp/lib/sshd.conf << "EOF"
 HostKey /tmp/lib/ssh_key
 PermitRootLogin yes
