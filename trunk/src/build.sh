@@ -55,6 +55,7 @@ do
 	ERROR="$?"
 	if [ "${ERROR}" != "0" ] ; then
 		echo "Error code: ${ERROR}"
+		exit 1
 	fi
 done
 
@@ -106,7 +107,7 @@ do
 	priv make hierarchy 2>>${ERRFILE} >>${ERRFILE}
 	rm -r ${DESTDIR}/rescue
 	mkdir -p ${DESTDIR}/rescue
-	priv make installworld SUBDIR_OVERRIDE="rescue" 2>>${ERRFILE} >>${ERRFILE}
+	priv make installworld 2>>${ERRFILE} >>${ERRFILE}
 #	priv make distribution 2>>${ERRFILE} >>${ERRFILE}
 	mkdir -p ${DESTDIR}/usr/src
 #	priv mount_nullfs ${WORKDIR}/usr/src/ ${DESTDIR}/usr/src/ 2>>${ERRFILE} >>${ERRFILE}
