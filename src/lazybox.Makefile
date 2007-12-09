@@ -136,7 +136,7 @@ CRUNCH_ALIAS_less= more
 
 CRUNCH_PROGS_gnu/usr.bin+= grep
 
-CRUNCH_PROGS_usr.sbin+= dconschat jail jexec jls pwd_mkdb pciconf usbdevs fwcontrol moused syslogd
+CRUNCH_PROGS_usr.sbin+= dconschat jail jexec jls pwd_mkdb pciconf usbdevs fwcontrol moused syslogd vidcontrol
 
 
 CRUNCH_SRCDIRS+= secure/usr.bin secure/usr.sbin
