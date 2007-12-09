@@ -52,7 +52,8 @@ fi
 echo -n "Creating master.passwd						"
 echo "root:${RPASSWD}:0:0::0:0:Super-User:/:/bin/tcsh" >>/tmp/lib/master.passwd
 echo "nobody:NOTREALPASSWORD:1:1::0:0:nobody:/tmp/empty:/dev/null" >>/tmp/lib/master.passwd
-pwd_mkdb -d /tmp/lib/ /tmp/lib/master.passwd 2>/dev/null
+
+pwd_mkdb -i -p -d /tmp/lib/ /tmp/lib/master.passwd 2>/dev/null
 echo "[DONE]"
 
 echo -n "Finding network interface					"
@@ -106,6 +107,10 @@ for i in ums* psm0
 do
 	moused -p /dev/${i} -3 -I /tmp/run/${i}.pid 2>/dev/null
 done
+for ttyv in /dev/ttyv* ; do
+	vidcontrol < ${ttyv} -m on
+done
+
 echo "[DONE]"
 
 echo -n "Starting syslogd						"
@@ -126,9 +131,8 @@ UsePrivilegeSeparation no
 UseDNS no
 PidFile /tmp/run/sshd.pid
 PasswordAuthentication yes
-RSAAuthentication no
-Match User *
-	ForceCommand dconschat
+PermitEmptyPasswords no
+ForceCommand tcsh
 EOF
 /bin/sshd -f /tmp/lib/sshd.conf 2>/dev/null
 echo "[DONE]"
