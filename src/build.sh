@@ -150,6 +150,7 @@ EOF
 	mkdir -p ${FSDIR}/share/lib
 	mkdir -p ${FSDIR}/usr/share/misc
 	cp ${WORKDIR}/usr/share/misc/termcap ${FSDIR}/share/lib/termcap
+	cp ${WORKDIR}/etc/login.conf ${FSDIR}/share/lib/login.conf
 	ln -s /share/lib/termcap ${FSDIR}/usr/share/misc/
 	echo " [DONE]"
 done
