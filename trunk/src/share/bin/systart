@@ -54,6 +54,7 @@ echo "root:${RPASSWD}:0:0::0:0:Super-User:/:/bin/tcsh" >>/tmp/lib/master.passwd
 echo "nobody:NOTREALPASSWORD:1:1::0:0:nobody:/tmp/empty:/dev/null" >>/tmp/lib/master.passwd
 
 pwd_mkdb -i -p -d /tmp/lib/ /tmp/lib/master.passwd 2>/dev/null
+cap_mkdb -f /tmp/lib/login.conf.db /share/lib/login.conf
 echo "[DONE]"
 
 echo -n "Finding network interface					"
