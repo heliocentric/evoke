@@ -159,7 +159,8 @@ mkdir -p ${FSDIR}/dev
 mkdir -p ${FSDIR}/bin
 mkdir -p ${FSDIR}/tmp
 mkdir -p ${FSDIR}/etc
-mkdir -p ${FSDIR}/var
+ln -s /tmp  ${FSDIR}/var
+ln -s /bin ${FSDIR}/sbin
 cd ${WRKDIRPREFIX}
 tar -cf - share | tar -xf - -C ${FSDIR}/
 echo " [DONE]"

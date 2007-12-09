@@ -32,7 +32,8 @@ echo "[DONE]"
 echo -n "Creating /tmp							"
 mdmfs -s4m md /tmp
 mkdir /tmp/lib
-mount_nullfs /tmp /var
+mkdir /tmp/run
+mkdir /tmp/db
 mount_nullfs -o union,ro /share/lib/ /etc/
 mount_nullfs -o union,ro /tmp/lib/ /etc/
 echo "[DONE]"
@@ -79,6 +80,7 @@ fi
 echo "[DONE]"
 
 echo -n "Configuring network						"
+ifconfig lo0 inet 127.0.0.1 netmask 255.255.255.255
 IP="$(kenv -q boot.netif.ip)"
 NETMASK="$(kenv -q boot.netif.netmask)"
 GATEWAY="$(kenv -q boot.netif.gateway)"
@@ -93,19 +95,36 @@ if [ "${IP}" != "" -a "${NETMASK}" != "" -a "${GATEWAY}" != "" ] ; then
 	fi
 
 else
-	dhclient ${IF}
+	dhclient ${IF} >/dev/null 2>/dev/null
 fi
 
 echo "[DONE]"
 
+echo -n "Starting moused							"
+cd /dev
+for i in ums* psm0
+do
+	moused -p /dev/${i} -3 -I /tmp/run/${i}.pid 2>/dev/null
+done
+echo "[DONE]"
+
+echo -n "Starting syslogd						"
+echo "syslog		514/udp" >> /tmp/lib/services
+echo "" >/tmp/db/log
+cat >/tmp/lib/syslogd.conf << EOF
+*.err	/tmp/db/log
+EOF
+syslogd -ss -f /tmp/lib/syslogd.conf -P /tmp/run/syslogd.pid -p /tmp/run/log
+echo "[DONE]"
+
 echo -n "Starting sshd							"
-ssh-keygen -t dsa -f /tmp/lib/ssh_key -N ''
+ssh-keygen -t dsa -f /tmp/lib/ssh_key -N '' >/dev/null 2>/dev/null
 cat >/tmp/lib/sshd.conf << "EOF"
 HostKey /tmp/lib/ssh_key
 PermitRootLogin yes
 UsePrivilegeSeparation no                       
 UseDNS no
-PidFile /tmp/lib/sshd.pid
+PidFile /tmp/run/sshd.pid
 PasswordAuthentication yes
 RSAAuthentication no
 Match User *
@@ -115,12 +134,15 @@ EOF
 echo "[DONE]"
 
 echo -n "Starting ftpd							"
+echo "ftp	21/tcp" >>/tmp/lib/services
 cat >/tmp/lib/ftpusers << EOF
 * no
 root yes
 EOF
-ftpd -D -p /tmp/lib/ftpd.pid
+ftpd -D -p /tmp/run/ftpd.pid
 echo "[DONE]"
+
+cd /
 
 tcsh
 reboot

@@ -5,11 +5,6 @@
 PROG=	lazybox
 BINDIR?=/rescue
 
-SCRIPTS+= dhclient_FIXED
-SCRIPTSNAME_dhclient_FIXED= dhclient-script
-dhclient_FIXED: ../../sbin/dhclient/dhclient-script
-	sed '1s/\/bin\//\/rescue\//' ${.ALLSRC} > ${.TARGET}
-CLEANFILES+= dhclient_FIXED
 
 #################################################################
 #
@@ -63,7 +58,7 @@ CRUNCH_LIBS+= -lssh -lcrypt -ledit -lkvm -lm -lbsdxml -lcam -lcurses -lipsec -li
 # /usr/include/paths.h as well!  You were warned!
 #
 CRUNCH_SRCDIRS+= bin
-CRUNCH_PROGS_bin= cat chmod date dd df echo expr kenv kill ln ls mkdir mv ps pwd rm sh stty test csh
+CRUNCH_PROGS_bin= cat chmod date dd df echo expr kenv kill ln ls mkdir mv ps pwd rm sh stty test csh cp
 
 # Additional options for specific programs
 CRUNCH_ALIAS_test= [
@@ -141,7 +136,7 @@ CRUNCH_ALIAS_less= more
 
 CRUNCH_PROGS_gnu/usr.bin+= grep
 
-CRUNCH_PROGS_usr.sbin+= dconschat jail jexec jls pwd_mkdb pciconf usbdevs fwcontrol moused
+CRUNCH_PROGS_usr.sbin+= dconschat jail jexec jls pwd_mkdb pciconf usbdevs fwcontrol moused syslogd
 
 
 CRUNCH_SRCDIRS+= secure/usr.bin secure/usr.sbin
