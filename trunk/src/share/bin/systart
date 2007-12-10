@@ -55,6 +55,9 @@ echo "nobody:NOTREALPASSWORD:1:1::0:0:nobody:/tmp/empty:/dev/null" >>/tmp/lib/ma
 
 pwd_mkdb -i -p -d /tmp/lib/ /tmp/lib/master.passwd 2>/dev/null
 cap_mkdb -f /tmp/lib/login.conf.db /share/lib/login.conf
+echo "/bin/tcsh" >>/tmp/lib/shells
+echo "/bin/csh" >>/tmp/lib/shells
+echo "/bin/sh" >>/tmp/lib/shells
 echo "[DONE]"
 
 echo -n "Finding network interface					"
@@ -118,7 +121,11 @@ echo -n "Starting syslogd						"
 echo "syslog		514/udp" >> /tmp/lib/services
 echo "" >/tmp/db/log
 cat >/tmp/lib/syslogd.conf << EOF
-*.err	/tmp/db/log
+*.notice;authpriv.none;kern.debug;*.info;*.crit;*.err	/tmp/db/log
+!ftpd
+*.*	/tmp/db/log
+!sshd
+*.*	/tmp/db/log
 EOF
 syslogd -ss -f /tmp/lib/syslogd.conf -P /tmp/run/syslogd.pid -p /tmp/run/log
 echo "[DONE]"
@@ -141,10 +148,9 @@ echo "[DONE]"
 echo -n "Starting ftpd							"
 echo "ftp	21/tcp" >>/tmp/lib/services
 cat >/tmp/lib/ftpusers << EOF
-* no
-root yes
+# blah
 EOF
-ftpd -D -p /tmp/run/ftpd.pid
+ftpd -D -d -p /tmp/run/ftpd.pid
 echo "[DONE]"
 
 cd /
