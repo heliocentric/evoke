@@ -47,8 +47,7 @@ CRUNCH_BUILDOPTS+= CRUNCH_CFLAGS=-DRESCUE
 CRUNCH_LIBS+= ${.OBJDIR}/../librescue/*.o
 
 
-
-CRUNCH_LIBS+= -lssh -lcrypt -ledit -lkvm -lm -lbsdxml -lcam -lcurses -lipsec -lipx -lsbuf -lufs -lz -ll -lgssapi -lbsm -lpam -lkrb5 -lroken -lasn1 -lcom_err -lbz2 -lgnuregex -lutil -lgeom -larchive -lcrypto -lutil -ltacplus -lradius -lypclnt -lopie -lmd -lwrap
+#CRUNCH_LIBS+= -lssh -lcrypt -ledit -lkvm -lm -lbsdxml -lcam -lcurses -lipsec -lipx -lsbuf -lufs -lz -ll -lgssapi -lbsm -lpam -lkrb5 -lroken -lasn1 -lcom_err -lbz2 -lgnuregex -lutil -lgeom -larchive -lcrypto -lutil -ltacplus -lradius -lypclnt -lopie -lmd -lwrap
 #CRUNCH_LIBS_SO+= -lgeom
 
 ###################################################################
@@ -58,20 +57,14 @@ CRUNCH_LIBS+= -lssh -lcrypt -ledit -lkvm -lm -lbsdxml -lcam -lcurses -lipsec -li
 # /usr/include/paths.h as well!  You were warned!
 #
 CRUNCH_SRCDIRS+= bin
-CRUNCH_PROGS_bin= cat chmod date dd df echo expr kenv kill ln ls mkdir mv ps pwd rm sh stty test csh cp
+CRUNCH_PROGS_bin= sh test
 
 # Additional options for specific programs
 CRUNCH_ALIAS_test= [
 CRUNCH_ALIAS_sh= -sh
 # The -sh alias shouldn't appear in /rescue as a hard link
 CRUNCH_SUPPRESS_LINK_-sh= 1
-CRUNCH_ALIAS_ln= link
-CRUNCH_ALIAS_rm= unlink
 
-
-CRUNCH_ALIAS_csh= -csh tcsh -tcsh
-CRUNCH_SUPPRESS_LINK_-csh= 1
-CRUNCH_SUPPRESS_LINK_-tcsh= 1
 
 ###################################################################
 # Programs from standard /sbin
@@ -83,70 +76,7 @@ CRUNCH_SUPPRESS_LINK_-tcsh= 1
 # headers in addition to the standard 'paths.h' header.
 #
 CRUNCH_SRCDIRS+= sbin
-CRUNCH_PROGS_sbin= atacontrol bsdlabel camcontrol devfs dmesg fsck_ffs fsck_msdosfs ifconfig init kldconfig kldload kldstat kldunload md5 mdconfig mdmfs mount mount_nullfs newfs ping reboot route swapon sysctl umount geom
-CRUNCH_ALIAS_md5= sha256 sha1
-CRUNCH_ALIAS_reboot= halt
-CRUNCH_ALOAS_geom= gmirror gconcat gstripe geli
-# crunchgen does not like C++ programs; this should be fixed someday
-#CRUNCH_PROGS_sbin+= devd
-
-
-.if ${MACHINE_ARCH} == "i386"
-CRUNCH_PROGS_sbin+= fdisk
-CRUNCH_ALIAS_bsdlabel= disklabel
-.endif
-
-.if ${MACHINE} == "pc98"
-CRUNCH_SRCDIR_fdisk= $(.CURDIR)/../../sbin/fdisk_pc98
-.endif
-
-.if ${MACHINE_ARCH} == "ia64"
-CRUNCH_PROGS_sbin+= mca gpt fdisk
-.endif
-
-.if ${MACHINE_ARCH} == "sparc64"
-CRUNCH_PROGS_sbin+= sunlabel
-.endif
-
-.if ${MACHINE_ARCH} == "alpha"
-CRUNCH_ALIAS_bsdlabel= disklabel
-.endif
-
-.if ${MACHINE_ARCH} == "amd64"
-CRUNCH_PROGS_sbin+= fdisk
-CRUNCH_ALIAS_bsdlabel= disklabel
-.endif
-
-
-# dhclient has historically been troublesome...
-CRUNCH_PROGS_sbin+= dhclient
-CRUNCH_BUILDOPTS_dhclient= -DRELEASE_CRUNCH -Dlint
-
-##################################################################
-# Programs from stock /usr/bin
-# 
-CRUNCH_SRCDIRS+= usr.bin usr.sbin gnu/usr.bin libexec
-
-CRUNCH_PROGS_usr.bin+= gzip awk uniq sed nc bzip2 tar ee id less tail head login ftp tftp top cut cap_mkdb
-CRUNCH_ALIAS_gzip= gunzip gzcat zcat
-CRUNCH_ALIAS_bzip2= bunzip2 bzcat
-CRUNCH_ALIAS_id= groups whoami
-CRUNCH_ALIAS_less= more
-
-
-CRUNCH_PROGS_gnu/usr.bin+= grep
-
-CRUNCH_PROGS_usr.sbin+= dconschat jail jexec jls pwd_mkdb pciconf usbdevs fwcontrol moused syslogd vidcontrol powerd
-
-
-CRUNCH_SRCDIRS+= secure/usr.bin secure/usr.sbin
-
-CRUNCH_PROGS_secure/usr.bin+= ssh ssh-keygen
-CRUNCH_PROGS_secure/usr.sbin+= sshd
-CRUNCH_PROGS_libexec+= getty tftpd ftpd
-##################################################################
-# Programs from stock /usr/sbin
-# 
+CRUNCH_PROGS_sbin= mount_nullfs sysctl
 
 ##################################################################
 #  The following is pretty nearly a generic crunchgen-handling makefile

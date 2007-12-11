@@ -110,7 +110,6 @@ do
 	priv make installworld 2>>${ERRFILE} >>${ERRFILE}
 #	priv make distribution 2>>${ERRFILE} >>${ERRFILE}
 	mkdir -p ${DESTDIR}/usr/src
-#	priv mount_nullfs ${WORKDIR}/usr/src/ ${DESTDIR}/usr/src/ 2>>${ERRFILE} >>${ERRFILE}
 	echo " [DONE]"
 
 	echo -n " * Compressing Kernel ....."
@@ -147,6 +146,29 @@ EOF
 	mkdir -p ${FSDIR}/FreeBSD-6/${TARGET}/bin 2>>${ERRFILE} >>${ERRFILE}
 	cd ${WORKDIR}/rescue
 	tar -cf - * | tar -xf - -C ${FSDIR}/FreeBSD-6/${TARGET}/bin/ 2>>${ERRFILE} >>${ERRFILE}
+	mkdir -p ${FSDIR}/FreeBSD-6/${TARGET}/lib
+	mkdir -p ${FSDIR}/FreeBSD-6/${TARGET}/libexec
+	cp ${DESTDIR}/libexec/ld-elf.so.1 ${FSDIR}/FreeBSD-6/${TARGET}/libexec/
+	mount_nullfs -o union ${DESTDIR}/bin ${DESTDIR}/mnt
+	mount_nullfs -o union ${DESTDIR}/sbin ${DESTDIR}/mnt
+	mount_nullfs -o union ${DESTDIR}/usr/bin ${DESTDIR}/mnt
+	mount_nullfs -o union ${DESTDIR}/usr/sbin ${DESTDIR}/mnt
+	mount_nullfs -o union ${DESTDIR}/usr/libexec ${DESTDIR}/mnt
+	mount_nullfs -o union ${DESTDIR}/usr/libexec ${DESTDIR}/mnt
+	mount_nullfs -o union ${DESTDIR}/lib ${DESTDIR}/mnt
+	mount_nullfs -o union ${DESTDIR}/usr/lib ${DESTDIR}/mnt
+	for lib in $(for i in ${PROGS}
+		do
+			ldd -f "%o" ${i}
+		done | sort | uniq ) 
+	do
+		cp ${lib} ${FSDIR}/FreeBSD-6/${TARGET}/lib/
+	done
+	umount ${DESTDIR}/mnt
+	umount ${DESTDIR}/mnt
+	umount ${DESTDIR}/mnt
+	umount ${DESTDIR}/mnt
+	umount ${DESTDIR}/mnt
 	mkdir -p ${FSDIR}/share/lib
 	mkdir -p ${FSDIR}/usr/share/misc
 	cp ${WORKDIR}/usr/share/misc/termcap ${FSDIR}/share/lib/termcap
