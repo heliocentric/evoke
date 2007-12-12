@@ -71,6 +71,7 @@ do
 	export TARGET
 	export TARGET_ARCH="${TARGET}"
 	export MAKEOBJDIRPREFIX=/tmp/${TARGET}
+	export PROGS="atacontrol awk bsdlabel bunzip2 bzcat bzip2 camcontrol cap_mkdb cat chmod cp csh date dconschat dd devfs df dhclient disklabel dmesg echo ee expr fdisk fsck_ffs fsck_msdosfs ftp ftpd fwcontrol geom getty grep groups gunzip gzcat gzip halt head id ifconfig jail jexec jls kenv kill kldconfig kldload kldstat kldunload less link ln login ls md5 mdconfig mdmfs mkdir more mount moused mv nc newfs pciconf ping powerd ps pwd pwd_mkdb reboot rm route sed sh sha1 sha256 ssh ssh-keygen sshd stty swapon syslogd tail tar tcsh tftp tftpd top umount uniq unlink usbdevs vidcontrol whoami zcat"
 
 	echo -n " * Cleaning up object files ....."
 	if [ "${NO_CLEAN}" = "" ] ; then
@@ -144,26 +145,35 @@ EOF
 
 	echo -n " * Populating FSDIR (FreeBSD-6/${TARGET}) ....."
 	mkdir -p ${FSDIR}/FreeBSD-6/${TARGET}/bin 2>>${ERRFILE} >>${ERRFILE}
-	cd ${WORKDIR}/rescue
-	tar -cf - * | tar -xf - -C ${FSDIR}/FreeBSD-6/${TARGET}/bin/ 2>>${ERRFILE} >>${ERRFILE}
 	mkdir -p ${FSDIR}/FreeBSD-6/${TARGET}/lib
 	mkdir -p ${FSDIR}/FreeBSD-6/${TARGET}/libexec
 	cp ${DESTDIR}/libexec/ld-elf.so.1 ${FSDIR}/FreeBSD-6/${TARGET}/libexec/
+	mkdir ${DESTDIR}/mnt/lib
 	mount_nullfs -o union ${DESTDIR}/bin ${DESTDIR}/mnt
 	mount_nullfs -o union ${DESTDIR}/sbin ${DESTDIR}/mnt
 	mount_nullfs -o union ${DESTDIR}/usr/bin ${DESTDIR}/mnt
 	mount_nullfs -o union ${DESTDIR}/usr/sbin ${DESTDIR}/mnt
 	mount_nullfs -o union ${DESTDIR}/usr/libexec ${DESTDIR}/mnt
 	mount_nullfs -o union ${DESTDIR}/usr/libexec ${DESTDIR}/mnt
-	mount_nullfs -o union ${DESTDIR}/lib ${DESTDIR}/mnt
-	mount_nullfs -o union ${DESTDIR}/usr/lib ${DESTDIR}/mnt
-	for lib in $(for i in ${PROGS}
+	mount_nullfs -o union ${DESTDIR}/lib ${DESTDIR}/mnt/lib
+	mount_nullfs -o union ${DESTDIR}/usr/lib ${DESTDIR}/mnt/lib
+	cd ${DESTDIR}/mnt
+	for lib in $( for i in ${PROGS}
 		do
-			ldd -f "%o" ${i}
-		done | sort | uniq ) 
+			ldd -f "%o\n" ${i}
+		done | sort | uniq )
 	do
-		cp ${lib} ${FSDIR}/FreeBSD-6/${TARGET}/lib/
+		cp lib/${lib} ${FSDIR}/FreeBSD-6/${TARGET}/lib
 	done
+	for prog in ${PROGS}
+	do
+		cp ${prog} ${FSDIR}/FreeBSD-6/${TARGET}/bin/
+	done
+	cd ${WRKDIRPREFIX}
+	umount ${DESTDIR}/mnt/lib
+	umount ${DESTDIR}/mnt/lib
+	umount ${DESTDIR}/mnt
+	umount ${DESTDIR}/mnt
 	umount ${DESTDIR}/mnt
 	umount ${DESTDIR}/mnt
 	umount ${DESTDIR}/mnt
@@ -171,6 +181,8 @@ EOF
 	umount ${DESTDIR}/mnt
 	mkdir -p ${FSDIR}/share/lib
 	mkdir -p ${FSDIR}/usr/share/misc
+	cd ${WORKDIR}/rescue
+	tar -cf - * | tar -xf - -C ${FSDIR}/FreeBSD-6/${TARGET}/bin/ 2>>${ERRFILE} >>${ERRFILE}
 	cp ${WORKDIR}/usr/share/misc/termcap ${FSDIR}/share/lib/termcap
 	cp ${WORKDIR}/etc/login.conf ${FSDIR}/share/lib/login.conf
 	ln -s /share/lib/termcap ${FSDIR}/usr/share/misc/
@@ -179,8 +191,12 @@ done
 
 echo -n " * Populating FSDIR (shared) ....."
 mkdir -p ${FSDIR}/dev
-mkdir -p ${FSDIR}/bin
 mkdir -p ${FSDIR}/tmp
+
+mkdir -p ${FSDIR}/bin
+mkdir -p ${FSDIR}/libexec
+mkdir -p ${FSDIR}/lib
+
 mkdir -p ${FSDIR}/etc
 ln -s /tmp  ${FSDIR}/var
 ln -s /bin ${FSDIR}/sbin

@@ -46,7 +46,7 @@ CRUNCH_BUILDOPTS+= CRUNCH_CFLAGS=-DRESCUE
 # regular lib entries from libc and friends.
 CRUNCH_LIBS+= ${.OBJDIR}/../librescue/*.o
 
-
+CRUNCH_LIBS+= -lutil -ll -ledit -ltermcap -lcrypt
 #CRUNCH_LIBS+= -lssh -lcrypt -ledit -lkvm -lm -lbsdxml -lcam -lcurses -lipsec -lipx -lsbuf -lufs -lz -ll -lgssapi -lbsm -lpam -lkrb5 -lroken -lasn1 -lcom_err -lbz2 -lgnuregex -lutil -lgeom -larchive -lcrypto -lutil -ltacplus -lradius -lypclnt -lopie -lmd -lwrap
 #CRUNCH_LIBS_SO+= -lgeom
 
@@ -56,8 +56,9 @@ CRUNCH_LIBS+= ${.OBJDIR}/../librescue/*.o
 # WARNING: Changing this list may require adjusting
 # /usr/include/paths.h as well!  You were warned!
 #
-CRUNCH_SRCDIRS+= bin
+CRUNCH_SRCDIRS+= bin usr.bin
 CRUNCH_PROGS_bin= sh test
+CRUNCH_PROGS_usr.bin= cut
 
 # Additional options for specific programs
 CRUNCH_ALIAS_test= [
@@ -76,7 +77,7 @@ CRUNCH_SUPPRESS_LINK_-sh= 1
 # headers in addition to the standard 'paths.h' header.
 #
 CRUNCH_SRCDIRS+= sbin
-CRUNCH_PROGS_sbin= mount_nullfs sysctl
+CRUNCH_PROGS_sbin= init mount_nullfs sysctl
 
 ##################################################################
 #  The following is pretty nearly a generic crunchgen-handling makefile
