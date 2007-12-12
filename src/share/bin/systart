@@ -18,11 +18,11 @@ OS=$(sysctl -n kern.ostype)
 ABI=$(sysctl -n kern.osrelease | cut -d . -f 1)
 export ARCH=$(sysctl -n hw.machine_arch)
 export MACHINE=$(sysctl -n hw.machine)
-if [ -d "/${OS}-${ABI}/${ARCH}/bin" ] ; then
-	mount_nullfs -o union,ro /${OS}-${ABI}/${ARCH}/bin /bin
+if [ -d "/.${OS}-${ABI}/${ARCH}/bin" ] ; then
+	mount_nullfs -o union,ro /.${OS}-${ABI}/${ARCH}/bin /bin
 fi
 mount_nullfs -o union,ro /share/bin/ /bin/
-export PATH=/bin:/${OS}-${ABI}/${ARCH}/bin
+export PATH=/bin:/.${OS}-${ABI}/${ARCH}/bin
 echo "[DONE]"
 
 echo -n "Remounting root filesystem R/W					"

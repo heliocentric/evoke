@@ -13,7 +13,7 @@ if [ "${WRKDIRPREFIX}" = "" ] ; then
 	export WRKDIRPREFIX=$(pwd)
 fi
 
-ARCHS="i386"
+ARCHS="i386 powerpc amd64"
 VERSION="6.3-RC1"
 
 # Choose dist source
@@ -88,7 +88,7 @@ do
 #	    sed -i .bak "s_\"/BOOT/LOADER_\"/.BOOT/0.1R2/I386/LOADER_g" ${file} 2>>${ERRFILE} >>${ERRFILE}
 #	done
 	sed -i .bak '/pxe_setnfshandle(rootpath);/d' ${WORKDIR}/usr/src/sys/boot/i386/libi386/pxe.c 2>>${ERRFILE} >>${ERRFILE}
-	sed -i .bak "s_\"/rescue_\"/FreeBSD-6/${TARGET}/bin_g" ${WORKDIR}/usr/src/include/paths.h 2>>${ERRFILE} >>${ERRFILE}
+	sed -i .bak "s_\"/rescue_\"/.FreeBSD-6/${TARGET}/bin_g" ${WORKDIR}/usr/src/include/paths.h 2>>${ERRFILE} >>${ERRFILE}
 	sed -i .bak "s_\"/etc/rc_\"/share/bin/systart_g" ${WORKDIR}/usr/src/sbin/init/pathnames.h 2>>${ERRFILE} >>${ERRFILE}
 	cp ${WRKDIRPREFIX}/lazybox.Makefile ${WORKDIR}/usr/src/rescue/rescue/Makefile
 	echo " [DONE]"
@@ -138,15 +138,15 @@ dcons_load="YES"
 dcons_crom_load="YES"
 geom_label_load="YES"
 nullfs_load="YES"
-init_path="/FreeBSD-6/i386/bin/init"
+init_path="/.FreeBSD-6/i386/bin/init"
 vfs.root.mountfrom="ufs:md0"
 EOF
 	echo " [DONE]"
 
-	echo -n " * Populating FSDIR (FreeBSD-6/${TARGET}) ....."
-	mkdir -p ${FSDIR}/FreeBSD-6/${TARGET}/bin 2>>${ERRFILE} >>${ERRFILE}
+	echo -n " * Populating FSDIR (.FreeBSD-6/${TARGET}) ....."
+	mkdir -p ${FSDIR}/.FreeBSD-6/${TARGET}/bin 2>>${ERRFILE} >>${ERRFILE}
 	cd ${WORKDIR}/rescue
-	tar -cf - * | tar -xf - -C ${FSDIR}/FreeBSD-6/${TARGET}/bin/ 2>>${ERRFILE} >>${ERRFILE}
+	tar -cf - * | tar -xf - -C ${FSDIR}/.FreeBSD-6/${TARGET}/bin/ 2>>${ERRFILE} >>${ERRFILE}
 	mkdir -p ${FSDIR}/share/lib
 	mkdir -p ${FSDIR}/usr/share/misc
 	cp ${WORKDIR}/usr/share/misc/termcap ${FSDIR}/share/lib/termcap

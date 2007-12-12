@@ -236,7 +236,7 @@ objs: $(OUTMK)
 # <sigh> Someone should replace the bin/csh and bin/sh build-tools with
 # shell scripts so we can remove this nonsense.
 build-tools:
-.for _tool in bin/csh bin/sh 
+.for _tool in bin/csh bin/sh usr.bin/awk
 	cd $(.CURDIR)/../../${_tool}; \
 	MAKEOBJDIRPREFIX=${CRUNCHOBJS} ${MAKE} obj; \
 	MAKEOBJDIRPREFIX=${CRUNCHOBJS} ${MAKE} build-tools
