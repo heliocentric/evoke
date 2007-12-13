@@ -13,7 +13,7 @@ if [ "${WRKDIRPREFIX}" = "" ] ; then
 	export WRKDIRPREFIX=$(pwd)
 fi
 
-TARGETS="6.3-RC1/i386 6.3-RC1/amd64 6.3-RC1/powerpc 7.0-BETA4/amd64"
+TARGETS="6.3-RC1/i386 6.3-RC1/amd64 7.0-BETA4/powerpc 7.0-BETA4/amd64"
 ARCHS="i386 powerpc amd64"
 VERSION="6.3-RC1"
 

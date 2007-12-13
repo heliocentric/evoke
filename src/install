@@ -15,23 +15,49 @@ echo -n "Fetching DamnSmallBSD							"
 case "${CHOICE}" in
 	[dD])
 		DEST=dsbsd-head
-		svn checkout svn://devnulled.ath.cx/damnsmallbsd/trunk/src ${DEST}	
-		cat ${DEST}/build.sh | grep TARGETS=
-#		TARGETS="6.3-RC1/i386 6.3-RC1/amd64 6.3-RC1/powerpc 7.0-BETA4/amd64"
+		svn checkout svn://devnulled.ath.cx/damnsmallbsd/trunk/src ${DEST} 2>/dev/null >/dev/null
+		TARGETS=$(cat ${DEST}/build.sh | grep TARGETS= | cut -d \" -f 2)
 	;;
 esac
+echo "[DONE]"
 
-for release in $( for target in ${TARGETS}
-		do
-			echo ${target} |cut -d "/" -f 1
-		done | sort | uniq )
-do
-	echo -n "Fetching FreeBSD ${release} source dists.			"
-	mkdir -p ${OPWD}/${DEST}/dists/${release}/src
-	for file in $(fetch -o - ftp://ftp.freebsd.org/pub/FreeBSD/releases/i386/${release}/src/CHECKSUM.MD5 | cut -d ")" -f 1 | cut -d "(" -f 2)
+read -p "Download Source Dists? [Yn]: " CHOICE
+case "${CHOICE}" in
+	[nN])
+		
+	;;
+	*)
+	for release in $( for target in ${TARGETS}
+			do
+				echo ${target} |cut -d "/" -f 1
+			done | sort | uniq )
 	do
-		cd ${OPWD}/${DEST}/dists/${release}/src
-		fetch -m ftp://ftp.freebsd.org/pub/FreeBSD/releases/i386/${release}/src/${file}
+		echo -n "Fetching FreeBSD ${release} source dists.					"
+		mkdir -p ${OPWD}/${DEST}/dists/${release}/src
+		for file in $(fetch -q -o - ftp://ftp.freebsd.org/pub/FreeBSD/releases/i386/${release}/src/CHECKSUM.MD5 | cut -d ")" -f 1 | cut -d "(" -f 2)
+		do
+			cd ${OPWD}/${DEST}/dists/${release}/src
+			fetch -q -m ftp://ftp.freebsd.org/pub/FreeBSD/releases/i386/${release}/src/${file}
+		done
+		echo "[DONE]"
 	done
-	echo "[DONE]"
-done
+	;;
+esac
+read -p "Download Kernel Dists? [Yn]: " CHOICE
+case "${CHOICE}" in 
+	[nN])
+	;;
+	*)
+	for kernels in ${TARGETS}
+	do
+		echo -n "Fetching FreeBSD ${kernels} kernel dists.				"
+		mkdir -p ${OPWD}/${DEST}/dists/${kernels}/kernels
+		cd ${OPWD}/${DEST}/dists/${kernels}/kernels
+		for file in $(fetch -q -o - ftp://ftp.freebsd.org/pub/FreeBSD/releases/$(echo ${kernels} | cut -d "/" -f 2)/$(echo ${kernels} | cut -d "/" -f 1)/kernels/CHECKSUM.MD5 | cut -d ")" -f 1 | cut -d "(" -f 2)
+	        do
+	                fetch -q -m ftp://ftp.freebsd.org/pub/FreeBSD/releases/$(echo ${kernels} | cut -d "/" -f 2)/$(echo ${kernels} | cut -d "/" -f 1)/kernels/${file}
+	        done
+		echo "[DONE]"
+	done
+	;;
+esac
