@@ -1,5 +1,6 @@
 #!/bin/sh
 # $Id$
+OPWD=$(pwd)
 
 clear
 echo "Available DamnSmallBSD Releases"
@@ -10,6 +11,27 @@ echo ""
 echo ""
 read -p "Enter Choice: " CHOICE
 
-if [ "${CHOICE}" = "d" ] ; then
-	svn checkout svn://devnulled.ath.cx/damnsmallbsd/trunk/src dsbsd-head
-fi
+echo -n "Fetching DamnSmallBSD							"
+case "${CHOICE}" in
+	[dD])
+		DEST=dsbsd-head
+		svn checkout svn://devnulled.ath.cx/damnsmallbsd/trunk/src ${DEST}	
+		cat ${DEST}/build.sh | grep TARGETS=
+#		TARGETS="6.3-RC1/i386 6.3-RC1/amd64 6.3-RC1/powerpc 7.0-BETA4/amd64"
+	;;
+esac
+
+for release in $( for target in ${TARGETS}
+		do
+			echo ${target} |cut -d "/" -f 1
+		done | sort | uniq )
+do
+	echo -n "Fetching FreeBSD ${release} source dists.			"
+	mkdir -p ${OPWD}/${DEST}/dists/${release}/src
+	for file in $(fetch -o - ftp://ftp.freebsd.org/pub/FreeBSD/releases/i386/${release}/src/CHECKSUM.MD5 | cut -d ")" -f 1 | cut -d "(" -f 2)
+	do
+		cd ${OPWD}/${DEST}/dists/${release}/src
+		fetch -m ftp://ftp.freebsd.org/pub/FreeBSD/releases/i386/${release}/src/${file}
+	done
+	echo "[DONE]"
+done
