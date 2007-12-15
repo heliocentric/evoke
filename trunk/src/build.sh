@@ -13,7 +13,7 @@ if [ "${WRKDIRPREFIX}" = "" ] ; then
 	export WRKDIRPREFIX=$(pwd)
 fi
 
-TARGETS="6.3-RC1/i386 6.3-RC1/amd64 7.0-BETA4/powerpc 7.0-BETA4/amd64"
+TARGETS="6.3-RC1/i386 6.3-RC1/amd64"
 VERSION=0.1r1
 
 export ERRFILE=${WRKDIRPREFIX}/error.log
@@ -22,15 +22,17 @@ export FSDIR=${WRKDIRPREFIX}/fsdir
 rm -r ${BOOTDIR}
 rm -r ${FSDIR}
 
+echo "" >${ERRFILE}
 for target in ${TARGETS}
 do
-	export DESTDIR=${WRKDIRPREFIX}/${TARGET}
+	echo "Starting build for ${target}"
+	export DESTDIR=${WRKDIRPREFIX}/${target}
 	chflags -R noschg ${DESTDIR}
 	if [ -d "${DESTDIR}" ] ; then
 			rm -rf ${DESTDIR}
 	fi
 	mkdir -p ${DESTDIR}
-	SRCDIR="${WRKDIRPREFIX}/dist/$(echo ${target} | cut -d "/" -f 1)" DISTS="src" ${WRKDIRPREFIX}/share/bin/distextract
+	SRCDIR="${WRKDIRPREFIX}/dists/$(echo ${target} | cut -d "/" -f 1)" DISTS="src" ${WRKDIRPREFIX}/share/bin/distextract >/dev/null
 	ERROR="$?"
 	if [ "${ERROR}" != "0" ] ; then
 		echo "Error code: ${ERROR}"
@@ -40,20 +42,20 @@ do
 	export TARGET=$(echo ${target} | cut -d "/" -f 2)
 	export TARGET_ARCH="${TARGET}"
 	export MAKEOBJDIRPREFIX=/tmp/${target}
-	export NBINDIR=/.$(echo ${target} | cut -d "/" -f 1 | cut -d "." -f 1)/${TARGET}/bin
+	export NBINDIR=/.FreeBSD-$(echo ${target} | cut -d "/" -f 1 | cut -d "." -f 1)/${TARGET}/bin
 
 	echo -n " * ${target} = Cleaning up object files ....."
 	if [ "${NO_CLEAN}" = "" ] ; then
-		rm -rf /tmp/${TARGET} 2>${ERRFILE}
+		rm -rf ${MAKEOBJDIRPREFIX} 2>>${ERRFILE}
 	fi
 	echo " [DONE]"
 
 	echo -n " * ${target} = Patching World ....."
 	cd ${WORKDIR}/usr/src/sys/boot/
 	export BOOTPATH="/dsbsd/${VERSION}/${target}"
-	for file in $(cat bootlist)
+	for file in $(cat ${WRKDIRPREFIX}/bootlist)
 	do
-	    sed -i .bak "s_\"/boot_\"${BOOTPATH}_g" ${file} 2>>${ERRFILE} >>${ERRFILE}
+	    sed -i .bak "s_/boot_${BOOTPATH}_g" ${WORKDIR}/${file} 2>>${ERRFILE} >>${ERRFILE}
 	done
 	sed -i .bak '/pxe_setnfshandle(rootpath);/d' ${WORKDIR}/usr/src/sys/boot/i386/libi386/pxe.c 2>>${ERRFILE} >>${ERRFILE}
 	sed -i .bak "s_\"/rescue_\"${NBINDIR}_g" ${WORKDIR}/usr/src/include/paths.h 2>>${ERRFILE} >>${ERRFILE}
@@ -69,21 +71,23 @@ do
 	echo " [DONE]"
 
 	echo -n " * ${target} = Populating DESTDIR=${DESTDIR} ....."
-	export DESTDIR=${WRKDIRPREFIX}/${TARGET}
+	export DESTDIR=${WRKDIRPREFIX}/${target}
 	mkdir -p ${DESTDIR}
 	priv make hierarchy 2>>${ERRFILE} >>${ERRFILE}
 	rm -r ${DESTDIR}/rescue
 	mkdir -p ${DESTDIR}/rescue
+	mkdir -p ${DESTDIR}${BOOTPATH}/defaults
 	priv make installworld 2>>${ERRFILE} >>${ERRFILE}
 	priv make distribution 2>>${ERRFILE} >>${ERRFILE}
 	echo " [DONE]"
 
 	echo -n " * ${target} = Compressing Kernel ....."
-	SRCDIR="${WRKDIRPREFIX}/dist/${target}" DISTS="kernels" ${WRKDIRPREFIX}/share/bin/distextract	
+	SRCDIR="${WRKDIRPREFIX}/dists/${target}" DISTS="kernels" ${WRKDIRPREFIX}/share/bin/distextract >/dev/null
 	for i in GENERIC
 	do
 		cd ${DESTDIR}/boot/${i}/
 		rm -r *.gz 2>/dev/null
+		rm -r *.symbols 2>/dev/null
 		rm g_md.ko
 		gzip -9 kernel acpi.ko dcons.ko dcons_crom.ko nullfs.ko
 		rm -r *.ko
@@ -91,9 +95,11 @@ do
 	echo " [DONE]"
 
 	echo -n " * ${target} = Populating BOOTPATH ....."
-	mkdir -p ${BOOTDIR}/${BOOTPATH} 2>>${ERRFILE} >>${ERRFILE}
-	cd ${DESTDIR}/boot/
+	mkdir -p ${BOOTDIR}/${BOOTPATH}/defaults 2>>${ERRFILE} >>${ERRFILE}
+	cd ${DESTDIR}/boot
 	tar -cf - --exclude SMP --exclude loader.old * | tar -xvf - -C ${BOOTDIR}/${BOOTPATH} 2>>${ERRFILE} >>${ERRFILE}
+	cd ${DESTDIR}${BOOTPATH}
+	tar -cf - * | tar -xvf - -C ${BOOTDIR}/${BOOTPATH} 2>>${ERRFILE} >>${ERRFILE}
 	cat >${BOOTDIR}/${BOOTPATH}/loader.conf << EOF
 init_path="${NBINDIR}/init"
 EOF
@@ -106,13 +112,13 @@ EOF
 	echo " [DONE]"
 
 done
+
+echo -n " * share = Populating FSDIR ....."
 mkdir -p ${FSDIR}/share/lib
 mkdir -p ${FSDIR}/usr/share/misc
 cp ${WORKDIR}/usr/share/misc/termcap ${FSDIR}/share/lib/termcap
 cp ${WORKDIR}/etc/login.conf ${FSDIR}/share/lib/login.conf
 ln -s /share/lib/termcap ${FSDIR}/usr/share/misc/
-
-echo -n " * share = Populating FSDIR ....."
 mkdir -p ${FSDIR}/dev
 mkdir -p ${FSDIR}/bin
 mkdir -p ${FSDIR}/tmp
@@ -149,7 +155,5 @@ echo " [DONE]"
 
 echo -n " * share = Making ISO image ....."
 cd ${WRKDIRPREFIX}
-mkisofs -b /dsbsd/${VERSION}/6.3-RC1/i386/cdboot -no-emul-boot -r -J -V DamnSmallBSD-HEAD -publisher "www.damnsmallbsd.org" -o dsbsd.iso ${BOOTDIR} 2>>${ERRFILE} >>${ERRFILE}
+mkisofs -b dsbsd/${VERSION}/6.3-RC1/i386/cdboot -no-emul-boot -r -J -V DamnSmallBSD-HEAD -publisher "www.damnsmallbsd.org" -o dsbsd.iso ${BOOTDIR} 2>>${ERRFILE} >>${ERRFILE}
 echo " [DONE]"
-
-
