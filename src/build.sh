@@ -13,7 +13,7 @@ if [ "${WRKDIRPREFIX}" = "" ] ; then
 	export WRKDIRPREFIX=$(pwd)
 fi
 
-TARGETS="6.3-RC1/i386 6.3-RC1/amd64"
+TARGETS="6.3-RC1/i386"
 VERSION=0.1r1
 
 export ERRFILE=${WRKDIRPREFIX}/error.log
@@ -32,7 +32,7 @@ do
 			rm -rf ${DESTDIR}
 	fi
 	mkdir -p ${DESTDIR}
-	SRCDIR="${WRKDIRPREFIX}/dists/$(echo ${target} | cut -d "/" -f 1)" DISTS="src" ${WRKDIRPREFIX}/share/bin/distextract >/dev/null
+	SRCDIR="${WRKDIRPREFIX}/dists/$(echo ${target} | cut -d "/" -f 1)" DISTS="src" ${WRKDIRPREFIX}/share/bin/distextract >>${ERRFILE} 2>>${ERRFILE}
 	ERROR="$?"
 	if [ "${ERROR}" != "0" ] ; then
 		echo "Error code: ${ERROR}"
@@ -55,7 +55,8 @@ do
 	export BOOTPATH="/dsbsd/${VERSION}/${target}"
 	for file in $(cat ${WRKDIRPREFIX}/bootlist)
 	do
-	    sed -i .bak "s_/boot_${BOOTPATH}_g" ${WORKDIR}/${file} 2>>${ERRFILE} >>${ERRFILE}
+	    sed -i .bak "s_/boot_${BOOTPATH}_g" ${WORKDIR}${file} 2>>${ERRFILE} >>${ERRFILE}
+	    sed -i .bak "s_/BOOT_$(echo ${BOOTPATH} | tr a-z A-Z)_g" ${WORKDIR}${file} 2>>${ERRFILE} >>${ERRFILE}
 	done
 	sed -i .bak '/pxe_setnfshandle(rootpath);/d' ${WORKDIR}/usr/src/sys/boot/i386/libi386/pxe.c 2>>${ERRFILE} >>${ERRFILE}
 	sed -i .bak "s_\"/rescue_\"${NBINDIR}_g" ${WORKDIR}/usr/src/include/paths.h 2>>${ERRFILE} >>${ERRFILE}
@@ -89,7 +90,7 @@ do
 		rm -r *.gz 2>/dev/null
 		rm -r *.symbols 2>/dev/null
 		rm g_md.ko
-		gzip -9 kernel acpi.ko dcons.ko dcons_crom.ko nullfs.ko
+		gzip -9 kernel acpi.ko dcons.ko dcons_crom.ko nullfs.ko 2>>${ERRFILE}
 		rm -r *.ko
 	done
 	echo " [DONE]"
@@ -126,6 +127,10 @@ mkdir -p ${FSDIR}/etc
 ln -s /tmp  ${FSDIR}/var
 ln -s /bin ${FSDIR}/sbin
 cd ${WRKDIRPREFIX}
+for i in $(find ${FSDIR} -name ".svn")
+do
+	rm -r ${i}
+done
 tar -cf - share | tar -xf - -C ${FSDIR}/
 echo " [DONE]"
 
