@@ -52,12 +52,13 @@ do
 
 	echo -n " * ${target} = Patching World ....."
 	cd ${WORKDIR}/usr/src/sys/boot/
-	export BOOTPATH="/dsbsd/${VERSION}/${target}"
-	for file in $(cat ${WRKDIRPREFIX}/bootlist)
-	do
-	    sed -i .bak "s_/boot_${BOOTPATH}_g" ${WORKDIR}${file} 2>>${ERRFILE} >>${ERRFILE}
-	    sed -i .bak "s_/BOOT_$(echo ${BOOTPATH} | tr a-z A-Z)_g" ${WORKDIR}${file} 2>>${ERRFILE} >>${ERRFILE}
-	done
+#	export BOOTPATH="/dsbsd/${VERSION}/${target}"
+#	export BOOTPATH="/boot"
+#	for file in $(cat ${WRKDIRPREFIX}/bootlist)
+#	do
+#	    sed -i .bak "s_/boot_${BOOTPATH}_g" ${WORKDIR}${file} 2>>${ERRFILE} >>${ERRFILE}
+#	    sed -i .bak "s_/BOOT_$(echo ${BOOTPATH} | tr a-z A-Z)_g" ${WORKDIR}${file} 2>>${ERRFILE} >>${ERRFILE}
+#	done
 	sed -i .bak '/pxe_setnfshandle(rootpath);/d' ${WORKDIR}/usr/src/sys/boot/i386/libi386/pxe.c 2>>${ERRFILE} >>${ERRFILE}
 	sed -i .bak "s_\"/rescue_\"${NBINDIR}_g" ${WORKDIR}/usr/src/include/paths.h 2>>${ERRFILE} >>${ERRFILE}
 	sed -i .bak "s_\"/etc/rc_\"/share/bin/systart_g" ${WORKDIR}/usr/src/sbin/init/pathnames.h 2>>${ERRFILE} >>${ERRFILE}
@@ -160,5 +161,5 @@ echo " [DONE]"
 
 echo -n " * share = Making ISO image ....."
 cd ${WRKDIRPREFIX}
-mkisofs -b dsbsd/${VERSION}/6.3-RC1/i386/cdboot -no-emul-boot -r -J -V DamnSmallBSD-HEAD -publisher "www.damnsmallbsd.org" -o dsbsd.iso ${BOOTDIR} 2>>${ERRFILE} >>${ERRFILE}
+mkisofs -b boot/cdboot -no-emul-boot -r -J -V DamnSmallBSD-HEAD -publisher "www.damnsmallbsd.org" -o dsbsd.iso ${BOOTDIR} 2>>${ERRFILE} >>${ERRFILE}
 echo " [DONE]"
