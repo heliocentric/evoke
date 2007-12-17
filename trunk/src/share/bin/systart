@@ -8,7 +8,6 @@ export ARCH=$(sysctl -n hw.machine_arch)
 export MACHINE=$(sysctl -n hw.machine)
 
 
-
 echo -n "Merging /lib and /libexec					"
 if [ -d "/.${OS}-${ABI}/${ARCH}/lib" ] ; then
 	mount_nullfs -o union,ro /.${OS}-${ABI}/${ARCH}/lib /lib
