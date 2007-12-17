@@ -108,6 +108,8 @@ EOF
 
 	echo -n " * ${target} = Populating FSDIR ....."
 	mkdir -p ${FSDIR}${NBINDIR} 2>>${ERRFILE} >>${ERRFILE}
+	mkdir -p ${FSDIR}/lib 2>>${ERRFILE} >>${ERRFILE}
+	mkdir -p ${FSDIR}/libexec 2>>${ERRFILE} >>${ERRFILE}
 	cd ${WORKDIR}/rescue && tar -cf - * | tar -xf - -C ${FSDIR}/${NBINDIR} 2>>${ERRFILE} >>${ERRFILE}
 	echo " [DONE]"
 
@@ -122,8 +124,10 @@ cp ${WORKDIR}/etc/login.conf ${FSDIR}/share/lib/login.conf
 ln -s /share/lib/termcap ${FSDIR}/usr/share/misc/
 mkdir -p ${FSDIR}/dev
 mkdir -p ${FSDIR}/bin
-mkdir -p ${FSDIR}/tmp
+mkdir -p ${FSDIR}/lib
+mkdir -p ${FSDIR}/libexec
 mkdir -p ${FSDIR}/etc
+mkdir -p ${FSDIR}/tmp
 ln -s /tmp  ${FSDIR}/var
 ln -s /bin ${FSDIR}/sbin
 cd ${WRKDIRPREFIX}
