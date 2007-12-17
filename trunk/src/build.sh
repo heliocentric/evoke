@@ -17,14 +17,17 @@ TARGETS="6.3-RC1/i386"
 VERSION=0.1r1
 
 export ERRFILE=${WRKDIRPREFIX}/error.log
+export TRACKFILE=${WRKDIRPREFIX}/trackfile
 export BOOTDIR=${WRKDIRPREFIX}/bdir
 export FSDIR=${WRKDIRPREFIX}/fsdir
 chflags -R noschg ${FSDIR} 2>/dev/null
 chflags -R noschg ${BOOTDIR} 2>/dev/null
 rm -r ${BOOTDIR} 2>/dev/null
 rm -r ${FSDIR} 2>/dev/null
-
+rm -r ${TRACKFILE} 2>/dev/null
 echo "" >${ERRFILE}
+echo "" >${TRACKFILE}
+
 for target in ${TARGETS}
 do
 	echo "Starting build for ${target}"
@@ -93,7 +96,7 @@ do
 		rm -r *.gz 2>/dev/null
 		rm -r *.symbols 2>/dev/null
 		rm g_md.ko
-		gzip -9 kernel acpi.ko dcons.ko dcons_crom.ko nullfs.ko 2>>${ERRFILE}
+		gzip -9 kernel acpi.ko dcons.ko dcons_crom.ko nullfs.ko geom_label.ko 2>>${ERRFILE}
 		rm -r *.ko
 	done
 	echo " [DONE]"
@@ -104,6 +107,7 @@ do
 	cat >>${BOOTDIR}${BOOTPATH}/loader.conf << EOF
 init_path="${NBINDIR}/init"
 EOF
+
 	echo " [DONE]"
 
 	echo -n " * ${target} = Populating FSDIR ....."
@@ -150,6 +154,9 @@ kernel="GENERIC"
 mfsroot_load="YES"
 mfsroot_type="mfs_root"
 mfsroot_name="${BOOTPATH}/root.fs"
+trackfile_load="YES"
+trackfile_type="mfs_root"
+trackfile_name="${BOOTPATH}/trackfile"
 dcons_load="YES"
 dcons_crom_load="YES"
 geom_label_load="YES"
@@ -160,6 +167,22 @@ EOF
 
 priv mdconfig -d -u $(echo ${MDDEVICE} | cut -c 3-100)
 gzip -9 root.fs	2>>${ERRFILE} >>${ERRFILE}
+echo " [DONE]"
+
+echo -n " * share = Creating trackfile ....."
+cd ${BOOTDIR}
+for file in $( find ./ -not -type d | cut -b 3-200)
+do
+	echo "F:${BOOTPATH}/${file}:$(sha256 -q ${file})" >>${TRACKFILE}
+done
+echo -n "# " >>${TRACKFILE}
+dd if=${TRACKFILE} bs=512 fillchar=" " conv=sync of=/tmp/trackfile.head 2>/dev/null
+dd if=/dev/zero bs=512 count=1 of=/tmp/trackfile.tail 2>/dev/null
+cat /tmp/trackfile.head /tmp/trackfile.tail >${BOOTDIR}${BOOTPATH}/trackfile
+DEVICE=$(mdconfig -af ${BOOTDIR}${BOOTPATH}/trackfile)
+geom label load
+geom label label trackfile /dev/${DEVICE}
+mdconfig -d -u $(echo ${DEVICE} | cut -b 3-7)
 echo " [DONE]"
 
 echo -n " * share = Making ISO image ....."

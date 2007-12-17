@@ -2,7 +2,7 @@
 # $Id$
 
 get_disk () {
-       sysctl -b kern.geom.conftxt | grep -a DISK | awk '{ print $3; }' | grep -v afd | grep -v cd | grep -v acd | grep -v fd | sort
+       sysctl -b kern.geom.conftxt | grep -a DISK | awk '{ print $3; }' | grep -v afd | grep -v cd | grep -v acd | grep -v fd 
 }
 
 dsbsd_install () {
