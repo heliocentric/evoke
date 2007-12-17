@@ -19,6 +19,8 @@ VERSION=0.1r1
 export ERRFILE=${WRKDIRPREFIX}/error.log
 export BOOTDIR=${WRKDIRPREFIX}/bdir
 export FSDIR=${WRKDIRPREFIX}/fsdir
+chflags -R noschg ${FSDIR}
+chflags -R noschg ${BOOTDIR}
 rm -r ${BOOTDIR}
 rm -r ${FSDIR}
 
@@ -53,7 +55,7 @@ do
 	echo -n " * ${target} = Patching World ....."
 	cd ${WORKDIR}/usr/src/sys/boot/
 #	export BOOTPATH="/dsbsd/${VERSION}/${target}"
-#	export BOOTPATH="/boot"
+	export BOOTPATH="/boot"
 #	for file in $(cat ${WRKDIRPREFIX}/bootlist)
 #	do
 #	    sed -i .bak "s_/boot_${BOOTPATH}_g" ${WORKDIR}${file} 2>>${ERRFILE} >>${ERRFILE}
@@ -97,24 +99,21 @@ do
 	echo " [DONE]"
 
 	echo -n " * ${target} = Populating BOOTPATH ....."
-	mkdir -p ${BOOTDIR}/${BOOTPATH}/defaults 2>>${ERRFILE} >>${ERRFILE}
-	cd ${DESTDIR}/boot
-	tar -cf - --exclude SMP --exclude loader.old * | tar -xvf - -C ${BOOTDIR}/${BOOTPATH} 2>>${ERRFILE} >>${ERRFILE}
-	cd ${DESTDIR}${BOOTPATH}
-	tar -cf - * | tar -xvf - -C ${BOOTDIR}/${BOOTPATH} 2>>${ERRFILE} >>${ERRFILE}
-	cat >${BOOTDIR}/${BOOTPATH}/loader.conf << EOF
+	mkdir -p ${BOOTDIR}${BOOTPATH}/defaults 2>>${ERRFILE} >>${ERRFILE}
+	cd ${DESTDIR}/boot && tar -cf - --exclude SMP --exclude loader.old * | tar -xvf - -C ${BOOTDIR}${BOOTPATH} 2>>${ERRFILE} >>${ERRFILE}
+	cat >>${BOOTDIR}${BOOTPATH}/loader.conf << EOF
 init_path="${NBINDIR}/init"
 EOF
 	echo " [DONE]"
 
 	echo -n " * ${target} = Populating FSDIR ....."
 	mkdir -p ${FSDIR}${NBINDIR} 2>>${ERRFILE} >>${ERRFILE}
-	cd ${WORKDIR}/rescue
-	tar -cf - * | tar -xf - -C ${FSDIR}/${NBINDIR} 2>>${ERRFILE} >>${ERRFILE}
+	cd ${WORKDIR}/rescue && tar -cf - * | tar -xf - -C ${FSDIR}/${NBINDIR} 2>>${ERRFILE} >>${ERRFILE}
 	echo " [DONE]"
 
 done
 
+BOOTPATH=/boot
 echo -n " * share = Populating FSDIR ....."
 mkdir -p ${FSDIR}/share/lib
 mkdir -p ${FSDIR}/usr/share/misc
@@ -137,16 +136,16 @@ echo " [DONE]"
 
 
 echo -n " * share = Creating root.fs ....."
-cd ${BOOTDIR}/dsbsd/${VERSION}
+cd ${BOOTDIR}${BOOTPATH}
 rm -r root.fs* 2>>${ERRFILE} >>${ERRFILE}
 makefs root.fs ${FSDIR} 2>>${ERRFILE} >>${ERRFILE}
 MDDEVICE=$(priv mdconfig -af root.fs)
 FINGERPRINT=$(sha256 -q /dev/${MDDEVICE})
-cat >${BOOTDIR}/dsbsd/${VERSION}/loader.conf << EOF
+cat >>${BOOTDIR}${BOOTPATH}/loader.conf << EOF
 kernel="GENERIC"
 mfsroot_load="YES"
 mfsroot_type="mfs_root"
-mfsroot_name="/dsbsd/${VERSION}/root.fs"
+mfsroot_name="${BOOTPATH}/root.fs"
 dcons_load="YES"
 dcons_crom_load="YES"
 geom_label_load="YES"
