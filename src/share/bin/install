@@ -1,4 +1,81 @@
 #!/bin/sh
 # $Id$
 
-echo "FreeBSD Installer"
+get_disk () {
+       sysctl -b kern.geom.conftxt | grep -a DISK | awk '{ print $3; }' | grep -v afd | grep -v cd | grep -v acd | grep -v fd | sort
+}
+
+dsbsd_install () {
+	if [ "${1}" != "" ] ; then
+		echo "Are you absolutely sure you want to DESTROY all data on ${1}?"
+		read -p "Choice: [y/N] " CHOICE
+		case "${CHOICE}" in
+			[yY])
+				fdisk -IB /dev/${1}
+				bsdlabel -wB /dev/${1}s1
+				newfs /dev/${1}s1a
+				mkdir -p /tmp/mnt/dest
+				mount /dev/${1}s1a /tmp/mnt/dest
+				mkdir -p /tmp/mnt/source
+			;;
+		esac
+	fi
+}
+
+dsbsd_installer () {
+	clear
+	echo "*** Warning! ***"
+	echo "Installer destroys all data on the target device, and does not give you the"
+	echo "option to keep anything. It should only be used for Dedicated DamnSmallBSD boot"
+	echo "devices."
+	echo ""
+	read -p "Press Enter to Continue.  " CHOICE
+
+	until [ "${BREAKOUT}" = "yes" ] 
+	do
+		clear
+		echo "Choose Target"
+		echo ""
+		echo "-----------------------------"
+		echo ""
+		get_disk | awk '{ print " " NR ") " $0; }'
+		echo " q) Exit"
+		echo ""
+		echo ""
+		read -p "Choice: " CHOICE
+		case "${CHOICE}" in
+			[qQ])
+				return
+			;;
+			*)
+				dsbsd_install $(get_disk | awk "NR == ${CHOICE}")
+			;;
+		esac
+	done
+}
+
+main_installer () {
+	until [ "${BREAKOUT}" = "yes" ] 
+	do
+		clear
+		echo "Installer"
+		echo ""
+		echo "-----------------------------"
+		echo ""
+		echo " 1) Install DamnSmallBSD "
+		echo " q) Exit "
+		echo ""
+		echo ""
+		read -p "Choice: " CHOICE
+		case "${CHOICE}" in
+			1)
+				dsbsd_installer
+			;;
+			[qQ])
+				return
+			;;
+		esac
+	done
+}
+
+main_installer

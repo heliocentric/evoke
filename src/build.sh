@@ -19,10 +19,10 @@ VERSION=0.1r1
 export ERRFILE=${WRKDIRPREFIX}/error.log
 export BOOTDIR=${WRKDIRPREFIX}/bdir
 export FSDIR=${WRKDIRPREFIX}/fsdir
-chflags -R noschg ${FSDIR}
-chflags -R noschg ${BOOTDIR}
-rm -r ${BOOTDIR}
-rm -r ${FSDIR}
+chflags -R noschg ${FSDIR} 2>/dev/null
+chflags -R noschg ${BOOTDIR} 2>/dev/null
+rm -r ${BOOTDIR} 2>/dev/null
+rm -r ${FSDIR} 2>/dev/null
 
 echo "" >${ERRFILE}
 for target in ${TARGETS}
