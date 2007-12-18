@@ -13,7 +13,7 @@ if [ "${WRKDIRPREFIX}" = "" ] ; then
 	export WRKDIRPREFIX=$(pwd)
 fi
 
-TARGETS="7.0-BETA4/powerpc 6.3-RC1/i386"
+TARGETS="6.3-RC1/i386"
 VERSION=0.1r1
 
 export ERRFILE=${WRKDIRPREFIX}/error.log
@@ -67,7 +67,7 @@ do
 	sed -i .bak '/pxe_setnfshandle(rootpath);/d' ${WORKDIR}/usr/src/sys/boot/i386/libi386/pxe.c 2>>${ERRFILE} >>${ERRFILE}
 	sed -i .bak "s_\"/rescue_\"${NBINDIR}_g" ${WORKDIR}/usr/src/include/paths.h 2>>${ERRFILE} >>${ERRFILE}
 	sed -i .bak "s_\"/etc/rc_\"/share/bin/systart_g" ${WORKDIR}/usr/src/sbin/init/pathnames.h 2>>${ERRFILE} >>${ERRFILE}
-	cp ${WRKDIRPREFIX}/lazybox.Makefile ${WORKDIR}/usr/src/rescue/rescue/Makefile
+	cp ${WRKDIRPREFIX}/lazybox.static.Makefile ${WORKDIR}/usr/src/rescue/rescue/Makefile
 	echo " [DONE]"
 
 	echo -n " * ${target} = Building World ....."
