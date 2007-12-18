@@ -1,24 +1,47 @@
 #!/bin/sh
 # $Id$
 
+if [ "${TMPDIR}" = "" ] ; then
+	export TMPDIR=/tmp/scratch
+fi
+
 get_disk () {
        sysctl -b kern.geom.conftxt | grep -a DISK | awk '{ print $3; }' | grep -v afd | grep -v cd | grep -v acd | grep -v fd 
+}
+
+real_install () {
+	if [ -c /dev/label/trackfile ] ; then
+		CLEANFILE=$(grep -v ^# /dev/label/trackfile)
+		for i in $(echo ${CLEANFILE} | grep ^F)
+		do
+			echo "${i}"
+		done
+	else
+		echo "Trackfile not found"
+	fi
+	case "${TYPE}" in
+		tftp)
+			SOURCEDIR=${TMPDIR}/$$/source
+			TARGETDIR=${TMPDIR}/$$/target
+			mkdir -p ${SOURCEDIR}
+			mkdir -p ${TARGETDIR}
+		;;
+		disk)
+			
+		;;
+	esac
 }
 
 dsbsd_install () {
 	# expect TYPE= to be set to either tftp, cd, or disk.
 	# for tftp, use TFTP_IP as the ip of the tftp server. Always verify.
-	if [ "${1}" != "" ] ; then
-		echo "Are you absolutely sure you want to DESTROY all data on ${1}?"
+	# Use TDISK as the target
+	if [ "${TDISK}" != "" ] ; then
+		echo "Are you absolutely sure you want to DESTROY all data on ${TDISK}?"
 		read -p "Choice: [y/N] " CHOICE
 		case "${CHOICE}" in
 			[yY])
-#				fdisk -IB /dev/${1}
-#				bsdlabel -wB /dev/${1}s1
-#				newfs /dev/${1}s1a
-#				mkdir -p /tmp/mnt/dest
-#				mount /dev/${1}s1a /tmp/mnt/dest
-#				mkdir -p /tmp/mnt/source
+				real_install
 			;;
 		esac
 	fi
@@ -64,10 +87,10 @@ choose_dsbsd_source () {
 			[qQ])
 				return
 			;;
-			[tT]
-				read -p "Enter IP of TFTP server: [$(kenv -q boot.netif.gateway)] IP
+			[tT])
+				read -p "Enter IP of TFTP server: [$(kenv -q boot.nfsroot.server)]" IP
 				if [ "${IP}" = "" ] ; then
-					export TFTP_IP=$(kenv -q boot.netif.gateway)
+					export TFTP_IP=$(kenv -q boot.nfsroot.server)
 				else
 					export TFTP_IP=${IP}
 				fi

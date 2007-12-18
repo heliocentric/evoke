@@ -13,7 +13,7 @@ if [ "${WRKDIRPREFIX}" = "" ] ; then
 	export WRKDIRPREFIX=$(pwd)
 fi
 
-TARGETS="6.3-RC1/i386"
+TARGETS="7.0-BETA4/powerpc 6.3-RC1/i386"
 VERSION=0.1r1
 
 export ERRFILE=${WRKDIRPREFIX}/error.log
