@@ -1,9 +1,9 @@
 #!/bin/sh
 # $Id$
 
-ROOTDIR=`pwd`
-OBJDIR=${OBJDIR}/obj
+export ROOTDIR=`pwd`
+export OBJDIR=${OBJDIR}/obj/$(date "+%Y%m%d%H%M.%S")
 mkdir -p ${OBJDIR}
-BUILDERDIR=${ROOTDIR}/builder
+export BUILDERDIR=${ROOTDIR}/builder
 
 ${BUILDERDIR}/build.sh
