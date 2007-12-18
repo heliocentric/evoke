@@ -1,5 +1,7 @@
 #!/bin/sh
 # $Id
+
+umask 077
 export TERM=cons25
 
 OS=$(sysctl -n kern.ostype)
@@ -43,7 +45,12 @@ echo -n "Creating /tmp							"
 mdmfs -s4m md /tmp
 mkdir /tmp/lib
 mkdir /tmp/run
+mkdir /tmp/pid
 mkdir /tmp/db
+mkdir /tmp/scratch
+chmod 777 /tmp/scratch
+chmod +t /tmp/scratch
+export TMPDIR=/tmp/scratch
 mount_nullfs -o union,ro /share/lib/ /etc/
 mount_nullfs -o union,ro /tmp/lib/ /etc/
 echo "[DONE]"
@@ -119,7 +126,7 @@ echo -n "Starting moused							"
 cd /dev
 for i in ums* psm0
 do
-	moused -p /dev/${i} -3 -I /tmp/run/${i}.pid 2>/dev/null
+	moused -p /dev/${i} -3 -I /tmp/pid/${i}.pid 2>/dev/null
 done
 for ttyv in /dev/ttyv* ; do
 	vidcontrol < ${ttyv} -m on
@@ -137,7 +144,7 @@ cat >/tmp/lib/syslogd.conf << EOF
 !sshd
 *.*	/tmp/db/log
 EOF
-syslogd -ss -f /tmp/lib/syslogd.conf -P /tmp/run/syslogd.pid -p /tmp/run/log
+syslogd -ss -f /tmp/lib/syslogd.conf -P /tmp/pid/syslogd.pid -p /tmp/run/log
 echo "[DONE]"
 
 echo -n "Starting sshd							"
@@ -147,7 +154,7 @@ HostKey /tmp/lib/ssh_key
 PermitRootLogin yes
 UsePrivilegeSeparation no                       
 UseDNS no
-PidFile /tmp/run/sshd.pid
+PidFile /tmp/pid/sshd.pid
 PasswordAuthentication yes
 PermitEmptyPasswords no
 ForceCommand tcsh
@@ -160,7 +167,7 @@ echo "ftp	21/tcp" >>/tmp/lib/services
 cat >/tmp/lib/ftpusers << EOF
 # blah
 EOF
-ftpd -D -d -p /tmp/run/ftpd.pid
+ftpd -D -d -p /tmp/pid/ftpd.pid
 echo "[DONE]"
 
 cd /
