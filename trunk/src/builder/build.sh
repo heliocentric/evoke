@@ -35,15 +35,9 @@ do
 	export WORKDIR=${WRKDIRPREFIX}/${target}
 	export TARGET=$(echo ${target} | cut -d "/" -f 2)
 	export TARGET_ARCH="${TARGET}"
-	export MAKEOBJDIRPREFIX=/tmp/${target}
 	export NDIR=/.FreeBSD-$(echo ${target} | cut -d "/" -f 1 | cut -d "." -f 1)/${TARGET}/
 	export NBINDIR=${NDIR}/bin
 
-	echo -n " * ${target} = Cleaning up object files ....."
-	if [ "${NO_CLEAN}" = "" ] ; then
-		rm -rf ${MAKEOBJDIRPREFIX} 2>>${ERRFILE}
-	fi
-	echo " [DONE]"
 
 	echo -n " * ${target} = Patching World ....."
 	cd ${WORKDIR}/usr/src/sys/boot/
@@ -62,6 +56,14 @@ do
 	mkdir -p ${FSDIR}${NBINDIR} 2>>${ERRFILE} >>${ERRFILE}
 	mkdir -p ${FSDIR}${NDIR}/lib 2>>${ERRFILE} >>${ERRFILE}
 	mkdir -p ${FSDIR}${NDIR}/libexec 2>>${ERRFILE} >>${ERRFILE}
+
+	export MAKEOBJDIRPREFIX=/tmp/dyn${target}
+
+	echo -n " * ${target} = Cleaning up object files ....."
+	if [ "${NO_CLEAN}" = "" ] ; then
+		rm -rf ${MAKEOBJDIRPREFIX} 2>>${ERRFILE}
+	fi
+	echo " [DONE]"
 
 	case "${1}" in
 		[dD][yY][nN][aA][mM][iI][cC])
