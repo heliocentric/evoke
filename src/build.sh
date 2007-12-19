@@ -1,9 +1,13 @@
 #!/bin/sh
 # $Id$
 
+echo -n " * share = Cleaning up object files ....."
 export ROOTDIR=`pwd`
-export OBJDIR=${OBJDIR}/obj/$(date "+%Y%m%d%H%M.%S")
+export OBJDIR=${ROOTDIR}/obj
+chflags -R noschg ${OBJDIR} 2>/dev/null
+rm -r ${OBJDIR} 2>/dev/null
 mkdir -p ${OBJDIR}
-export BUILDERDIR=${ROOTDIR}/builder
+export BUILDDIR=${ROOTDIR}/builder
 
-${BUILDERDIR}/build.sh
+echo " [DONE"
+${BUILDDIR}/build.sh ${1}

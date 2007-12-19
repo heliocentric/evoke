@@ -37,9 +37,9 @@ if [ "${ROOTFINGERPRINT}" != "" ] ; then
 fi
 echo "[DONE]"
 
-echo -n "Remounting root filesystem R/W					"
-mount -o update,rw /dev/md0 / 2>/dev/null >/dev/null
-echo "[DONE]"
+#echo -n "Remounting root filesystem R/W					"
+#mount -o update,rw /dev/md0 / 2>/dev/null >/dev/null
+#echo "[DONE]"
 
 echo -n "Creating /tmp							"
 mdmfs -s4m md /tmp
