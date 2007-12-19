@@ -20,22 +20,11 @@ export ERRFILE=${WRKDIRPREFIX}/error.log
 export TRACKFILE=${WRKDIRPREFIX}/trackfile
 export BOOTDIR=${WRKDIRPREFIX}/bdir
 export FSDIR=${WRKDIRPREFIX}/fsdir
-chflags -R noschg ${FSDIR} 2>/dev/null
-chflags -R noschg ${BOOTDIR} 2>/dev/null
-rm -r ${BOOTDIR} 2>/dev/null
-rm -r ${FSDIR} 2>/dev/null
-rm -r ${TRACKFILE} 2>/dev/null
-echo "" >${ERRFILE}
-echo "" >${TRACKFILE}
 
 for target in ${TARGETS}
 do
 	echo "Starting build for ${target}"
 	export DESTDIR=${WRKDIRPREFIX}/${target}
-	chflags -R noschg ${DESTDIR}
-	if [ -d "${DESTDIR}" ] ; then
-			rm -rf ${DESTDIR}
-	fi
 	mkdir -p ${DESTDIR}
 	SRCDIR="${ROOTDIR}/dists/$(echo ${target} | cut -d "/" -f 1)" DISTS="src" ${ROOTDIR}/share/bin/distextract >>${ERRFILE} 2>>${ERRFILE}
 	ERROR="$?"
@@ -47,7 +36,8 @@ do
 	export TARGET=$(echo ${target} | cut -d "/" -f 2)
 	export TARGET_ARCH="${TARGET}"
 	export MAKEOBJDIRPREFIX=/tmp/${target}
-	export NBINDIR=/.FreeBSD-$(echo ${target} | cut -d "/" -f 1 | cut -d "." -f 1)/${TARGET}/bin
+	export NDIR=/.FreeBSD-$(echo ${target} | cut -d "/" -f 1 | cut -d "." -f 1)/${TARGET}/
+	export NBINDIR=${NDIR}/bin
 
 	echo -n " * ${target} = Cleaning up object files ....."
 	if [ "${NO_CLEAN}" = "" ] ; then
@@ -67,26 +57,20 @@ do
 	sed -i .bak '/pxe_setnfshandle(rootpath);/d' ${WORKDIR}/usr/src/sys/boot/i386/libi386/pxe.c 2>>${ERRFILE} >>${ERRFILE}
 	sed -i .bak "s_\"/rescue_\"${NBINDIR}_g" ${WORKDIR}/usr/src/include/paths.h 2>>${ERRFILE} >>${ERRFILE}
 	sed -i .bak "s_\"/etc/rc_\"/share/bin/systart_g" ${WORKDIR}/usr/src/sbin/init/pathnames.h 2>>${ERRFILE} >>${ERRFILE}
-	cp ${BUILDDIR}/lazybox.static ${WORKDIR}/usr/src/rescue/rescue/Makefile
-	echo " [DONE]"
-
-	echo -n " * ${target} = Building World ....."
-	cd ${WORKDIR}/usr/src/
-	if [ "${NO_CLEAN}" = "" ] ; then
-		make  -DLOADER_TFTP_SUPPORT buildworld 2>>${ERRFILE} >>${ERRFILE}
-	fi
-	echo " [DONE]"
-
-	echo -n " * ${target} = Populating DESTDIR=${DESTDIR} ....."
 	export DESTDIR=${WRKDIRPREFIX}/${target}
 	mkdir -p ${DESTDIR}
-	priv make hierarchy 2>>${ERRFILE} >>${ERRFILE}
-	rm -r ${DESTDIR}/rescue
-	mkdir -p ${DESTDIR}/rescue
-	mkdir -p ${DESTDIR}${BOOTPATH}/defaults
-	priv make installworld 2>>${ERRFILE} >>${ERRFILE}
-	priv make distribution 2>>${ERRFILE} >>${ERRFILE}
-	echo " [DONE]"
+	mkdir -p ${FSDIR}${NBINDIR} 2>>${ERRFILE} >>${ERRFILE}
+	mkdir -p ${FSDIR}${NDIR}/lib 2>>${ERRFILE} >>${ERRFILE}
+	mkdir -p ${FSDIR}${NDIR}/libexec 2>>${ERRFILE} >>${ERRFILE}
+
+	case "${1}" in
+		[dD][yY][nN][aA][mM][iI][cC])
+			. ${BUILDDIR}/dynamic.sh
+		;;
+		*)
+			. ${BUILDDIR}/static.sh
+		;;
+	esac
 
 	echo -n " * ${target} = Compressing Kernel ....."
 	SRCDIR="${ROOTDIR}/dists/${target}" DISTS="kernels" ${ROOTDIR}/share/bin/distextract >/dev/null
@@ -108,13 +92,6 @@ do
 init_path="${NBINDIR}/init"
 EOF
 
-	echo " [DONE]"
-
-	echo -n " * ${target} = Populating FSDIR ....."
-	mkdir -p ${FSDIR}${NBINDIR} 2>>${ERRFILE} >>${ERRFILE}
-	mkdir -p ${FSDIR}/lib 2>>${ERRFILE} >>${ERRFILE}
-	mkdir -p ${FSDIR}/libexec 2>>${ERRFILE} >>${ERRFILE}
-	cd ${WORKDIR}/rescue && tar -cf - * | tar -xf - -C ${FSDIR}/${NBINDIR} 2>>${ERRFILE} >>${ERRFILE}
 	echo " [DONE]"
 
 done
@@ -139,6 +116,7 @@ for i in $(find ${FSDIR} -name ".svn")
 do
 	rm -r ${i}
 done
+cd ${ROOTDIR}
 tar -cf - share | tar -xf - -C ${FSDIR}/
 echo " [DONE]"
 
