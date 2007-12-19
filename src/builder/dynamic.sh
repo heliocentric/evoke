@@ -39,12 +39,11 @@ for lib in $( for i in ${PROGS}
 		ldd -f "%o\n" ${i}
 	done | sort | uniq )
 do
+	strip --remove-section=.note --remove-section=.comment ${DESTDIR}/mnt/lib/${lib}
 	cp ${DESTDIR}/mnt/lib/${lib} ${FSDIR}${NDIR}/lib
 done
-for prog in ${PROGS}
-do
-	cp ${prog} ${FSDIR}${NBINDIR}/	
-done
+strip --remove-section=.note --remove-section=.comment ${PROGS}
+tar -cLf - ${PROGS} | tar -xf - -C ${FSDIR}${NBINDIR}/	
 cd ${WRKDIRPREFIX}
 umount ${DESTDIR}/mnt/lib
 umount ${DESTDIR}/mnt/lib
