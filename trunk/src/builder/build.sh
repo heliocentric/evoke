@@ -37,7 +37,7 @@ do
 	export TARGET_ARCH="${TARGET}"
 	export NDIR=/.FreeBSD-$(echo ${target} | cut -d "/" -f 1 | cut -d "." -f 1)/${TARGET}/
 	export NBINDIR=${NDIR}/bin
-
+	export CROSS_BUILD_TESTING=yes
 
 	echo -n " * ${target} = Patching World ....."
 	cd ${WORKDIR}/usr/src/sys/boot/
