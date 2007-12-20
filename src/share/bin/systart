@@ -51,8 +51,8 @@ mkdir /tmp/scratch
 chmod 777 /tmp/scratch
 chmod +t /tmp/scratch
 export TMPDIR=/tmp/scratch
-mount_nullfs -o union,ro /share/lib/ /etc/
-mount_nullfs -o union,ro /tmp/lib/ /etc/
+mount_nullfs -o union,ro /share/lib/ /cfg/
+mount_nullfs -o union,ro /tmp/lib/ /cfg/
 echo "[DONE]"
 
 echo -n "Grabbing root password from loader.conf				"
