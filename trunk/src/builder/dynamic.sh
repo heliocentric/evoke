@@ -34,14 +34,17 @@ mount_nullfs -o union ${DESTDIR}/usr/libexec ${DESTDIR}/mnt/bin
 mount_nullfs -o union ${DESTDIR}/lib ${DESTDIR}/mnt/lib
 mount_nullfs -o union ${DESTDIR}/usr/lib ${DESTDIR}/mnt/lib
 cd ${DESTDIR}/mnt/bin
-for lib in $( for i in ${PROGS}
+for lib in $( for i in ${PROGS} ${DESTDIR}/mnt/lib/pam*.so.?
 	do
 		ldd -f "%o\n" ${i}
-	done | sort | uniq )
+	done | sort | uniq ) ${DESTDIR}/mnt/lib/pam*.so.?
 do
-	strip --remove-section=.note --remove-section=.comment ${DESTDIR}/mnt/lib/${lib}
-	cp ${DESTDIR}/mnt/lib/${lib} ${FSDIR}${NDIR}/lib
+	cd ${DESTDIR}/mnt/lib/
+	strip --remove-section=.note --remove-section=.comment ${lib}
+	cp $(basename ${lib}) ${FSDIR}${NDIR}/lib
+	ln -s ${lib} ${FSDIR}${NDIR}/lib/$(echo $(basename ${lib}) | cut -d "." -f 1-2)
 done
+cd ${DESTDIR}/mnt/bin
 strip --remove-section=.note --remove-section=.comment ${PROGS}
 tar -cLf - ${PROGS} | tar -xf - -C ${FSDIR}${NBINDIR}/	
 cd ${WRKDIRPREFIX}

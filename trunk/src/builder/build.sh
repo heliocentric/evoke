@@ -82,7 +82,7 @@ do
 		rm -r *.gz 2>/dev/null
 		rm -r *.symbols 2>/dev/null
 		rm g_md.ko
-		gzip -9 kernel acpi.ko dcons.ko dcons_crom.ko nullfs.ko geom_label.ko 2>>${ERRFILE}
+		gzip -9 kernel acpi.ko dcons.ko dcons_crom.ko nullfs.ko geom_label.ko geom_mirror.ko geom_concat.ko geom_eli.ko geom_nop.ko geom_raid3.ko geom_shsec.ko geom_stripe.ko 2>>${ERRFILE}
 		rm -r *.ko
 	done
 	echo " [DONE]"
@@ -109,8 +109,9 @@ mkdir -p ${FSDIR}/dev
 mkdir -p ${FSDIR}/bin
 mkdir -p ${FSDIR}/lib
 mkdir -p ${FSDIR}/libexec
-mkdir -p ${FSDIR}/etc
+mkdir -p ${FSDIR}/cfg
 mkdir -p ${FSDIR}/tmp
+ln -s /cfg  ${FSDIR}/etc
 ln -s /tmp  ${FSDIR}/var
 ln -s /bin ${FSDIR}/sbin
 cd ${WRKDIRPREFIX}
@@ -140,6 +141,13 @@ trackfile_name="${BOOTPATH}/trackfile"
 dcons_load="YES"
 dcons_crom_load="YES"
 geom_label_load="YES"
+geom_mirror_load="YES"
+#geom_concat_load="YES"
+#geom_eli_load="YES"
+#geom_nop_load="YES"
+#geom_raid3_load="YES"
+#geom_stripe_load="YES"
+#geom_shsec_load="YES"
 nullfs_load="YES"
 dsbsd.fingerprint="${FINGERPRINT}" 
 vfs.root.mountfrom="ufs:md0"
