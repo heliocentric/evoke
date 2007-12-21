@@ -1,0 +1,16 @@
+#!/bin/sh
+# $Id$
+
+case "${1}" in
+	[mM][oO][uU][nN][tT])
+	;;
+	[rR][uU][nN])
+
+	;;
+	[aA][uU][tT][oO])
+		if [ "$(kenv -q dsbsd.autojail)" != "" ] ; then
+			jailer mount $(kenv -q dsbsd.autojail)
+			jailer run $(kenv -q dsbsd.autojail)
+		fi
+	;;
+esac
