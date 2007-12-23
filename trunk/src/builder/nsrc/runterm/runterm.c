@@ -1,4 +1,4 @@
-# $Id$
+/* $Id$ */
 
 
 #include <sys/param.h>
@@ -21,10 +21,10 @@ int main(int argc, char *argv[]) {
 	pid_t pid = fork();
 	if (pid = 0) {
 		if (setsid() < 0) {
-			exit(1);
+			err(1,"setsid()");
 		}
 		if (setlogin("CONSOLE") < 0) {
-			exit(2);
+			err(1,"setlogin()");
 		}
 		int tty = open(argv[1], O_RDWR);
 		close(0);
@@ -33,7 +33,10 @@ int main(int argc, char *argv[]) {
 		login_tty(tty);
 		close(tty);
 		execvp(argv[1], &argv[1]);
-	} else if (pid = -1) {
-		exit(errno);
+	}
+	else {
+		if (pid = -1) {
+			err(1,"fork()");
+		}
 	}
 }
