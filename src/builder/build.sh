@@ -13,8 +13,6 @@ if [ "${WRKDIRPREFIX}" = "" ] ; then
 	export WRKDIRPREFIX=${OBJDIR}
 fi
 
-TARGETS="6.3-RC1/i386"
-VERSION=0.1r1
 
 export ERRFILE=${WRKDIRPREFIX}/error.log
 export TRACKFILE=${WRKDIRPREFIX}/trackfile
