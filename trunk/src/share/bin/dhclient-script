@@ -1,0 +1,13 @@
+#!/bin/sh
+
+case "${reason}" in
+	PREINIT)
+		if [ -f /dev/net/${interface} ] ; then
+			ifconfig ${interface} inet 0.0.0.0 broadcast 255.255.255.255
+		fi
+	;;
+	*)
+		# this will output all environment variables, so you can add handlers easier
+		set
+	;;
+esac

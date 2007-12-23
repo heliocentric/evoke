@@ -6,7 +6,7 @@ case "${1}" in
 		if [ -c "/dev/${2}" ] ; then
 			sysctl -b kern.geom.conftxt | grep -aw ${2} |  awk '{
 				if ($2 == "BSD") {
-					print $0
+					
 				};
 			}'
 		else
