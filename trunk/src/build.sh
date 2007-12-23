@@ -1,6 +1,8 @@
 #!/bin/sh
 # $Id$
 
+export TARGETS="6.3-RC1"
+export VERSION="HEAD"
 echo -n " * share = Cleaning up object files ....."
 export ROOTDIR=`pwd`
 export OBJDIR=${ROOTDIR}/obj
