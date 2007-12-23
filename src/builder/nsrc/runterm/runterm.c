@@ -18,25 +18,28 @@
 #include <errno.h>
 
 int main(int argc, char *argv[]) {
-	pid_t pid = fork();
+	pid_t pid = 0;
+	int tty;
+	if (pid < 0) {
+		err(4,"fork()");
+	}
 	if (pid = 0) {
 		if (setsid() < 0) {
 			err(1,"setsid()");
 		}
 		if (setlogin("CONSOLE") < 0) {
-			err(1,"setlogin()");
+			err(2,"setlogin()");
 		}
-		int tty = open(argv[1], O_RDWR);
-		close(0);
-		close(1);
-		close(2);
-		login_tty(tty);
-		close(tty);
-		execvp(argv[1], &argv[1]);
-	}
-	else {
-		if (pid = -1) {
-			err(1,"fork()");
+		if (tty = open(argv[1], O_RDWR) < 0) {
+			err(3,"open()");
+		}
+		
+		if (login_tty(tty) < 0) {
+			err(5,"login_tty()");
+		}
+
+		if (execvp(argv[2], &argv[2]) < 0) {
+			err(6,"execvp()");	
 		}
 	}
 }
