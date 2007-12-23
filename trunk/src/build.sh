@@ -1,7 +1,7 @@
 #!/bin/sh
 # $Id$
 
-export TARGETS="6.3-RC1"
+export TARGETS="6.3-RC1/i386"
 export VERSION="HEAD"
 echo -n " * share = Cleaning up object files ....."
 export ROOTDIR=`pwd`
