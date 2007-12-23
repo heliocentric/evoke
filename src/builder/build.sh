@@ -49,6 +49,7 @@ do
 	sed -i .bak '/pxe_setnfshandle(rootpath);/d' ${WORKDIR}/usr/src/sys/boot/i386/libi386/pxe.c 2>>${ERRFILE} >>${ERRFILE}
 	sed -i .bak "s_\"/rescue_\"${NBINDIR}_g" ${WORKDIR}/usr/src/include/paths.h 2>>${ERRFILE} >>${ERRFILE}
 	sed -i .bak "s_\"/etc/rc_\"/share/bin/systart_g" ${WORKDIR}/usr/src/sbin/init/pathnames.h 2>>${ERRFILE} >>${ERRFILE}
+
 	export DESTDIR=${WRKDIRPREFIX}/${target}
 	mkdir -p ${DESTDIR}
 	mkdir -p ${FSDIR}${NBINDIR} 2>>${ERRFILE} >>${ERRFILE}
@@ -63,6 +64,8 @@ do
 	fi
 	echo " [DONE]"
 
+	tar -cf - ${BUILDDIR}/nsrc | tar -xf - -C ${DESTDIR}/usr/src/
+	setenv LOCAL_DIRS=nsrc
 	case "${1}" in
 		[dD][yY][nN][aA][mM][iI][cC])
 			. ${BUILDDIR}/dynamic.sh

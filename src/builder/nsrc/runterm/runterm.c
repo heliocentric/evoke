@@ -18,12 +18,12 @@
 #include <errno.h>
 
 int main(int argc, char *argv[]) {
-	pid_t pid = 0;
+	pid_t pid = fork();
 	int tty;
 	if (pid < 0) {
 		err(4,"fork()");
 	}
-	if (pid = 0) {
+	if (pid == 0) {
 		if (setsid() < 0) {
 			err(1,"setsid()");
 		}
@@ -35,11 +35,12 @@ int main(int argc, char *argv[]) {
 		}
 		
 		if (login_tty(tty) < 0) {
-			err(5,"login_tty()");
+			err(5,"login_tty(%s)",argv[1]);
 		}
 
 		if (execvp(argv[2], &argv[2]) < 0) {
 			err(6,"execvp()");	
 		}
 	}
+	exit(0);
 }
