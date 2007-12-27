@@ -56,22 +56,25 @@ do
 	mkdir -p ${FSDIR}${NDIR}/lib 2>>${ERRFILE} >>${ERRFILE}
 	mkdir -p ${FSDIR}${NDIR}/libexec 2>>${ERRFILE} >>${ERRFILE}
 
-	export MAKEOBJDIRPREFIX=/tmp/dyn${target}
+	export MAKEOBJDIRPREFIX=/tmp/${target}
 
 	echo -n " * ${target} = Cleaning up object files ....."
 	if [ "${NO_CLEAN}" = "" ] ; then
 		rm -rf ${MAKEOBJDIRPREFIX} 2>>${ERRFILE}
 	fi
 	echo " [DONE]"
+	cd ${BUILDDIR}
+	tar -cf - nsrc | tar -xf - -C ${DESTDIR}/usr/src/
 
-	tar -cf - ${BUILDDIR}/nsrc | tar -xf - -C ${DESTDIR}/usr/src/
-	setenv LOCAL_DIRS=nsrc
 	case "${1}" in
+		[sS][tT][aA][tT][iI][cC])
+			. ${BUILDDIR}/static.sh
+		;;
 		[dD][yY][nN][aA][mM][iI][cC])
 			. ${BUILDDIR}/dynamic.sh
 		;;
 		*)
-			. ${BUILDDIR}/static.sh
+			. ${BUILDDIR}/dynamic.sh
 		;;
 	esac
 
@@ -83,7 +86,7 @@ do
 		rm -r *.gz 2>/dev/null
 		rm -r *.symbols 2>/dev/null
 		rm g_md.ko
-		gzip -9 kernel acpi.ko dcons.ko dcons_crom.ko nullfs.ko geom_label.ko geom_mirror.ko geom_concat.ko geom_eli.ko geom_nop.ko geom_raid3.ko geom_shsec.ko geom_stripe.ko 2>>${ERRFILE}
+		gzip -9 kernel acpi.ko dcons.ko dcons_crom.ko nullfs.ko geom_label.ko geom_mirror.ko geom_concat.ko geom_eli.ko geom_nop.ko geom_raid3.ko geom_shsec.ko geom_stripe.ko pf.ko 2>>${ERRFILE}
 		rm -r *.ko
 	done
 	echo " [DONE]"
@@ -149,6 +152,7 @@ geom_mirror_load="YES"
 #geom_shsec_load="YES"
 #ext2fs_load="YES"
 #ntfs_load="YES"
+pf_load="YES"
 nullfs_load="YES"
 dsbsd.fingerprint="${FINGERPRINT}" 
 vfs.root.mountfrom="ufs:md0"
