@@ -1,0 +1,197 @@
+#!/bin/sh
+# Copyright 2007-2008 Dylan Cochran
+# All rights reserved
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted providing that the following conditions
+# are met:
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+# IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
+# DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+# STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
+# IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
+# $Id$
+list_if () {
+   for i in `ifconfig -l`
+   do
+               case ${i} in
+                        lo*)
+                       ;;
+                        plip*)
+                       ;;
+                        slip*)
+                       ;;
+                        fwe*)
+                       ;;
+                        ppp*)
+                       ;;
+                       *)
+				echo ${i}
+                       ;;
+               esac
+   done
+}
+
+umask 077
+export TERM=cons25
+
+export OS=$(sysctl -n kern.ostype)
+export ABI=$(sysctl -n kern.osrelease | cut -d . -f 1)
+export ARCH=$(sysctl -n hw.machine_arch)
+export MACHINE=$(sysctl -n hw.machine)
+
+
+echo -n "Merging directories						"
+sh /share/bin/merger / /
+mount_nullfs -o union,ro /share/bin/ /bin/
+export PATH=/bin
+echo "[DONE]"
+
+echo -n "Verifying root filesystem					"
+ROOTFINGERPRINT=$(kenv -q dsbsd.fingerprint)
+if [ "${ROOTFINGERPRINT}" != "" ] ; then
+	if [ "${ROOTFINGERPRINT}" != "$(sha256 -q /dev/md0)" ] ; then
+		echo "[FAILED]"
+		reboot
+	fi
+fi
+echo "[DONE]"
+
+echo -n "Creating /tmp							"
+mdmfs -s4m md /tmp
+export LIBDIR=/tmp/lib
+mkdir /tmp/lib
+export RUNDIR=/tmp/run
+mkdir /tmp/run
+export PIDDIR=/tmp/pid
+mkdir /tmp/pid
+export DBDIR=/tmp/db
+mkdir /tmp/db
+mkdir /tmp/empty
+mkdir /tmp/scratch
+chmod 777 /tmp/scratch
+chmod +t /tmp/scratch
+export TMPDIR=/tmp/scratch
+mount_nullfs -o union,ro /share/lib/ /cfg/
+mount_nullfs -o union,ro /tmp/lib/ /cfg/
+echo "[DONE]"
+
+echo -n "Generating passwd files						"
+RPASSWD=$(kenv -q dsbsd.rootpassword)
+if [ "${RPASSWD}" = "" ] ; then
+	RPASSWD='$1$1QgK4Xsg$.PInGIAb4c0nznxpRkUPk.'
+fi
+
+echo "root:${RPASSWD}:0:0::0:0:Super-User:/home/root:/bin/tcsh" >>/tmp/lib/master.passwd
+echo "nobody:NOTREALPASSWORD:1:1::0:0:nobody:/tmp/empty:/dev/null" >>/tmp/lib/master.passwd
+echo "wheel:*:0:" >>/tmp/lib/group
+echo "operator:*:5:" >>/tmp/lib/group
+mdmfs -s 2m md /home/root
+
+pwd_mkdb -i -p -d /tmp/lib/ /tmp/lib/master.passwd 2>/dev/null
+cap_mkdb -f /tmp/lib/login.conf.db /share/lib/login.conf
+echo "/bin/tcsh" >>/tmp/lib/shells
+echo "/bin/csh" >>/tmp/lib/shells
+echo "/bin/sh" >>/tmp/lib/shells
+echo "[DONE]"
+
+
+echo -n "Configuring network						"
+IF="$(kenv -q boot.netif.name)"
+if [ "${IF}" = "" ] ; then
+	IF="$(list_if | head -n 1)"
+fi
+
+ifconfig lo0 inet 127.0.0.1 netmask 255.255.255.255
+IP="$(kenv -q boot.netif.ip)"
+NETMASK="$(kenv -q boot.netif.netmask)"
+GATEWAY="$(kenv -q boot.netif.gateway)"
+DNS="$(kenv -q boot.netif.dns)"
+if [ "${IP}" != "" -a "${NETMASK}" != "" -a "${GATEWAY}" != "" ] ; then
+	ifconfig ${IF} inet ${IP} netmask ${NETMASK}
+	route add default ${GATEWAY} 2>/dev/null >/dev/null
+	if [ "${DNS}" = "" ] ; then
+		echo "nameserver ${GATEWAY}" >/tmp/lib/resolv.conf
+	else
+		echo "nameserver ${DNS}" >/tmp/lib/resolv.conf
+	fi
+
+else
+	dhclient ${IF} >/dev/null 2>/dev/null
+fi
+ifconfig lo0 up
+for if in $(list_if)
+do
+	ifconfig ${if} up
+done
+echo "[DONE]"
+
+echo -n "Starting moused							"
+cd /dev
+for i in ums* psm0
+do
+	moused -p /dev/${i} -3 -I /tmp/pid/${i}.pid 2>/dev/null
+done
+for ttyv in /dev/ttyv* ; do
+	vidcontrol < ${ttyv} -m on
+done
+
+echo "[DONE]"
+
+echo -n "Starting syslogd						"
+echo "syslog		514/udp" >> /tmp/lib/services
+echo "" >/tmp/db/log
+cat >/tmp/lib/syslogd.conf << EOF
+*.notice;authpriv.none;kern.debug;*.info;*.crit;*.err	/tmp/db/log
+!ftpd
+*.*	/tmp/db/log
+!sshd
+*.*	/tmp/db/log
+EOF
+syslogd -ss -f /tmp/lib/syslogd.conf -P /tmp/pid/syslogd.pid -p /tmp/run/log
+echo "[DONE]"
+
+echo -n "Starting sshd							"
+mkdir -p /tmp/lib/ssh
+ssh-keygen -t dsa -f /tmp/lib/ssh/ssh_key -N '' >/dev/null 2>/dev/null
+cat >/tmp/lib/ssh/sshd.conf << "EOF"
+HostKey /tmp/lib/ssh/ssh_key
+PermitRootLogin yes
+UsePrivilegeSeparation no                       
+UseDNS no
+PidFile /tmp/pid/sshd.pid
+PasswordAuthentication yes
+PermitEmptyPasswords no
+ForceCommand tcsh
+EOF
+cat >/tmp/lib/ssh/ssh_config << "EOF"
+StrictHostKeyChecking no
+EOF
+/bin/sshd -f /tmp/lib/ssh/sshd.conf 2>/dev/null
+echo "[DONE]"
+
+echo -n "Starting ftpd							"
+echo "ftp	21/tcp" >>/tmp/lib/services
+cat >/tmp/lib/ftpusers << EOF
+# blah
+EOF
+ftpd -D -d -p /tmp/pid/ftpd.pid
+echo "[DONE]"
+
+cd /
+
+tcsh
+reboot

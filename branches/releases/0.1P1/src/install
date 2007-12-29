@@ -1,0 +1,88 @@
+#!/bin/sh
+# Copyright 2007-2008 Dylan Cochran
+# All rights reserved
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted providing that the following conditions
+# are met:
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+# IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
+# DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+# STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
+# IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
+# $Id$
+OPWD=$(pwd)
+
+clear
+echo "Available DamnSmallBSD Releases"
+echo "==============================="
+echo ""
+echo "d - HEAD"
+echo ""
+echo ""
+read -p "Enter Choice: " CHOICE
+
+echo -n "Fetching DamnSmallBSD							"
+case "${CHOICE}" in
+	[dD])
+		DEST=dsbsd-head
+		svn checkout http://devnulled.ath.cx/svn/damnsmallbsd/trunk/src ${DEST} 2>/dev/null >/dev/null
+		TARGETS=$(cat ${DEST}/build.sh | grep TARGETS= | cut -d \" -f 2)
+	;;
+esac
+echo "[DONE]"
+
+read -p "Download Source Dists? [Yn]: " CHOICE
+case "${CHOICE}" in
+	[nN])
+		
+	;;
+	*)
+	for release in $( for target in ${TARGETS}
+			do
+				echo ${target} |cut -d "/" -f 1
+			done | sort | uniq )
+	do
+		echo -n "Fetching FreeBSD ${release} source dists.					"
+		mkdir -p ${OPWD}/${DEST}/dists/${release}/src
+		for file in $(fetch -q -o - ftp://ftp.freebsd.org/pub/FreeBSD/releases/i386/${release}/src/CHECKSUM.MD5 | cut -d ")" -f 1 | cut -d "(" -f 2)
+		do
+			cd ${OPWD}/${DEST}/dists/${release}/src
+			fetch -q -m ftp://ftp.freebsd.org/pub/FreeBSD/releases/i386/${release}/src/${file}
+		done
+		echo "[DONE]"
+	done
+	;;
+esac
+read -p "Download Kernel Dists? [Yn]: " CHOICE
+case "${CHOICE}" in 
+	[nN])
+	;;
+	*)
+	for kernels in ${TARGETS}
+	do
+		echo -n "Fetching FreeBSD ${kernels} kernel dists.				"
+		mkdir -p ${OPWD}/${DEST}/dists/${kernels}/kernels
+		cd ${OPWD}/${DEST}/dists/${kernels}/kernels
+		for file in $(fetch -q -o - 
+ftp://ftp.freebsd.org/pub/FreeBSD/releases/$(echo ${kernels} | cut -d "/" -f 2)/$(echo ${kernels} | cut -d "/" -f 1)/kernels/CHECKSUM.MD5 | cut -d ")" -f 1 | cut -d "(" -f 2)
+	        do
+	                fetch -q -m ftp://ftp.freebsd.org/pub/FreeBSD/releases/$(echo ${kernels} | cut -d "/" -f 2)/$(echo ${kernels} | cut -d "/" -f 1)/kernels/${file}
+	        done
+		echo "[DONE]"
+	done
+	;;
+esac
