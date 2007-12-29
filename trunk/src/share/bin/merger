@@ -26,22 +26,25 @@
 # $Id$
 
 if [ "${1}" = "" ] ; then
-	local SOURCE=""
+	SOURCE=""
 else
-	local SOURCE="${1}"
+	SOURCE="${1}"
 fi
 if [ "${2}" = "" ] ; then
-	local TARGET=""
+	TARGET=""
 else
-	local TARGET="${2}"
+	TARGET="${2}"
 fi
 
 if [ -d "${SOURCE}/.${OS}-${ABI}/${ARCH}/lib" ] ; then
-	mount_nullfs -o union,ro ${TARGET}/.${OS}-${ABI}/${ARCH}/lib /lib
+	mount_nullfs -o union,ro ${SOURCE}/.${OS}-${ABI}/${ARCH}/lib ${TARGET}/lib
 fi
 if [ -d "${SOURCE}/.${OS}-${ABI}/${ARCH}/libexec" ] ; then
-	mount_nullfs -o union,ro ${TARGET}/.${OS}-${ABI}/${ARCH}/libexec /libexec
+	mount_nullfs -o union,ro ${SOURCE}/.${OS}-${ABI}/${ARCH}/libexec ${TARGET}/libexec
 fi
 if [ -d "${SOURCE}/.${OS}-${ABI}/${ARCH}/bin" ] ; then
-	mount_nullfs -o union,ro ${TARGET}/.${OS}-${ABI}/${ARCH}/bin /bin
+	mount_nullfs -o union,ro ${SOURCE}/.${OS}-${ABI}/${ARCH}/bin ${TARGET}/bin
+fi
+if [ -d "${SOURCE}/.${OS}-${ABI}/${ARCH}/boot" ] ; then
+	mount_nullfs -o union,ro ${SOURCE}/.${OS}-${ABI}/${ARCH}/boot ${TARGET}/boot
 fi

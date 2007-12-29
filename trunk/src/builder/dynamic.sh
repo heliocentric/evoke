@@ -33,26 +33,25 @@ mv nc newfs pciconf ping powerd ps pwd pwd_mkdb reboot rm route sed sh sha1 sha2
 sshd stty swapon syslogd tail tar tcsh tftp tftpd top umount uniq unlink usbdevs vidcontrol whoami \
 zcat sort pfctl"
 cp ${BUILDDIR}/lazybox.dynamic ${WORKDIR}/usr/src/rescue/rescue/Makefile
-echo " [DONE]"
 
 
-echo -n " * Building World ....."
+echo -n " * ${target} = Building World ....."
 cd ${WORKDIR}/usr/src/
 if [ "${NO_CLEAN}" = "" ] ; then
 	make  -DLOADER_TFTP_SUPPORT LOCAL_DIRS="nsrc" buildworld 2>>${ERRFILE} >>${ERRFILE}
 fi
-echo " [DONE]"
+echo "				[DONE]"
 
-echo -n " * Populating DESTDIR=${DESTDIR} ....."
+echo -n " * ${target} = Populating DESTDIR"
 priv make hierarchy 2>>${ERRFILE} >>${ERRFILE}
 rm -r ${DESTDIR}/rescue
 mkdir -p ${DESTDIR}/rescue
 priv make installworld 2>>${ERRFILE} >>${ERRFILE}
 priv make distribution 2>>${ERRFILE} >>${ERRFILE}
 mkdir -p ${DESTDIR}/usr/src
-echo " [DONE]"
+echo "				[DONE]"
 
-echo -n " * Populating FSDIR  ....."
+echo -n " * ${target} = Populating FSDIR"
 cp ${DESTDIR}/libexec/ld-elf.so.1 ${FSDIR}${NDIR}/libexec/
 mkdir -p ${DESTDIR}/mnt/lib
 mkdir -p ${DESTDIR}/mnt/bin
@@ -88,4 +87,4 @@ umount ${DESTDIR}/mnt/bin
 cp -r ${DESTDIR}/lib/geom ${FSDIR}${NDIR}/lib/
 cd ${WORKDIR}/rescue
 tar -cf - * | tar -xf - -C ${FSDIR}${NBINDIR}/ 2>>${ERRFILE} >>${ERRFILE}
-echo " [DONE]"
+echo "				[DONE]"
