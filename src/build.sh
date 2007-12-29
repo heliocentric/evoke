@@ -27,7 +27,7 @@
 
 export TARGETS="7.0-BETA4/i386"
 export VERSION="HEAD"
-echo -n " * share = Cleaning up object files ....."
+echo -n " * share = Cleaning up"
 export ROOTDIR=`pwd`
 export OBJDIR=${ROOTDIR}/obj
 chflags -R noschg ${OBJDIR} 2>/dev/null
@@ -35,5 +35,6 @@ rm -r ${OBJDIR} 2>/dev/null
 mkdir -p ${OBJDIR}
 export BUILDDIR=${ROOTDIR}/builder
 
-echo " [DONE"
+echo "						[DONE]"
+
 ${BUILDDIR}/build.sh ${1}

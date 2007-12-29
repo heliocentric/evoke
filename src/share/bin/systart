@@ -48,14 +48,14 @@ list_if () {
 umask 077
 export TERM=cons25
 
-OS=$(sysctl -n kern.ostype)
-ABI=$(sysctl -n kern.osrelease | cut -d . -f 1)
+export OS=$(sysctl -n kern.ostype)
+export ABI=$(sysctl -n kern.osrelease | cut -d . -f 1)
 export ARCH=$(sysctl -n hw.machine_arch)
 export MACHINE=$(sysctl -n hw.machine)
 
 
 echo -n "Merging directories						"
-sh /share/bin/merger
+sh /share/bin/merger / /
 mount_nullfs -o union,ro /share/bin/ /bin/
 export PATH=/bin
 echo "[DONE]"
@@ -72,10 +72,15 @@ echo "[DONE]"
 
 echo -n "Creating /tmp							"
 mdmfs -s4m md /tmp
+export LIBDIR=/tmp/lib
 mkdir /tmp/lib
+export RUNDIR=/tmp/run
 mkdir /tmp/run
+export PIDDIR=/tmp/pid
 mkdir /tmp/pid
+export DBDIR=/tmp/db
 mkdir /tmp/db
+mkdir /tmp/empty
 mkdir /tmp/scratch
 chmod 777 /tmp/scratch
 chmod +t /tmp/scratch
@@ -90,8 +95,11 @@ if [ "${RPASSWD}" = "" ] ; then
 	RPASSWD='$1$1QgK4Xsg$.PInGIAb4c0nznxpRkUPk.'
 fi
 
-echo "root:${RPASSWD}:0:0::0:0:Super-User:/:/bin/tcsh" >>/tmp/lib/master.passwd
+echo "root:${RPASSWD}:0:0::0:0:Super-User:/home/root:/bin/tcsh" >>/tmp/lib/master.passwd
 echo "nobody:NOTREALPASSWORD:1:1::0:0:nobody:/tmp/empty:/dev/null" >>/tmp/lib/master.passwd
+echo "wheel:*:0:" >>/tmp/lib/group
+echo "operator:*:5:" >>/tmp/lib/group
+mdmfs -s 2m md /home/root
 
 pwd_mkdb -i -p -d /tmp/lib/ /tmp/lib/master.passwd 2>/dev/null
 cap_mkdb -f /tmp/lib/login.conf.db /share/lib/login.conf
@@ -157,9 +165,10 @@ syslogd -ss -f /tmp/lib/syslogd.conf -P /tmp/pid/syslogd.pid -p /tmp/run/log
 echo "[DONE]"
 
 echo -n "Starting sshd							"
-ssh-keygen -t dsa -f /tmp/lib/ssh_key -N '' >/dev/null 2>/dev/null
-cat >/tmp/lib/sshd.conf << "EOF"
-HostKey /tmp/lib/ssh_key
+mkdir -p /tmp/lib/ssh
+ssh-keygen -t dsa -f /tmp/lib/ssh/ssh_key -N '' >/dev/null 2>/dev/null
+cat >/tmp/lib/ssh/sshd.conf << "EOF"
+HostKey /tmp/lib/ssh/ssh_key
 PermitRootLogin yes
 UsePrivilegeSeparation no                       
 UseDNS no
@@ -168,7 +177,10 @@ PasswordAuthentication yes
 PermitEmptyPasswords no
 ForceCommand tcsh
 EOF
-/bin/sshd -f /tmp/lib/sshd.conf 2>/dev/null
+cat >/tmp/lib/ssh/ssh_config << "EOF"
+StrictHostKeyChecking no
+EOF
+/bin/sshd -f /tmp/lib/ssh/sshd.conf 2>/dev/null
 echo "[DONE]"
 
 echo -n "Starting ftpd							"
