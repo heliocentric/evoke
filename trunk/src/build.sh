@@ -25,7 +25,7 @@
 
 # $Id$
 
-export TARGETS="7.0-BETA4/i386"
+export TARGETS="7.0-RC1/i386 6.3-RC1"
 export VERSION="HEAD"
 echo -n " * share = Cleaning up"
 export ROOTDIR=`pwd`
