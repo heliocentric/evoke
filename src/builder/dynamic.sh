@@ -72,7 +72,7 @@ do
 	cd ${DESTDIR}/mnt/lib/
 	strip --remove-section=.note --remove-section=.comment ${lib}
 	cp $(basename ${lib}) ${FSDIR}${NDIR}/lib
-	ln -s ${lib} ${FSDIR}${NDIR}/lib/$(echo $(basename ${lib}) | cut -d "." -f 1-2)
+	ln -s $(basename ${lib}) ${FSDIR}${NDIR}/lib/$(echo $(basename ${lib}) | cut -d "." -f 1-2)
 done
 cd ${DESTDIR}/mnt/bin
 strip --remove-section=.note --remove-section=.comment ${PROGS}
