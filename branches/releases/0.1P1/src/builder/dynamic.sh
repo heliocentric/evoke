@@ -31,7 +31,7 @@ ftp ftpd fwcontrol geom getty grep groups gunzip gzcat gzip halt head id ifconfi
 kill kldconfig kldload kldstat kldunload less link ln login ls md5 mdconfig mdmfs mkdir more mount moused \
 mv nc newfs pciconf ping powerd ps pwd pwd_mkdb reboot rm route sed sh sha1 sha256 ssh ssh-keygen \
 sshd stty swapon syslogd tail tar tcsh tftp tftpd top umount uniq unlink usbdevs vidcontrol whoami \
-zcat sort pfctl"
+zcat sort pfctl arp hostname netstat logger"
 cp ${BUILDDIR}/lazybox.dynamic ${WORKDIR}/usr/src/rescue/rescue/Makefile
 
 
