@@ -70,16 +70,22 @@ for lib in $( for i in ${PROGS} ${DESTDIR}/mnt/lib/pam*.so.?
 	done | sort | uniq ) ${DESTDIR}/mnt/lib/pam*.so.?
 do
 	cd ${DESTDIR}/mnt/lib/
-	strip --remove-section=.note --remove-section=.comment ${lib}
-	cp $(basename ${lib}) ${FSDIR}${NDIR}/lib
+	chmod o+w ${lib}
+	tar -cf - $(basename ${lib}) | tar -xf - -C ${FSDIR}${NDIR}/lib/
 	ln -s $(basename ${lib}) ${FSDIR}${NDIR}/lib/$(echo $(basename ${lib}) | cut -d "." -f 1-2)
 done
+
 cd ${DESTDIR}/mnt/bin
 strip --remove-section=.note --remove-section=.comment ${PROGS}
 tar -cLf - ${PROGS} | tar -xf - -C ${FSDIR}${NBINDIR}/	
+cd ${FSDIR}${NBINDIR}
+#upx ${PROGS}
 cd ${WRKDIRPREFIX}
+cd ${FSDIR}${NDIR}/lib
+strip --remove-section=.note --remove-section=.comment *
 umount ${DESTDIR}/mnt/lib
 umount ${DESTDIR}/mnt/lib
+umount ${DESTDIR}/mnt/bin
 umount ${DESTDIR}/mnt/bin
 umount ${DESTDIR}/mnt/bin
 umount ${DESTDIR}/mnt/bin

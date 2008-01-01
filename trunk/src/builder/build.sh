@@ -123,13 +123,8 @@ mkdir -p ${FSDIR}/boot
 ln -s /cfg  ${FSDIR}/etc
 ln -s /tmp  ${FSDIR}/var
 ln -s /bin ${FSDIR}/sbin
-cd ${WRKDIRPREFIX}
-for i in $(find ${FSDIR} -name ".svn")
-do
-	rm -r ${i}
-done
 cd ${ROOTDIR}
-tar -cf - share | tar -xf - -C ${FSDIR}/
+tar -cf - --exclude ".svn" share | tar -xf - -C ${FSDIR}/
 echo "						[DONE]"
 
 
