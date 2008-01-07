@@ -25,13 +25,15 @@
 
 
 # $Id$
-export PROGS="atacontrol awk bsdlabel bunzip2 bzcat bzip2 camcontrol cap_mkdb cat chmod cp \
-csh date dconschat dd devfs df dhclient disklabel dmesg echo ee expr fdisk fsck_ffs fsck_msdosfs \
-ftp ftpd fwcontrol geom getty grep groups gunzip gzcat gzip halt head id ifconfig jail jexec jls kenv \
-kill kldconfig kldload kldstat kldunload less link ln login ls md5 mdconfig mdmfs mkdir more mount moused \
-mv nc newfs pciconf ping powerd ps pwd pwd_mkdb reboot rm route sed sh sha1 sha256 ssh ssh-keygen \
-sshd stty swapon syslogd tail tar tcsh tftp tftpd top umount uniq unlink usbdevs vidcontrol whoami \
-zcat sort pfctl"
+export PROGS="atacontrol awk bsdlabel bunzip2 bzcat bzip2 camcontrol cap_mkdb \
+cat chmod cp csh date dconschat dd devfs df dhclient disklabel dmesg echo ee \
+expr fdisk fsck_ffs fsck_msdosfs \
+ftp ftpd fwcontrol geom getty grep groups gunzip gzcat gzip halt head id \
+ifconfig jail jexec jls kenv kill kldconfig kldload kldstat kldunload less \
+link ln login ls md5 mdconfig mdmfs mkdir more mount moused mv nc newfs \
+pciconf ping powerd ps pwd pwd_mkdb reboot rm route sed sh sha1 sha256 ssh \
+ssh-keygen sshd stty swapon syslogd tail tar tcsh tftp tftpd top umount uniq \
+unlink usbdevs vidcontrol whoami zcat sort pfctl du "
 cp ${BUILDDIR}/lazybox.dynamic ${WORKDIR}/usr/src/rescue/rescue/Makefile
 
 
@@ -63,14 +65,19 @@ mount_nullfs -o union ${DESTDIR}/usr/sbin ${DESTDIR}/mnt/bin
 mount_nullfs -o union ${DESTDIR}/usr/libexec ${DESTDIR}/mnt/bin
 mount_nullfs -o union ${DESTDIR}/lib ${DESTDIR}/mnt/lib
 mount_nullfs -o union ${DESTDIR}/usr/lib ${DESTDIR}/mnt/lib
+cd ${DESTDIR}/mnt/lib
+chflags -R noschg *
+chmod a+w *
 cd ${DESTDIR}/mnt/bin
+chflags -R noschg *
+chmod a+w *
+
 for lib in $( for i in ${PROGS} ${DESTDIR}/mnt/lib/pam*.so.?
 	do
 		ldd -f "%o\n" ${i}
-	done | sort | uniq ) ${DESTDIR}/mnt/lib/pam*.so.?
+	done | sort | uniq ) ${DESTDIR}/mnt/lib/pam_nologin.so.? ${DESTDIR}/mnt/lib/pam_opie.so.? ${DESTDIR}/mnt/lib/pam_opieaccess.so.? ${DESTDIR}/mnt/lib/pam_permit.so.? ${DESTDIR}/mnt/lib/pam_unix.so.? ${DESTDIR}/mnt/lib/pam_login_access.so.?
 do
 	cd ${DESTDIR}/mnt/lib/
-	chmod o+w ${lib}
 	tar -cf - $(basename ${lib}) | tar -xf - -C ${FSDIR}${NDIR}/lib/
 	ln -s $(basename ${lib}) ${FSDIR}${NDIR}/lib/$(echo $(basename ${lib}) | cut -d "." -f 1-2)
 done

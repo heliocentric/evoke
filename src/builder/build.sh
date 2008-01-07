@@ -57,7 +57,7 @@ do
 	mkdir -p ${FSDIR}${NDIR}/libexec 2>>${ERRFILE} >>${ERRFILE}
 	mkdir -p ${FSDIR}${NDIR}/boot	2>>${ERRFILE} >>${ERRFILE}
 
-	export MAKEOBJDIRPREFIX=/tmp/${target}
+	export MAKEOBJDIRPREFIX=${TMPDIR}/${target}
 
 	echo -n " * ${target} = Cleaning up"
 	if [ "${NO_CLEAN}" = "" ] ; then

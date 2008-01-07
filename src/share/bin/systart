@@ -47,6 +47,7 @@ list_if () {
 
 umask 077
 export TERM=cons25
+export DISPLAY=:-0
 
 export OS=$(sysctl -n kern.ostype)
 export ABI=$(sysctl -n kern.osrelease | cut -d . -f 1)
@@ -87,6 +88,7 @@ chmod +t /tmp/scratch
 export TMPDIR=/tmp/scratch
 mount_nullfs -o union,ro /share/lib/ /cfg/
 mount_nullfs -o union,ro /tmp/lib/ /cfg/
+export CFGDIR=/cfg
 echo "[DONE]"
 
 echo -n "Generating passwd files						"

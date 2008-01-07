@@ -25,7 +25,7 @@
 
 # $Id$
 
-export TARGETS="7.0-RC1/i386 6.3-RC1/i386"
+export TARGETS="7.0-RC1/i386 6.3-RC2/i386"
 export VERSION="HEAD"
 echo -n " * share = Cleaning up"
 export ROOTDIR=`pwd`
@@ -34,7 +34,9 @@ chflags -R noschg ${OBJDIR} 2>/dev/null
 rm -r ${OBJDIR} 2>/dev/null
 mkdir -p ${OBJDIR}
 export BUILDDIR=${ROOTDIR}/builder
-
+if [ "${TMPDIR}" = "" ] ; then
+	export TMPDIR="/tmp"
+fi
 echo "						[DONE]"
 
 ${BUILDDIR}/build.sh ${1}
