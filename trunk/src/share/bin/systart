@@ -141,30 +141,30 @@ do
 done
 echo "[DONE]"
 
-echo -n "Starting moused							"
-cd /dev
-for i in ums* psm0
-do
-	moused -p /dev/${i} -3 -I /tmp/pid/${i}.pid 2>/dev/null
-done
-for ttyv in /dev/ttyv* ; do
-	vidcontrol < ${ttyv} -m on
-done
+#echo -n "Starting moused							"
+#cd /dev
+#for i in ums* psm0
+#do
+#	moused -p /dev/${i} -3 -I /tmp/pid/${i}.pid 2>/dev/null
+#done
+#for ttyv in /dev/ttyv* ; do
+#	vidcontrol < ${ttyv} -m on
+#done
 
-echo "[DONE]"
+#echo "[DONE]"
 
-echo -n "Starting syslogd						"
-echo "syslog		514/udp" >> /tmp/lib/services
-echo "" >/tmp/db/log
-cat >/tmp/lib/syslogd.conf << EOF
-*.notice;authpriv.none;kern.debug;*.info;*.crit;*.err	/tmp/db/log
-!ftpd
-*.*	/tmp/db/log
-!sshd
-*.*	/tmp/db/log
-EOF
-syslogd -ss -f /tmp/lib/syslogd.conf -P /tmp/pid/syslogd.pid -p /tmp/run/log
-echo "[DONE]"
+#echo -n "Starting syslogd						"
+#echo "syslog		514/udp" >> /tmp/lib/services
+#echo "" >/tmp/db/log
+#cat >/tmp/lib/syslogd.conf << EOF
+#33*.notice;authpriv.none;kern.debug;*.info;*.crit;*.err	/tmp/db/log
+#!ftpd
+#*.*	/tmp/db/log
+#!sshd
+#*.*	/tmp/db/log
+#EOF
+#syslogd -ss -f /tmp/lib/syslogd.conf -P /tmp/pid/syslogd.pid -p /tmp/run/log
+#echo "[DONE]"
 
 echo -n "Starting sshd							"
 mkdir -p /tmp/lib/ssh
@@ -185,13 +185,13 @@ EOF
 /bin/sshd -f /tmp/lib/ssh/sshd.conf 2>/dev/null
 echo "[DONE]"
 
-echo -n "Starting ftpd							"
-echo "ftp	21/tcp" >>/tmp/lib/services
-cat >/tmp/lib/ftpusers << EOF
+#echo -n "Starting ftpd							"
+#echo "ftp	21/tcp" >>/tmp/lib/services
+#cat >/tmp/lib/ftpusers << EOF
 # blah
-EOF
-ftpd -D -d -p /tmp/pid/ftpd.pid
-echo "[DONE]"
+#EOF
+#ftpd -D -d -p /tmp/pid/ftpd.pid
+#echo "[DONE]"
 
 cd /
 

@@ -27,16 +27,28 @@
 
 export TARGETS="7.0-RC1/i386 6.3-RC2/i386"
 export VERSION="HEAD"
-echo -n " * share = Cleaning up"
+
 export ROOTDIR=`pwd`
-export OBJDIR=${ROOTDIR}/obj
+
+# Overridable options
+
+if [ "${TMPDIR}" = "" ] ; then
+	export TMPDIR="/tmp"
+fi
+if [ "${NDISTDIR}" = "" ] ; then
+	export NDISTDIR="${ROOTDIR}/dists"
+fi
+if [ "${OBJDIR}" = "" ] ; then
+	export OBJDIR="${ROOTDIR}/obj"
+fi
+
+
+echo -n " * share = Cleaning up"
+
 chflags -R noschg ${OBJDIR} 2>/dev/null
 rm -r ${OBJDIR} 2>/dev/null
 mkdir -p ${OBJDIR}
 export BUILDDIR=${ROOTDIR}/builder
-if [ "${TMPDIR}" = "" ] ; then
-	export TMPDIR="/tmp"
-fi
 echo "						[DONE]"
 
 ${BUILDDIR}/build.sh ${1}

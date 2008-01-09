@@ -23,7 +23,7 @@ for target in ${TARGETS}
 do
 	export DESTDIR=${WRKDIRPREFIX}/${target}
 	mkdir -p ${DESTDIR}
-	SRCDIR="${ROOTDIR}/dists/$(echo ${target} | cut -d "/" -f 1)" DISTS="src" ${ROOTDIR}/share/bin/distextract >>${ERRFILE} 2>>${ERRFILE}
+	SRCDIR="${NDISTDIR}/$(echo ${target} | cut -d "/" -f 1)" DISTS="src" ${ROOTDIR}/share/bin/distextract >>${ERRFILE} 2>>${ERRFILE}
 	ERROR="$?"
 	if [ "${ERROR}" != "0" ] ; then
 		echo "Error code: ${ERROR}"
@@ -81,7 +81,7 @@ do
 	cp ${DESTDIR}/boot/boot ${DESTDIR}/boot/mbr ${FSDIR}${NDIR}/boot/
 
 	echo -n " * ${target} = Compressing Kernel"
-	SRCDIR="${ROOTDIR}/dists/${target}" DISTS="kernels" ${ROOTDIR}/share/bin/distextract >/dev/null
+	SRCDIR="${NDISTDIR}/${target}" DISTS="kernels" ${ROOTDIR}/share/bin/distextract >/dev/null
 	for i in GENERIC
 	do
 		cd ${DESTDIR}/boot/${i}/
