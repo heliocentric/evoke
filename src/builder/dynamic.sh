@@ -25,19 +25,24 @@
 
 
 # $Id$
-export PROGS="atacontrol awk bsdlabel bunzip2 bzcat bzip2 camcontrol cap_mkdb \
-cat chmod cp csh date dconschat dd devfs df dhclient disklabel dmesg echo ee \
-expr fdisk fsck_ffs fsck_msdosfs \
-ftp ftpd fwcontrol geom getty grep groups gunzip gzcat gzip halt head id \
-ifconfig jail jexec jls kenv kill kldconfig kldload kldstat kldunload less \
-link ln login ls md5 mdconfig mdmfs mkdir more mount moused mv nc newfs \
-pciconf ping powerd ps pwd pwd_mkdb reboot rm route sed sh sha1 sha256 ssh \
-ssh-keygen sshd stty swapon syslogd tail tar tcsh tftp tftpd top umount uniq \
-unlink usbdevs vidcontrol whoami zcat sort pfctl du "
+export PROGS="
+
+atacontrol awk bsdlabel bunzip2 bzcat bzip2 camcontrol cap_mkdb 
+cat chmod cp csh date dconschat dd devfs df dhclient disklabel dmesg echo ee 
+expr fdisk fsck_ffs fsck_msdosfs 
+ftp ftpd fwcontrol geom getty grep groups gunzip gzcat gzip halt head id 
+ifconfig jail jexec jls kenv kill kldconfig kldload kldstat kldunload less
+link ln login ls md5 mdconfig mdmfs mkdir more mount moused mv nc newfs 
+pciconf ping powerd ps pwd pwd_mkdb reboot rm route sed sh sha1 sha256 ssh 
+ssh-keygen sshd stty swapon syslogd tail tar tcsh tftp tftpd top umount uniq 
+unlink usbdevs vidcontrol whoami zcat sort pfctl du makefs
+
+"
+
 cp ${BUILDDIR}/lazybox.dynamic ${WORKDIR}/usr/src/rescue/rescue/Makefile
 
 
-echo -n " * ${target} = Building World ....."
+echo -n " * ${target} = Building World "
 cd ${WORKDIR}/usr/src/
 if [ "${NO_CLEAN}" = "" ] ; then
 	make  -DLOADER_TFTP_SUPPORT LOCAL_DIRS="nsrc" buildworld 2>>${ERRFILE} >>${ERRFILE}
@@ -53,6 +58,29 @@ priv make distribution 2>>${ERRFILE} >>${ERRFILE}
 mkdir -p ${DESTDIR}/usr/src
 echo "				[DONE]"
 
+echo -n " * ${target} = Building Ports "
+if [ "${BUILD_PORTS}" != "" ] ; then
+	cp ${BUILDDIR}/portbuild.sh ${DESTDIR}/
+	cp ${BUILDDIR}/portlist ${DESTDIR}/
+	cp /etc/resolv.conf ${DESTDIR}/etc/
+	mkdir -p ${DESTDIR}/usr/ports
+	mount_nullfs /usr/ports ${DESTDIR}/usr/ports
+	chroot ${DESTDIR} /portbuild.sh 2>>${ERRFILE} >>${ERRFILE}
+	umount ${DESTDIR}/usr/ports
+fi
+echo "				[DONE]"
+
+echo -n " * ${target} = Installing Packages "
+mkdir -p ${DESTDIR}/usr/local/bin
+mkdir -p ${DESTDIR}/usr/local/sbin
+mkdir -p ${DESTDIR}/usr/local/lib
+mkdir -p ${DESTDIR}/usr/local/libexec
+if [ -d "${NDISTDIR}/${target}/packages" ] ; then
+	cd ${NDISTDIR}/${target}/packages
+	tar -xf * --exclude '+*' -C ${DESTDIR}/usr/local/
+fi
+echo "				[DONE]"
+
 echo -n " * ${target} = Populating FSDIR"
 cp ${DESTDIR}/libexec/ld-elf.so.1 ${FSDIR}${NDIR}/libexec/
 mkdir -p ${DESTDIR}/mnt/lib
@@ -62,9 +90,13 @@ mount_nullfs -o union ${DESTDIR}/bin ${DESTDIR}/mnt/bin
 mount_nullfs -o union ${DESTDIR}/sbin ${DESTDIR}/mnt/bin
 mount_nullfs -o union ${DESTDIR}/usr/bin ${DESTDIR}/mnt/bin
 mount_nullfs -o union ${DESTDIR}/usr/sbin ${DESTDIR}/mnt/bin
+mount_nullfs -o union ${DESTDIR}/usr/local/bin ${DESTDIR}/mnt/bin
+mount_nullfs -o union ${DESTDIR}/usr/local/sbin ${DESTDIR}/mnt/bin
+mount_nullfs -o union ${DESTDIR}/usr/local/libexec ${DESTDIR}/mnt/bin
 mount_nullfs -o union ${DESTDIR}/usr/libexec ${DESTDIR}/mnt/bin
 mount_nullfs -o union ${DESTDIR}/lib ${DESTDIR}/mnt/lib
 mount_nullfs -o union ${DESTDIR}/usr/lib ${DESTDIR}/mnt/lib
+mount_nullfs -o union ${DESTDIR}/usr/local/lib ${DESTDIR}/mnt/lib
 cd ${DESTDIR}/mnt/lib
 chflags -R noschg *
 chmod a+w *
@@ -72,6 +104,7 @@ cd ${DESTDIR}/mnt/bin
 chflags -R noschg *
 chmod a+w *
 
+PROGS="${PROGS} $(grep ^B ${BUILDDIR}/portlist | cut -d : -f 2)"
 for lib in $( for i in ${PROGS} ${DESTDIR}/mnt/lib/pam*.so.?
 	do
 		ldd -f "%o\n" ${i}
@@ -92,11 +125,16 @@ cd ${FSDIR}${NDIR}/lib
 strip --remove-section=.note --remove-section=.comment *
 umount ${DESTDIR}/mnt/lib
 umount ${DESTDIR}/mnt/lib
+umount ${DESTDIR}/mnt/lib
 umount ${DESTDIR}/mnt/bin
 umount ${DESTDIR}/mnt/bin
 umount ${DESTDIR}/mnt/bin
 umount ${DESTDIR}/mnt/bin
 umount ${DESTDIR}/mnt/bin
+umount ${DESTDIR}/mnt/bin
+umount ${DESTDIR}/mnt/bin
+umount ${DESTDIR}/mnt/bin
+
 cp -r ${DESTDIR}/lib/geom ${FSDIR}${NDIR}/lib/
 cd ${WORKDIR}/rescue
 tar -cf - * | tar -xf - -C ${FSDIR}${NBINDIR}/ 2>>${ERRFILE} >>${ERRFILE}

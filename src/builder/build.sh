@@ -125,7 +125,7 @@ ln -s /tmp  ${FSDIR}/var
 ln -s /bin ${FSDIR}/sbin
 cd ${ROOTDIR}
 tar -cf - --exclude ".svn" share | tar -xf - -C ${FSDIR}/
-echo "						[DONE]"
+echo "					[DONE]"
 
 
 echo -n " * share = Creating root.fs"
