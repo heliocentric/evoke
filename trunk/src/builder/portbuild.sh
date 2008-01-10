@@ -35,5 +35,5 @@ unexport TMPDIR
 for port in $(cat /portlist | cut -d : -f 3  | sort | uniq)
 do
 	cd /usr/ports/${port}/
-	make -DFORCE_PKG_REGISTER -DNO_IGNORE package-recursive
+	make -DFORCE_PKG_REGISTER -DNO_IGNORE -DBATCH package-recursive
 done

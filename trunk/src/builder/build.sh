@@ -86,6 +86,11 @@ do
 	do
 		cd ${DESTDIR}/boot/${i}/
 		rm -r *.gz 2>/dev/null
+		for file in $(grep ^M ${BUILDDIR}/portlist | cut -d : -f 2)
+		do
+			cp ${DESTDIR}/usr/local/modules/${file}.ko ./
+			gzip -9 ${file}.ko
+		done
 		rm -r *.symbols 2>/dev/null
 		rm g_md.ko 2>/dev/null
 		gzip -9 kernel acpi.ko dcons.ko dcons_crom.ko nullfs.ko geom_label.ko geom_mirror.ko geom_concat.ko geom_eli.ko geom_nop.ko geom_raid3.ko geom_shsec.ko geom_stripe.ko pf.ko crypto.ko zlib.ko 2>>${ERRFILE}
