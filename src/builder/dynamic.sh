@@ -64,8 +64,11 @@ if [ "${BUILD_PORTS}" != "" ] ; then
 	cp ${BUILDDIR}/portlist ${DESTDIR}/
 	cp /etc/resolv.conf ${DESTDIR}/etc/
 	mkdir -p ${DESTDIR}/usr/ports
-	mount_nullfs /usr/ports ${DESTDIR}/usr/ports
+	mkdir -p ${OBJDIR}/portsdists
+	mount_nullfs -o ro /usr/ports ${DESTDIR}/usr/ports
+	mount_nullfs ${OBJDIR}/portsdists ${DESTDIR}/usr/ports/distfiles
 	chroot ${DESTDIR} /portbuild.sh 2>>${ERRFILE} >>${ERRFILE}
+	umount ${DESTDIR}/usr/ports/distfiles
 	umount ${DESTDIR}/usr/ports
 fi
 echo "				[DONE]"
@@ -75,9 +78,13 @@ mkdir -p ${DESTDIR}/usr/local/bin
 mkdir -p ${DESTDIR}/usr/local/sbin
 mkdir -p ${DESTDIR}/usr/local/lib
 mkdir -p ${DESTDIR}/usr/local/libexec
+
 if [ -d "${NDISTDIR}/${target}/packages" ] ; then
 	cd ${NDISTDIR}/${target}/packages
-	tar -xf * --exclude '+*' -C ${DESTDIR}/usr/local/
+	for file in *
+	do
+		tar -xf ${file} --exclude '+*' -C ${DESTDIR}/usr/local/
+	done
 fi
 echo "				[DONE]"
 

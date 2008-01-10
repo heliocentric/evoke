@@ -1,2 +1,6 @@
 B:makefs:sysutils/makefs:
-B:wget:ftp/wget:
+B:mount_fusefs:sysutils/fusefs-kmod:
+M:fuse:sysutils/fusefs-kmod:
+B::sysutils/fusefs-curlftpfs:
+B:ntfs-3g:sysutils/fusefs-ntfs:
+B:nano:editors/nano:
