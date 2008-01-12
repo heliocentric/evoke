@@ -9,27 +9,22 @@ priv () {
 	fi
 }
 
-if [ "${WRKDIRPREFIX}" = "" ] ; then
-	export WRKDIRPREFIX=${OBJDIR}
-fi
 
-
-export ERRFILE=${WRKDIRPREFIX}/error.log
-export TRACKFILE=${WRKDIRPREFIX}/trackfile
-export BOOTDIR=${WRKDIRPREFIX}/bdir
-export FSDIR=${WRKDIRPREFIX}/fsdir
+export TRACKFILE=${OBJDIR}/trackfile
+export BOOTDIR=${OBJDIR}/bdir
+export FSDIR=${OBJDIR}/fsdir
 
 for target in ${TARGETS}
 do
-	export DESTDIR=${WRKDIRPREFIX}/${target}
-	mkdir -p ${DESTDIR}
-	SRCDIR="${NDISTDIR}/$(echo ${target} | cut -d "/" -f 1)" DISTS="src" ${ROOTDIR}/share/bin/distextract >>${ERRFILE} 2>>${ERRFILE}
+	export DESTDIR=${OBJDIR}/${target}
+	export WORKDIR=${DESTDIR}
+	mkdir -p ${WORKDIR}
+	SRCDIR="${NDISTDIR}/$(echo ${target} | cut -d "/" -f 1)" DISTS="src" ${ROOTDIR}/share/bin/distextract 1>&2
 	ERROR="$?"
 	if [ "${ERROR}" != "0" ] ; then
 		echo "Error code: ${ERROR}"
 		exit 1
 	fi
-	export WORKDIR=${WRKDIRPREFIX}/${target}
 	export TARGET=$(echo ${target} | cut -d "/" -f 2)
 	export TARGET_ARCH="${TARGET}"
 	export NDIR=/.FreeBSD-$(echo ${target} | cut -d "/" -f 1 | cut -d "." -f 1)/${TARGET}/
@@ -42,26 +37,26 @@ do
 	export BOOTPATH="/boot"
 #	for file in $(cat ${ROOTDIR}/bootlist)
 #	do
-#	    sed -i .bak "s_/boot_${BOOTPATH}_g" ${WORKDIR}${file} 2>>${ERRFILE} >>${ERRFILE}
-#	    sed -i .bak "s_/BOOT_$(echo ${BOOTPATH} | tr a-z A-Z)_g" ${WORKDIR}${file} 2>>${ERRFILE} >>${ERRFILE}
+#	    sed -i .bak "s_/boot_${BOOTPATH}_g" ${WORKDIR}${file} 1>&2
+#	    sed -i .bak "s_/BOOT_$(echo ${BOOTPATH} | tr a-z A-Z)_g" ${WORKDIR}${file} 1>&2
 #	done
-	sed -i .bak '/pxe_setnfshandle(rootpath);/d' ${WORKDIR}/usr/src/sys/boot/i386/libi386/pxe.c 2>>${ERRFILE} >>${ERRFILE}
-	sed -i .bak "s_\"/rescue_\"${NBINDIR}_g" ${WORKDIR}/usr/src/include/paths.h 2>>${ERRFILE} >>${ERRFILE}
-	sed -i .bak "s_\"/etc/rc_\"/share/bin/systart_g" ${WORKDIR}/usr/src/sbin/init/pathnames.h 2>>${ERRFILE} >>${ERRFILE}
+	sed -i .bak '/pxe_setnfshandle(rootpath);/d' ${WORKDIR}/usr/src/sys/boot/i386/libi386/pxe.c 1>&2
+	sed -i .bak "s_\"/rescue_\"${NBINDIR}_g" ${WORKDIR}/usr/src/include/paths.h 1>&2
+	sed -i .bak "s_\"/etc/rc_\"/share/bin/systart_g" ${WORKDIR}/usr/src/sbin/init/pathnames.h 1>&2
 	echo "				[DONE]"
 
-	export DESTDIR=${WRKDIRPREFIX}/${target}
+	export DESTDIR=${OBJDIR}/${target}
 	mkdir -p ${DESTDIR}
-	mkdir -p ${FSDIR}${NBINDIR} 2>>${ERRFILE} >>${ERRFILE}
-	mkdir -p ${FSDIR}${NDIR}/lib 2>>${ERRFILE} >>${ERRFILE}
-	mkdir -p ${FSDIR}${NDIR}/libexec 2>>${ERRFILE} >>${ERRFILE}
-	mkdir -p ${FSDIR}${NDIR}/boot	2>>${ERRFILE} >>${ERRFILE}
+	mkdir -p ${FSDIR}${NBINDIR} 1>&2
+	mkdir -p ${FSDIR}${NDIR}/lib 1>&2
+	mkdir -p ${FSDIR}${NDIR}/libexec 1>&2
+	mkdir -p ${FSDIR}${NDIR}/boot	1>&2
 
 	export MAKEOBJDIRPREFIX=${TMPDIR}/${target}
 
 	echo -n " * ${target} = Cleaning up"
 	if [ "${NO_CLEAN}" = "" ] ; then
-		rm -rf ${MAKEOBJDIRPREFIX} 2>>${ERRFILE}
+		rm -rf ${MAKEOBJDIRPREFIX} 
 	fi
 	echo "					[DONE]"
 	cd ${BUILDDIR}
@@ -81,27 +76,28 @@ do
 	cp ${DESTDIR}/boot/boot ${DESTDIR}/boot/mbr ${FSDIR}${NDIR}/boot/
 
 	echo -n " * ${target} = Compressing Kernel"
-	SRCDIR="${NDISTDIR}/${target}" DISTS="kernels" ${ROOTDIR}/share/bin/distextract >/dev/null
+	SRCDIR="${NDISTDIR}/${target}" DISTS="kernels" ${ROOTDIR}/share/bin/distextract 1>&2
 	for i in GENERIC
 	do
 		cd ${DESTDIR}/boot/${i}/
-		rm -r *.gz 2>/dev/null
 		for file in $(grep ^M ${BUILDDIR}/portlist | cut -d : -f 2)
 		do
 			cp ${DESTDIR}/usr/local/modules/${file}.ko ./
+		done
+		gzip -9 kernel
+		for file in $(grep ^M ${BUILDDIR}/portlist | cut -d : -f 2) ${MODULES}
+		do
 			gzip -9 ${file}.ko
 		done
-		rm -r *.symbols 2>/dev/null
-		rm g_md.ko 2>/dev/null
-		gzip -9 kernel acpi.ko dcons.ko dcons_crom.ko nullfs.ko geom_label.ko geom_mirror.ko geom_concat.ko geom_eli.ko geom_nop.ko geom_raid3.ko geom_shsec.ko geom_stripe.ko pf.ko crypto.ko zlib.ko 2>>${ERRFILE}
+		rm -r *.symbols
 		rm -r *.ko
 		gunzip *.gz
 	done
 	echo "				[DONE]"
 
 	echo -n " * ${target} = Populating BOOTPATH"
-	mkdir -p ${BOOTDIR}${BOOTPATH}/defaults 2>>${ERRFILE} >>${ERRFILE}
-	cd ${DESTDIR}/boot && tar -cf - --exclude SMP --exclude loader.old * | tar -xvf - -C ${BOOTDIR}${BOOTPATH} 2>>${ERRFILE} >>${ERRFILE}
+	mkdir -p ${BOOTDIR}${BOOTPATH}/defaults 1>&2
+	cd ${DESTDIR}/boot && tar -cf - --exclude loader.old * | tar -xvf - -C ${BOOTDIR}${BOOTPATH} 1>&2
 	cat >>${BOOTDIR}${BOOTPATH}/loader.conf << EOF
 init_path="${NBINDIR}/init"
 EOF
@@ -112,7 +108,6 @@ done
 
 BOOTPATH=/boot
 echo -n " * share = Populating FSDIR"
-mkdir -p ${FSDIR}/share/lib
 mkdir -p ${FSDIR}/usr/share/misc
 ln -s /share/lib/termcap ${FSDIR}/usr/share/misc/
 ln -s /lib ${FSDIR}/usr/lib
@@ -122,6 +117,7 @@ mkdir -p ${FSDIR}/home/root
 mkdir -p ${FSDIR}/dev
 
 mkdir -p ${FSDIR}/bin
+
 mkdir -p ${FSDIR}/lib
 mkdir -p ${FSDIR}/libexec
 mkdir -p ${FSDIR}/boot
@@ -129,16 +125,32 @@ ln -s /cfg  ${FSDIR}/etc
 ln -s /tmp  ${FSDIR}/var
 ln -s /bin ${FSDIR}/sbin
 cd ${ROOTDIR}
-tar -cf - --exclude ".svn" share | tar -xf - -C ${FSDIR}/
+
+for dir in $(find share/ -not -path \*.svn\* -type d)
+do
+	mkdir -p ${FSDIR}/${dir}
+done
+
+for file in $(find share/ -not -path \*.svn\* -not -type d)
+do
+	grep '#!' ${file} | head -1 >${FSDIR}/${file}
+	grep '$Id' ${file} | head -1 >>${FSDIR}/${file}
+	grep -v '^#' ${file} | grep -v '[[:space:]]#' >>${FSDIR}/${file}
+done
+
 echo "					[DONE]"
 
 
 echo -n " * share = Creating root.fs"
 cd ${BOOTDIR}${BOOTPATH}
-rm -r root.fs* 2>>${ERRFILE} >>${ERRFILE}
-makefs root.fs ${FSDIR} 2>>${ERRFILE} >>${ERRFILE}
+makefs root.fs ${FSDIR} 1>&2
 MDDEVICE=$(priv mdconfig -af root.fs)
 FINGERPRINT=$(sha256 -q /dev/${MDDEVICE})
+
+for module in ${MODULES} $(grep ^M ${BUILDDIR} | cut -d :-f 2)
+do
+	echo "${module}_load=\"YES\"" >>${BOOTDIR}${BOOTPATH}/loader.conf
+done
 cat >>${BOOTDIR}${BOOTPATH}/loader.conf << EOF
 kernel="GENERIC"
 mfsroot_load="YES"
@@ -147,25 +159,11 @@ mfsroot_name="${BOOTPATH}/root.fs"
 trackfile_load="YES"
 trackfile_type="mfs_root"
 trackfile_name="${BOOTPATH}/trackfile"
-dcons_load="YES"
-dcons_crom_load="YES"
-geom_label_load="YES"
-geom_mirror_load="YES"
-geom_concat_load="YES"
-geom_eli_load="YES"
-geom_nop_load="YES"
-geom_raid3_load="YES"
-geom_stripe_load="YES"
-geom_shsec_load="YES"
-ext2fs_load="YES"
-pf_load="YES"
-nullfs_load="YES"
 dsbsd.fingerprint="${FINGERPRINT}" 
 vfs.root.mountfrom="ufs:md0"
 EOF
-
 priv mdconfig -d -u $(echo ${MDDEVICE} | cut -c 3-100)
-gzip -9 root.fs	2>>${ERRFILE} >>${ERRFILE}
+gzip -9 root.fs	1>&2
 echo "					[DONE]"
 
 echo -n " * share = Creating trackfile"
@@ -175,16 +173,17 @@ do
 	echo "F:${BOOTPATH}/${file}:$(sha256 -q ${file})" >>${TRACKFILE}
 done
 echo -n "# " >>${TRACKFILE}
-dd if=${TRACKFILE} bs=512 fillchar=" " conv=sync of=/tmp/trackfile.head 2>/dev/null
-dd if=/dev/zero bs=512 count=1 of=/tmp/trackfile.tail 2>/dev/null
+dd if=${TRACKFILE} bs=512 fillchar=" " conv=sync of=/tmp/trackfile.head 
+dd if=/dev/zero bs=512 count=1 of=/tmp/trackfile.tail
 cat /tmp/trackfile.head /tmp/trackfile.tail >${BOOTDIR}${BOOTPATH}/trackfile
 DEVICE=$(mdconfig -af ${BOOTDIR}${BOOTPATH}/trackfile)
-geom label load 2>/dev/null
+geom label load
 geom label label trackfile /dev/${DEVICE}
 mdconfig -d -u $(echo ${DEVICE} | cut -b 3-7)
 echo "					[DONE]"
 
 echo -n " * share = Making ISO image"
-cd ${WRKDIRPREFIX}
-mkisofs -b boot/cdboot -no-emul-boot -r -J -V DSBSD-HEAD -publisher "www.damnsmallbsd.org" -o dsbsd.iso ${BOOTDIR} 2>>${ERRFILE} >>${ERRFILE}
+cd ${OBJDIR}
+mkisofs -b boot/cdboot -no-emul-boot -r -J -V DSBSD-${VERSION} -p "${ENGINEER}" -publisher "http://www.damnsmallbsd.org" -o dsbsd.iso ${BOOTDIR} 1>&2
 echo "					[DONE]"
+
