@@ -26,7 +26,6 @@
 
 # $Id$
 export PROGS="
-
 atacontrol awk bsdlabel bunzip2 bzcat bzip2 camcontrol cap_mkdb 
 cat chmod cp csh date dconschat dd devfs df dhclient disklabel dmesg echo ee 
 expr fdisk fsck_ffs fsck_msdosfs 
@@ -36,7 +35,6 @@ link ln login ls md5 mdconfig mdmfs mkdir more mount moused mv nc newfs
 pciconf ping powerd ps pwd pwd_mkdb reboot rm route sed sh sha1 sha256 ssh 
 ssh-keygen sshd stty swapon syslogd tail tar tcsh tftp tftpd top umount uniq 
 unlink usbdevs vidcontrol whoami zcat sort pfctl du makefs
-
 "
 
 cp ${BUILDDIR}/lazybox.dynamic ${WORKDIR}/usr/src/rescue/rescue/Makefile
@@ -45,16 +43,16 @@ cp ${BUILDDIR}/lazybox.dynamic ${WORKDIR}/usr/src/rescue/rescue/Makefile
 echo -n " * ${target} = Building World "
 cd ${WORKDIR}/usr/src/
 if [ "${NO_CLEAN}" = "" ] ; then
-	make  -DLOADER_TFTP_SUPPORT LOCAL_DIRS="nsrc" buildworld 2>>${ERRFILE} >>${ERRFILE}
+	make  -DLOADER_TFTP_SUPPORT LOCAL_DIRS="nsrc" buildworld 1>&2
 fi
 echo "				[DONE]"
 
 echo -n " * ${target} = Populating DESTDIR"
-priv make hierarchy 2>>${ERRFILE} >>${ERRFILE}
-rm -r ${DESTDIR}/rescue
-mkdir -p ${DESTDIR}/rescue
-priv make installworld 2>>${ERRFILE} >>${ERRFILE}
-priv make distribution 2>>${ERRFILE} >>${ERRFILE}
+priv make hierarchy 1>&2
+rm -r ${DESTDIR}/rescue 1>&2
+mkdir -p ${DESTDIR}/rescue 1>&2
+priv make installworld 1>&2
+priv make distribution 1>&2
 mkdir -p ${DESTDIR}/usr/src
 echo "				[DONE]"
 
@@ -67,7 +65,7 @@ if [ "${BUILD_PORTS}" != "" ] ; then
 	mkdir -p ${OBJDIR}/portsdists
 	mount_nullfs -o ro /usr/ports ${DESTDIR}/usr/ports
 	mount_nullfs ${OBJDIR}/portsdists ${DESTDIR}/usr/ports/distfiles
-	chroot ${DESTDIR} /portbuild.sh 2>>${ERRFILE} >>${ERRFILE}
+	chroot ${DESTDIR} /portbuild.sh 1>&2
 	umount ${DESTDIR}/usr/ports/distfiles
 	umount ${DESTDIR}/usr/ports
 fi
@@ -114,7 +112,7 @@ chmod a+w *
 PROGS="${PROGS} $(grep ^B ${BUILDDIR}/portlist | cut -d : -f 2)"
 for lib in $( for i in ${PROGS} ${DESTDIR}/mnt/lib/pam*.so.?
 	do
-		ldd -f "%o\n" ${i}
+		readelf -d ${i} | grep '(NEEDED)' | cut -d [ -f 2 | cut -d ] -f 1
 	done | sort | uniq ) ${DESTDIR}/mnt/lib/pam_nologin.so.? ${DESTDIR}/mnt/lib/pam_opie.so.? ${DESTDIR}/mnt/lib/pam_opieaccess.so.? ${DESTDIR}/mnt/lib/pam_permit.so.? ${DESTDIR}/mnt/lib/pam_unix.so.? ${DESTDIR}/mnt/lib/pam_login_access.so.?
 do
 	cd ${DESTDIR}/mnt/lib/
@@ -127,7 +125,7 @@ strip --remove-section=.note --remove-section=.comment ${PROGS}
 tar -cLf - ${PROGS} | tar -xf - -C ${FSDIR}${NBINDIR}/	
 cd ${FSDIR}${NBINDIR}
 #upx ${PROGS}
-cd ${WRKDIRPREFIX}
+cd ${OBJDIR}
 cd ${FSDIR}${NDIR}/lib
 strip --remove-section=.note --remove-section=.comment *
 umount ${DESTDIR}/mnt/lib
@@ -144,5 +142,5 @@ umount ${DESTDIR}/mnt/bin
 
 cp -r ${DESTDIR}/lib/geom ${FSDIR}${NDIR}/lib/
 cd ${WORKDIR}/rescue
-tar -cf - * | tar -xf - -C ${FSDIR}${NBINDIR}/ 2>>${ERRFILE} >>${ERRFILE}
+tar -cf - * | tar -xf - -C ${FSDIR}${NBINDIR}/ 1>&2
 echo "				[DONE]"
