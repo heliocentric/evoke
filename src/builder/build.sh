@@ -97,6 +97,7 @@ do
 
 	echo -n " * ${target} = Populating BOOTPATH"
 	mkdir -p ${BOOTDIR}${BOOTPATH}/defaults 1>&2
+	rm -r ${DESTDIR}/boot/SMP
 	cd ${DESTDIR}/boot && tar -cf - --exclude loader.old * | tar -xvf - -C ${BOOTDIR}${BOOTPATH} 1>&2
 	cat >>${BOOTDIR}${BOOTPATH}/loader.conf << EOF
 init_path="${NBINDIR}/init"
