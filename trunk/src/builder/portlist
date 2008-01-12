@@ -4,3 +4,7 @@ M:fuse:sysutils/fusefs-kmod:
 B::sysutils/fusefs-curlftpfs:
 B:ntfs-3g:sysutils/fusefs-ntfs:
 B:nano:editors/nano:
+B::sysutils/fusefs-wdfs:
+B::sysutils/fusefs-smbnetfs:
+B::sysutils/fusefs-sshfs:
+B::net/nload:
