@@ -162,9 +162,27 @@ trackfile_type="mfs_root"
 trackfile_name="${BOOTPATH}/trackfile"
 dsbsd.fingerprint="${FINGERPRINT}" 
 vfs.root.mountfrom="ufs:md0"
+boot_multicons="YES"
+hw.firewire.dcons_crom.force_console=1
+
+
 EOF
 priv mdconfig -d -u $(echo ${MDDEVICE} | cut -c 3-100)
 gzip -9 root.fs	1>&2
+echo "					[DONE]"
+
+echo -n " * share = Making cmdlist and modlist image"
+mkdir -p ${OBJDIR}/release
+for i in ${MODULES} $(grep ^M ${BUILDDIR}/portlist | cut -d : -f 2 | sort | uniq)
+do
+	echo ${i} >>${OBJDIR}/release/modlist
+done
+
+for i in ${PROGS} $(grep ^B ${BUILDDIR}/portlist | cut -d : -f 2 | sort | uniq) $(grep CRUNCH_LINKS ${BUILDDIR}/lazybox.dynamic | grep -v ^# | grep -v for | cut -d ' ' -f 2-20 | paste -d " " - - - - - - - - - - - - - - - - - - - - - ) $(grep CRUNCH_PROGS ${BUILDDIR}/lazybox.dynamic | grep -v ^# | grep -v for | cut -d ' ' -f 2-20 | paste -d " " - - - - - - - - - - - - - - - - - - - - - ) 
+do
+	echo ${i} >>${OBJDIR}/release/cmdlist
+done
+
 echo "					[DONE]"
 
 echo -n " * share = Creating trackfile"
@@ -181,10 +199,12 @@ DEVICE=$(mdconfig -af ${BOOTDIR}${BOOTPATH}/trackfile)
 geom label load
 geom label label trackfile /dev/${DEVICE}
 mdconfig -d -u $(echo ${DEVICE} | cut -b 3-7)
+cp ${BOOTDIR}${BOOTPATH}/trackfile ${OBJDIR}/release/
+
 echo "					[DONE]"
 
 echo -n " * share = Making ISO image"
-cd ${OBJDIR}
+cd ${OBJDIR}/release
 mkisofs -b boot/cdboot -no-emul-boot -r -J -V DSBSD-${VERSION} -p "${ENGINEER}" -publisher "http://www.damnsmallbsd.org" -o dsbsd.iso ${BOOTDIR} 1>&2
 echo "					[DONE]"
 

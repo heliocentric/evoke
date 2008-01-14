@@ -63,11 +63,13 @@ if [ "${BUILD_PORTS}" != "" ] ; then
 	cp /etc/resolv.conf ${DESTDIR}/etc/
 	mkdir -p ${DESTDIR}/usr/ports
 	mkdir -p ${OBJDIR}/portsdists
+	mount -t devfs devfs ${DESTDIR}/dev
 	mount_nullfs -o ro /usr/ports ${DESTDIR}/usr/ports
 	mount_nullfs ${OBJDIR}/portsdists ${DESTDIR}/usr/ports/distfiles
 	chroot ${DESTDIR} /portbuild.sh 1>&2
 	umount ${DESTDIR}/usr/ports/distfiles
 	umount ${DESTDIR}/usr/ports
+	umount ${DESTDIR}/dev
 fi
 echo "				[DONE]"
 
