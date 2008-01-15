@@ -93,6 +93,7 @@ cp ${DESTDIR}/libexec/ld-elf.so.1 ${FSDIR}${NDIR}/libexec/
 mkdir -p ${DESTDIR}/mnt/lib
 mkdir -p ${DESTDIR}/mnt/bin
 
+mount_nullfs -o union ${DESTDIR}/usr/local/plan9/bin ${DESTDIR}/mnt/bin
 mount_nullfs -o union ${DESTDIR}/bin ${DESTDIR}/mnt/bin
 mount_nullfs -o union ${DESTDIR}/sbin ${DESTDIR}/mnt/bin
 mount_nullfs -o union ${DESTDIR}/usr/bin ${DESTDIR}/mnt/bin
@@ -133,6 +134,7 @@ strip --remove-section=.note --remove-section=.comment *
 umount ${DESTDIR}/mnt/lib
 umount ${DESTDIR}/mnt/lib
 umount ${DESTDIR}/mnt/lib
+umount ${DESTDIR}/mnt/bin
 umount ${DESTDIR}/mnt/bin
 umount ${DESTDIR}/mnt/bin
 umount ${DESTDIR}/mnt/bin

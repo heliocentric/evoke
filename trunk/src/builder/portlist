@@ -5,10 +5,11 @@ B:curlftpfs:sysutils/fusefs-curlftpfs:
 B:ntfs-3g:sysutils/fusefs-ntfs:
 B:nano:editors/nano:
 B:wdfs:sysutils/fusefs-wdfs:
-B::sysutils/fusefs-httpfs:
 B:smbnetfs:sysutils/fusefs-smbnetfs:
 B:sshfs:sysutils/fusefs-sshfs:
 B:nload:net/nload:
-B::sysutils/clamav:
-B::sysutils/f-prot:
-
+B:clamscan:security/clamav:
+B:freshclam:security/clamav:
+B:vac:devel/plan9port:
+B:vbackup:devel/plan9port:
+B:vcat:devel/plan9port:
