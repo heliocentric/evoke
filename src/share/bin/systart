@@ -72,7 +72,7 @@ fi
 echo "[DONE]"
 
 echo -n "Creating /tmp							"
-mdmfs -s4m md /tmp
+mdmfs -s60m md /tmp
 export LIBDIR=/tmp/lib
 mkdir /tmp/lib
 export RUNDIR=/tmp/run

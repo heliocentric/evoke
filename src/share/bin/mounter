@@ -26,21 +26,13 @@
 
 # $Id$
 
-case "${1}" in
-	[mM][oO][uU][nN][tT])
-		if [ -c "/dev/${2}" ] ; then
-			sysctl -b kern.geom.conftxt | grep -aw ${2} |  awk '{
-				if ($2 == "BSD") {
-					if ($11 == "7") {
-
-					}
-				};
-			}'
-		else
-			echo "/dev/${2} is not a device node"  >&2 
-		fi
-	;;
-	[rR][uU][nN])
-
-	;;
-esac
+if [ -c "/dev/${2}" ] ; then
+	sysctl -b kern.geom.conftxt | grep -aw ${2} |  awk '{
+		if ($2 == "BSD") {
+			if ($11 == "7") {
+			}
+		};
+	}'
+else
+	echo "/dev/${2} is not a device node"  >&2 
+fi

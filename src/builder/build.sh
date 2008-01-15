@@ -148,7 +148,7 @@ makefs root.fs ${FSDIR} 1>&2
 MDDEVICE=$(priv mdconfig -af root.fs)
 FINGERPRINT=$(sha256 -q /dev/${MDDEVICE})
 
-for module in ${MODULES} $(grep ^M ${BUILDDIR} | cut -d :-f 2)
+for module in ${MODULES} $(grep ^M ${BUILDDIR}/portlist | cut -d : -f 2)
 do
 	echo "${module}_load=\"YES\"" >>${BOOTDIR}${BOOTPATH}/loader.conf
 done
