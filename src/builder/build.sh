@@ -137,6 +137,7 @@ do
 	grep '#!' ${file} | head -1 >${FSDIR}/${file}
 	grep '$Id' ${file} | head -1 >>${FSDIR}/${file}
 	grep -v '^#' ${file} | grep -v '[[:space:]]#' >>${FSDIR}/${file}
+	chmod a+rx ${FSDIR}/${file}
 done
 
 echo "					[DONE]"

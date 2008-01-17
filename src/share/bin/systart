@@ -72,7 +72,13 @@ fi
 echo "[DONE]"
 
 echo -n "Creating /tmp							"
-mdmfs -s60m md /tmp
+if [ "${OS}" = "FreeBSD" ] ; then
+	if [ "${ABI}" -ge "7" ] ; then
+		mount -t tmpfs tmpfs /tmp
+	else
+		mdmfs -s60m md /tmp
+	fi
+fi
 export LIBDIR=/tmp/lib
 mkdir /tmp/lib
 export RUNDIR=/tmp/run
@@ -81,6 +87,7 @@ export PIDDIR=/tmp/pid
 mkdir /tmp/pid
 export DBDIR=/tmp/db
 mkdir /tmp/db
+mkdir /tmp/mnt
 mkdir /tmp/empty
 mkdir /tmp/scratch
 chmod 777 /tmp/scratch
@@ -92,10 +99,7 @@ export CFGDIR=/cfg
 echo "[DONE]"
 
 echo -n "Generating passwd files						"
-RPASSWD=$(kenv -q dsbsd.rootpassword)
-if [ "${RPASSWD}" = "" ] ; then
-	RPASSWD='$1$1QgK4Xsg$.PInGIAb4c0nznxpRkUPk.'
-fi
+RPASSWD='$1$1QgK4Xsg$.PInGIAb4c0nznxpRkUPk.'
 
 echo "root:${RPASSWD}:0:0::0:0:Super-User:/home/root:/bin/tcsh" >>/tmp/lib/master.passwd
 echo "nobody:NOTREALPASSWORD:1:1::0:0:nobody:/tmp/empty:/dev/null" >>/tmp/lib/master.passwd
@@ -140,6 +144,11 @@ do
 	ifconfig ${if} up
 done
 echo "[DONE]"
+
+echo -n "Starting powerd							"
+powerd >/dev/null 2>/dev/null
+echo "[DONE]"
+
 
 #echo -n "Starting moused							"
 #cd /dev
@@ -194,6 +203,5 @@ echo "[DONE]"
 #echo "[DONE]"
 
 cd /
-
 tcsh
 reboot

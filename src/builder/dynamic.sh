@@ -25,17 +25,6 @@
 
 
 # $Id$
-export PROGS="
-atacontrol awk bsdlabel bunzip2 bzcat bzip2 camcontrol cap_mkdb 
-cat chmod cp csh date dconschat dd devfs df dhclient disklabel dmesg echo ee 
-expr fdisk fsck_ffs fsck_msdosfs 
-ftp ftpd fwcontrol geom getty grep groups gunzip gzcat gzip halt head id 
-ifconfig jail jexec jls kenv kill kldconfig kldload kldstat kldunload less
-link ln login ls md5 mdconfig mdmfs mkdir more mount moused mv nc newfs 
-pciconf ping powerd ps pwd pwd_mkdb reboot rm route sed sh sha1 sha256 ssh 
-ssh-keygen sshd stty swapon syslogd tail tar tcsh tftp tftpd top umount uniq 
-unlink usbdevs vidcontrol whoami zcat sort pfctl du makefs
-"
 
 cp ${BUILDDIR}/lazybox.dynamic ${WORKDIR}/usr/src/rescue/rescue/Makefile
 
@@ -94,6 +83,7 @@ mkdir -p ${DESTDIR}/mnt/lib
 mkdir -p ${DESTDIR}/mnt/bin
 
 mount_nullfs -o union ${DESTDIR}/usr/local/plan9/bin ${DESTDIR}/mnt/bin
+mount_nullfs -o union ${DESTDIR}/usr/local/plan9/bin/venti ${DESTDIR}/mnt/bin
 mount_nullfs -o union ${DESTDIR}/bin ${DESTDIR}/mnt/bin
 mount_nullfs -o union ${DESTDIR}/sbin ${DESTDIR}/mnt/bin
 mount_nullfs -o union ${DESTDIR}/usr/bin ${DESTDIR}/mnt/bin
@@ -125,7 +115,7 @@ done
 
 cd ${DESTDIR}/mnt/bin
 strip --remove-section=.note --remove-section=.comment ${PROGS}
-tar -cLf - ${PROGS} | tar -xf - -C ${FSDIR}${NBINDIR}/	
+tar -cLf - ${PROGS} | tar -xpf - -C ${FSDIR}${NBINDIR}/	
 cd ${FSDIR}${NBINDIR}
 #upx ${PROGS}
 cd ${OBJDIR}
@@ -134,6 +124,7 @@ strip --remove-section=.note --remove-section=.comment *
 umount ${DESTDIR}/mnt/lib
 umount ${DESTDIR}/mnt/lib
 umount ${DESTDIR}/mnt/lib
+umount ${DESTDIR}/mnt/bin
 umount ${DESTDIR}/mnt/bin
 umount ${DESTDIR}/mnt/bin
 umount ${DESTDIR}/mnt/bin

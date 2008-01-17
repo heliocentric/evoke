@@ -11,5 +11,6 @@ B:nload:net/nload:
 B:clamscan:security/clamav:
 B:freshclam:security/clamav:
 B:vac:devel/plan9port:
+B:venti:devel/plan9port:
 B:vbackup:devel/plan9port:
 B:vcat:devel/plan9port:

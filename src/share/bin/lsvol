@@ -25,36 +25,55 @@
 
 
 # $Id$
-
-case "${1}" in
-	[dD][iI][sS][kK])
-		if [ -c /dev/"${2}" ] ; then
-			# First argument is a character device, assume 
-			# it should be mounted.
-			if [ "${OPTIONS}" != "" ] ; then
-				OPTIONS="-o ${OPTIONS}"
-			fi
-			if [ -d "${3}" ] ; then
-				TYPE=$(lsvol | grep ^${2} | cut -d : -f 2)
-				case "${TYPE}" in
-					ntfs)
-						ntfs-3g ${OPTIONS} /dev/${2} ${3}
-					;;
-					*)
-						mount ${OPTIONS} -t ${TYPE} /dev/${2} ${3}
-						
-					;;
-				esac 
-			fi
-	fi
-	;;
-  	[tT][yY][pP][eE])
-		for i in $(lsvol | grep :${2})
-		do
-			echo ${i} | cut -d : -f 1
-		done
-	;;
-esac
-
-
-
+sysctl -b kern.geom.conftxt | \
+awk '{
+	if ($2 == "BSD") {
+		if ($11 == "7") {
+			print $3":ufs";
+		}
+		if ($11 == "8") {
+			print $3":msdosfs";
+		}
+		if ($11 == "1") {
+			print $3":swap";
+		}
+		if ($11 == "12") {
+			print $3":cd9660";
+		}
+		if ($11 == "17") {
+			print $3":ext2fs";
+		}
+		if ($11 == "18") {
+			print $3":ntfs";
+		}
+		if ($11 == "24") {
+			print $3":udf";
+		}
+		if ($11 == "27") {
+			print $3":zfs";
+		}
+	}
+	else if ($2 == "MBR") {
+		if ($11 == "4") {
+			print $3":msdosfs";
+		}
+		else if ($11 == "6") {
+			print $3":msdosfs";
+		} 
+		else if ($11 == "130") {
+			print $3":swap";
+		} 
+		else if ($11 == "131") {
+			print $3":linux";
+		} 
+		else if ($11 == "11") {
+			print $3":msdosfs";
+		} 
+		else if ($11 == "14") {
+			print $3":msdosfs";
+		} 
+		else if ($11 == "7") {
+			print $3":ntfs";
+		} 
+	}
+}'
