@@ -26,13 +26,13 @@
 # $Id$
 
 # Our build targets for the root.fs image.
-export TARGETS="7.0-RC1/i386 6.3-RC2/i386"
+export TARGETS="6.3-RC2/i386 7.0-RC1/i386"
 
 # DamnSmallBSD Version
 export VERSION="HEAD"
 
 # Release Engineer
-export ENGINEER="N/A"
+export ENGINEER="Dylan Cochran"
 
 # List of programs in base to add to the image.
 # The script already handles resolving libraries, and lazybox provides
@@ -47,7 +47,7 @@ kldconfig kldload kldstat kldunload less link ln login ls md5 mdconfig
 mdmfs mkdir more mount moused mv nc newfs pciconf ping powerd ps pwd 
 pwd_mkdb reboot rm route sed sh sha1 sha256 ssh ssh-keygen sshd stty 
 swapon syslogd tail tar tcsh tftp tftpd top umount uniq unlink usbdevs 
-vidcontrol whoami zcat sort pfctl du makefs
+vidcontrol whoami zcat sort pfctl du makefs mount_msdosfs
 "
 
 # List of kernel objects in base that will be on the image. Ports modules
@@ -55,7 +55,7 @@ vidcontrol whoami zcat sort pfctl du makefs
 
 export MODULES="
 acpi dcons dcons_crom nullfs geom_label geom_mirror geom_concat geom_eli
-geom_nop geom_raid3 geom_shsec geom_stripe pf crypto zlib
+geom_nop geom_raid3 geom_shsec geom_stripe pf crypto zlib speaker tmpfs
 "
 
 export ROOTDIR=`pwd`
