@@ -71,6 +71,14 @@ if [ "${ROOTFINGERPRINT}" != "" ] ; then
 fi
 echo "[DONE]"
 
+echo -n "Adding swap							"
+for device in $(mounter type swap)
+do
+	geom eli onetime ${device}
+	swapon /dev/${device}.eli
+done
+echo "[DONE]"
+
 echo -n "Creating /tmp							"
 if [ "${OS}" = "FreeBSD" ] ; then
 	if [ "${ABI}" -ge "7" ] ; then
