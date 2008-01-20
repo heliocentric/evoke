@@ -165,7 +165,7 @@ dsbsd.fingerprint="${FINGERPRINT}"
 vfs.root.mountfrom="ufs:md0"
 boot_multicons="YES"
 hw.firewire.dcons_crom.force_console=1
-
+kern.hz=100
 
 EOF
 priv mdconfig -d -u $(echo ${MDDEVICE} | cut -c 3-100)
