@@ -26,33 +26,68 @@
 
 # $Id$
 
+if [ "${OPTIONS}" != "" ] ; then
+	OPTIONS="-o ${OPTIONS}"
+fi
+
 case "${1}" in
-	[dD][iI][sS][kK])
-		if [ -c /dev/"${2}" ] ; then
-			# First argument is a character device, assume 
-			# it should be mounted.
-			if [ "${OPTIONS}" != "" ] ; then
-				OPTIONS="-o ${OPTIONS}"
-			fi
+	[fF][tT][pP])
+		if [ "${2}" != "" ] ; then
 			if [ -d "${3}" ] ; then
-				TYPE=$(lsvol | grep ^${2} | cut -d : -f 2)
-				case "${TYPE}" in
-					ntfs)
-						ntfs-3g ${OPTIONS} /dev/${2} ${3}
-					;;
-					*)
-						mount ${OPTIONS} -t ${TYPE} /dev/${2} ${3}
-						
-					;;
-				esac 
+				curlftpfs ${OPTIONS} ${2} ${3}
 			fi
-	fi
+		fi
 	;;
-  	[tT][yY][pP][eE])
-		for i in $(lsvol | grep :${2})
-		do
-			echo ${i} | cut -d : -f 1
-		done
+	[sS][sS][hH])
+		if [ "${2}" != "" ] ; then
+			if [ -d "${3}" ] ; then
+				sshfs ${OPTIONS} -C ${2} ${3}
+			fi
+		fi
+	;;
+	[wW][eE][bB][dD][aA][vV])
+		if [ "${2}" != "" ] ; then
+			if [ -d "${3}" ] ; then
+				wdfs ${OPTIONS} -o accept_sslcert -o svn_mode ${2} ${3}
+			fi
+		fi
+	;;
+	[sS][wW][aA][pP])
+		if [ "${2}" != "" ] ; then
+			if [ "${3}" = "enc" ] ; then
+				geli onetime ${2}
+				swapon ${2}.eli
+			else 
+				swapin ${2}
+			fi
+		fi
+	;;
+	[nN][tT][fF][sS])
+		if [ -c /dev/"${2}" ] ; then
+			if [ -d "${3}" ] ; then
+				ntfs-3g ${OPTIONS} /dev/${2} ${3}
+			fi
+		fi
+	;;
+  	[lL][iI][sS][tT])
+		if [ "${2}" != "" ] ; then
+			for i in $(lsvol | grep :${2})
+			do
+				if [ -d "${3}" ] ; then
+					mkdir -p ${3}/${i}
+					mounter ${2} ${i} ${3}/${i}
+				else
+					echo ${i} | cut -d : -f 1
+				fi
+			done
+		fi
+	;;
+	*)
+		if [ -c /dev/"${2}" ] ; then
+			if [ -d "${3}" ] ; then
+				mount ${OPTIONS} -t ${TYPE} /dev/${2} ${3}
+			fi
+		fi
 	;;
 esac
 

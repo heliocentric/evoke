@@ -179,10 +179,10 @@ do
 	echo ${i} >>${OBJDIR}/release/modlist
 done
 
-for i in ${PROGS} $(grep ^B ${BUILDDIR}/portlist | cut -d : -f 2 | sort | uniq) $(grep CRUNCH_LINKS ${BUILDDIR}/lazybox.dynamic | grep -v ^# | grep -v for | cut -d ' ' -f 2-20 | paste -d " " - - - - - - - - - - - - - - - - - - - - - ) $(grep CRUNCH_PROGS ${BUILDDIR}/lazybox.dynamic | grep -v ^# | grep -v for | cut -d ' ' -f 2-20 | paste -d " " - - - - - - - - - - - - - - - - - - - - - ) 
+for i in ${PROGS} $(grep ^B ${BUILDDIR}/portlist | cut -d : -f 2) $(grep CRUNCH_LINKS ${BUILDDIR}/lazybox.dynamic | grep -v ^# | grep -v for | cut -d ' ' -f 2-20 | paste -d " " - - - - - - - - - - - - - - - - - - - - - ) $(grep CRUNCH_PROGS ${BUILDDIR}/lazybox.dynamic | grep -v ^# | grep -v for | cut -d ' ' -f 2-20 | paste -d " " - - - - - - - - - - - - - - - - - - - - -) 
 do
-	echo ${i} >>${OBJDIR}/release/cmdlist
-done
+	echo ${i}
+done | sort | uniq >>${OBJDIR}/release/cmdlist
 
 echo "					[DONE]"
 
