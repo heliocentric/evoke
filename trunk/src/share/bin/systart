@@ -72,10 +72,9 @@ fi
 echo "[DONE]"
 
 echo -n "Adding swap							"
-for device in $(mounter type swap)
+for swap in $(mounter list swap)
 do
-	geom eli onetime ${device}
-	swapon /dev/${device}.eli
+	mounter swap ${swap} enc
 done
 echo "[DONE]"
 

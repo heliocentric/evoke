@@ -32,7 +32,7 @@ cp ${BUILDDIR}/lazybox.dynamic ${WORKDIR}/usr/src/rescue/rescue/Makefile
 echo -n " * ${target} = Building World "
 cd ${WORKDIR}/usr/src/
 if [ "${NO_CLEAN}" = "" ] ; then
-	make  -DLOADER_TFTP_SUPPORT LOCAL_DIRS="nsrc" buildworld 1>&2
+	make -DLOADER_TFTP_SUPPORT LOCAL_DIRS="nsrc" buildworld 1>&2
 fi
 echo "				[DONE]"
 
@@ -114,13 +114,13 @@ do
 done
 
 cd ${DESTDIR}/mnt/bin
-strip --remove-section=.note --remove-section=.comment ${PROGS}
+strip --remove-section=.note --remove-section=.comment --strip-unneeded ${PROGS}
 tar -cLf - ${PROGS} | tar -xpf - -C ${FSDIR}${NBINDIR}/	
 cd ${FSDIR}${NBINDIR}
 #upx ${PROGS}
 cd ${OBJDIR}
 cd ${FSDIR}${NDIR}/lib
-strip --remove-section=.note --remove-section=.comment *
+strip --remove-section=.note --remove-section=.comment --strip-unneeded *
 umount ${DESTDIR}/mnt/lib
 umount ${DESTDIR}/mnt/lib
 umount ${DESTDIR}/mnt/lib
