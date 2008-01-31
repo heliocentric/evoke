@@ -25,26 +25,21 @@
 
 # $Id$
 
-# Product name.
-export PRODUCT="example"
+export PBUILDVER="0.1"
 
-export DESCRIPTION="example product providing a good boilerplate for users."
+# Product name.
+export PRODUCT="autovarnish"
+
+export DESCRIPTION="Autoconfiguring varnish cache server."
 
 # Version.
-export VERSION="HEAD"
-
-# Release Engineer
-export ENGINEER="Dylan Cochran"
-
-
-# Targets to build for
-# ONLY USE THIS IF NECESSARY.
-#export TARGETS="6.3-RELEASE/i386 7.0-RC1/i386"
+export VERSION="0.1r1"
 
 # List of programs in base to add to the image.
 # Libraries are installed automagically.
 
-export PROGS="cc1 cc $(cut -d : -f 2 ${PORTLIST} | sort | uniq)"
+export PROGS="cc cc1 cc1obj ld as cc1plus \ 
+$(cut -d : -f 2 ${PORTLIST} | sort | uniq)"
 
 # List of packages to add to the image.
 export PACKAGES="$(cut -d : -f 3 ${PORTLIST} | sort | uniq)"
