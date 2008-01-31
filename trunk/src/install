@@ -84,7 +84,7 @@ case "${CHOICE}" in
 		mkdir -p ${OPWD}/${DEST}/dists/${kernels}/kernels
 		cd ${OPWD}/${DEST}/dists/${kernels}/kernels
 		FTPPATH=ftp://ftp.freebsd.org/pub/FreeBSD/releases/$(echo ${kernels} | cut -d "/" -f 2)/$(echo ${kernels} | cut -d "/" -f 1)/kernels/CHECKSUM.MD5
-		fetch -q -o - ${FTPPATH} | cut -d ")" -f 1 | cut -d "(" -f 2) >/tmp/filelist
+		fetch -q -o - ${FTPPATH} | cut -d ")" -f 1 | cut -d "(" -f 2 >/tmp/filelist
 		for file in $(cat /tmp/filelist)
 	        do
 	                fetch -q -m ftp://ftp.freebsd.org/pub/FreeBSD/releases/$(echo ${kernels} | cut -d "/" -f 2)/$(echo ${kernels} | cut -d "/" -f 1)/kernels/${file}
