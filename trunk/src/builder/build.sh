@@ -16,8 +16,13 @@ export FSDIR=${OBJDIR}/fsdir
 
 for target in ${TARGETS}
 do
+	export TARGET=$(echo ${target} | cut -d "/" -f 2)
+	export TARGET_ARCH="${TARGET}"
+	export ABI=$(echo ${target} | cut -d "/" -f 1)
+	export KERNCONF="${ABI}-${TARGET}"
 	export DESTDIR=${OBJDIR}/${target}
 	export WORKDIR=${DESTDIR}
+
 	mkdir -p ${WORKDIR}
 	SRCDIR="${NDISTDIR}/$(echo ${target} | cut -d "/" -f 1)" DISTS="src" ${ROOTDIR}/share/bin/distextract 1>&2
 	ERROR="$?"
@@ -25,10 +30,8 @@ do
 		echo "Error code: ${ERROR}"
 		exit 1
 	fi
-	export TARGET=$(echo ${target} | cut -d "/" -f 2)
-	export TARGET_ARCH="${TARGET}"
 	export NDIR=/.FreeBSD-$(echo ${target} | cut -d "/" -f 1 | cut -d "." -f 1)/${TARGET}/
-	export NBINDIR=${NDIR}/bin
+	export NBINDIR=${NDIR}bin
 	export CROSS_BUILD_TESTING=yes
 
 	echo -n " * ${target} = Patching World"
@@ -76,33 +79,24 @@ do
 	cp ${DESTDIR}/boot/boot ${DESTDIR}/boot/mbr ${FSDIR}${NDIR}/boot/
 
 	echo -n " * ${target} = Compressing Kernel"
-	SRCDIR="${NDISTDIR}/${target}" DISTS="kernels" ${ROOTDIR}/share/bin/distextract 1>&2
-	for i in GENERIC
+	cd ${DESTDIR}/boot/${KERNCONF}/
+	for file in $(grep ^M ${BUILDDIR}/portlist | cut -d : -f 2)
 	do
-		cd ${DESTDIR}/boot/${i}/
-		for file in $(grep ^M ${BUILDDIR}/portlist | cut -d : -f 2)
-		do
-			cp ${DESTDIR}/usr/local/modules/${file}.ko ./
-		done
-		gzip -9 kernel
-		for file in $(grep ^M ${BUILDDIR}/portlist | cut -d : -f 2) ${MODULES}
-		do
-			gzip -9 ${file}.ko
-		done
-		rm -r *.symbols
-		rm -r *.ko
-		gunzip *.gz
+		cp ${DESTDIR}/usr/local/modules/${file}.ko ./
 	done
+	gzip -9 kernel
+	for file in $(grep ^M ${BUILDDIR}/portlist | cut -d : -f 2) ${MODULES}
+	do
+		gzip -9 ${file}.ko
+	done
+	rm -r *.symbols
+	rm -r *.ko
+	gunzip *.gz
 	echo "				[DONE]"
 
 	echo -n " * ${target} = Populating BOOTPATH"
 	mkdir -p ${BOOTDIR}${BOOTPATH}/defaults 1>&2
-	rm -r ${DESTDIR}/boot/SMP
 	cd ${DESTDIR}/boot && tar -cf - --exclude loader.old * | tar -xvf - -C ${BOOTDIR}${BOOTPATH} 1>&2
-	cat >>${BOOTDIR}${BOOTPATH}/loader.conf << EOF
-init_path="${NBINDIR}/init"
-EOF
-
 	echo "				[DONE]"
 
 done
@@ -154,7 +148,8 @@ do
 	echo "${module}_load=\"YES\"" >>${BOOTDIR}${BOOTPATH}/loader.conf
 done
 cat >>${BOOTDIR}${BOOTPATH}/loader.conf << EOF
-kernel="GENERIC"
+kernel="${KERNCONF}"
+kernel_options="-r"
 mfsroot_load="YES"
 mfsroot_type="mfs_root"
 mfsroot_name="${BOOTPATH}/root.fs"
@@ -162,12 +157,11 @@ trackfile_load="YES"
 trackfile_type="mfs_root"
 trackfile_name="${BOOTPATH}/trackfile"
 dsbsd.fingerprint="${FINGERPRINT}" 
-vfs.root.mountfrom="ufs:md0"
 boot_multicons="YES"
 hw.firewire.dcons_crom.force_console=1
 kern.hz=100
-
 EOF
+
 priv mdconfig -d -u $(echo ${MDDEVICE} | cut -c 3-100)
 gzip -9 root.fs	1>&2
 echo "					[DONE]"
@@ -208,4 +202,3 @@ echo -n " * share = Making ISO image"
 cd ${OBJDIR}/release
 mkisofs -b boot/cdboot -no-emul-boot -r -J -V DSBSD-${VERSION} -p "${ENGINEER}" -publisher "http://www.damnsmallbsd.org" -o dsbsd.iso ${BOOTDIR} 1>&2
 echo "					[DONE]"
-

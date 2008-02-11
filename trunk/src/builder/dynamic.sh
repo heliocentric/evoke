@@ -26,13 +26,19 @@
 
 # $Id$
 
-cp ${BUILDDIR}/lazybox.dynamic ${WORKDIR}/usr/src/rescue/rescue/Makefile
+CROSSTOOLSPATH=${MAKEOBJDIRPREFIX}/${TARGET}${WORKDIR}/usr/src/tmp/usr/bin
 
+cp ${BUILDDIR}/lazybox.dynamic ${WORKDIR}/usr/src/rescue/rescue/Makefile
+cp ${BUILDDIR}/kernels/${ABI}/${TARGET} ${WORKDIR}/usr/src/sys/${TARGET}/conf/${KERNCONF}
+echo "options INIT_PATH=${NBINDIR}/init:/sbin/init:/stand/sysinstall" >> ${WORKDIR}/usr/src/sys/${TARGET}/conf/${KERNCONF}
 
 echo -n " * ${target} = Building World "
 cd ${WORKDIR}/usr/src/
-if [ "${NO_CLEAN}" = "" ] ; then
-	make -DLOADER_TFTP_SUPPORT LOCAL_DIRS="nsrc" buildworld 1>&2
+if [ "${NO_BUILD_WORLD}" = "" ] ; then
+	make -DLOADER_TFTP_SUPPORT LOADER_FIREWIRE_SUPPORT="yes" LOCAL_DIRS="nsrc" buildworld 1>&2
+fi
+if [ "${NO_BUILD_KERNEL}" = "" ] ; then
+	make buildkernel 1>&2
 fi
 echo "				[DONE]"
 
@@ -42,6 +48,7 @@ rm -r ${DESTDIR}/rescue 1>&2
 mkdir -p ${DESTDIR}/rescue 1>&2
 priv make installworld 1>&2
 priv make distribution 1>&2
+priv make INSTKERNNAME=${KERNCONF} installkernel 1>&2
 mkdir -p ${DESTDIR}/usr/src
 echo "				[DONE]"
 
@@ -67,6 +74,8 @@ mkdir -p ${DESTDIR}/usr/local/bin
 mkdir -p ${DESTDIR}/usr/local/sbin
 mkdir -p ${DESTDIR}/usr/local/lib
 mkdir -p ${DESTDIR}/usr/local/libexec
+mkdir -p ${DESTDIR}/usr/local/plan9/bin
+mkdir -p ${DESTDIR}/usr/local/plan9/bin/venti
 
 if [ -d "${NDISTDIR}/${target}/packages" ] ; then
 	cd ${NDISTDIR}/${target}/packages
@@ -102,10 +111,11 @@ cd ${DESTDIR}/mnt/bin
 chflags -R noschg *
 chmod a+w *
 
+
 PROGS="${PROGS} $(grep ^B ${BUILDDIR}/portlist | cut -d : -f 2)"
 for lib in $( for i in ${PROGS} ${DESTDIR}/mnt/lib/pam*.so.?
 	do
-		readelf -d ${i} | grep '(NEEDED)' | cut -d [ -f 2 | cut -d ] -f 1
+		${CROSSTOOLSPATH}/readelf -d ${i} | grep '(NEEDED)' | cut -d [ -f 2 | cut -d ] -f 1
 	done | sort | uniq ) ${DESTDIR}/mnt/lib/pam_nologin.so.? ${DESTDIR}/mnt/lib/pam_opie.so.? ${DESTDIR}/mnt/lib/pam_opieaccess.so.? ${DESTDIR}/mnt/lib/pam_permit.so.? ${DESTDIR}/mnt/lib/pam_unix.so.? ${DESTDIR}/mnt/lib/pam_login_access.so.?
 do
 	cd ${DESTDIR}/mnt/lib/
@@ -114,13 +124,13 @@ do
 done
 
 cd ${DESTDIR}/mnt/bin
-strip --remove-section=.note --remove-section=.comment --strip-unneeded ${PROGS}
+${CROSSTOOLSPATH}/strip --remove-section=.note --remove-section=.comment --strip-unneeded ${PROGS}
 tar -cLf - ${PROGS} | tar -xpf - -C ${FSDIR}${NBINDIR}/	
 cd ${FSDIR}${NBINDIR}
 #upx ${PROGS}
 cd ${OBJDIR}
 cd ${FSDIR}${NDIR}/lib
-strip --remove-section=.note --remove-section=.comment --strip-unneeded *
+${CROSSTOOLSPATH}/strip --remove-section=.note --remove-section=.comment --strip-unneeded *
 umount ${DESTDIR}/mnt/lib
 umount ${DESTDIR}/mnt/lib
 umount ${DESTDIR}/mnt/lib

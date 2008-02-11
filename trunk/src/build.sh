@@ -26,7 +26,8 @@
 # $Id$
 
 # Our build targets for the root.fs image.
-export TARGETS="6.3-RELEASE/i386 7.0-RC1/i386"
+export TARGETS="6.3-RELEASE/amd64 6.3-RELEASE/i386 7.0-RC1/i386 7.0-RC1/amd64
+"
 
 # DamnSmallBSD Version
 export VERSION="HEAD"
@@ -56,8 +57,9 @@ mount_msdosfs
 # are added automatically.
 
 export MODULES="
-acpi dcons dcons_crom nullfs geom_label geom_mirror geom_concat geom_eli
+acpi dcons dcons_crom geom_label geom_mirror geom_concat geom_eli
 geom_nop geom_raid3 geom_shsec geom_stripe pf crypto zlib speaker tmpfs
+mac_portacl
 "
 
 export ROOTDIR=`pwd`
