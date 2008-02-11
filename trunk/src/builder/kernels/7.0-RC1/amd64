@@ -12,4 +12,4 @@ options		MAC
 options         SC_PIXEL_MODE
 options         BREAK_TO_DEBUGGER
 options         PANIC_REBOOT_WAIT_TIME=160
-options     nullfs
+options		NULLFS
