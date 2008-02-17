@@ -1,4 +1,4 @@
-include		SMP
+include		GENERIC
 
 ident		DSBSD
 options         ROOTDEVNAME=\"ufs:md0\"
