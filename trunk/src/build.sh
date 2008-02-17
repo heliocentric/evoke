@@ -26,8 +26,8 @@
 # $Id$
 
 # Our build targets for the root.fs image.
-export TARGETS="6.3-RELEASE/amd64 6.3-RELEASE/i386 7.0-RC1/i386 7.0-RC1/amd64
-"
+#export TARGETS="6.3-RELEASE/amd64 6.3-RELEASE/i386 7.0-RC1/amd64 7.0-RC1/i386"
+export TARGETS="6.3-RELEASE/amd64 7.0-RC2/amd64 6.3-RELEASE/i386 7.0-RC2/i386"
 
 # DamnSmallBSD Version
 export VERSION="HEAD"
@@ -75,7 +75,9 @@ fi
 if [ "${OBJDIR}" = "" ] ; then
 	export OBJDIR="${ROOTDIR}/obj"
 fi
-
+if [ "${RELEASEDIR}" = "" ] ; then
+	export RELEASEDIR="${ROOTDIR}/obj/release"
+fi
 
 unset WRKDIRPREFIX
 export ERRFILE=${ROOTDIR}/logs/$(date +%Y%m%d%H%M%S).log
@@ -83,8 +85,11 @@ export ERRFILE=${ROOTDIR}/logs/$(date +%Y%m%d%H%M%S).log
 echo -n " * share = Cleaning up"
 
 chflags -R noschg ${OBJDIR} 2>>${ERRFILE}
+rm -r ${RELEASEDIR} 2>>${ERRFILE}
 rm -r ${OBJDIR} 2>>${ERRFILE}
 mkdir -p ${OBJDIR} 2>>${ERRFILE}
+mkdir -p ${RELEASEDIR} 2>>${ERRFILE}
+
 export BUILDDIR=${ROOTDIR}/builder
 echo "						[DONE]"
 

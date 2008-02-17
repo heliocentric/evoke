@@ -35,7 +35,7 @@ echo "options INIT_PATH=${NBINDIR}/init:/sbin/init:/stand/sysinstall" >> ${WORKD
 echo -n " * ${target} = Building World "
 cd ${WORKDIR}/usr/src/
 if [ "${NO_BUILD_WORLD}" = "" ] ; then
-	make -DLOADER_TFTP_SUPPORT LOADER_FIREWIRE_SUPPORT="yes" LOCAL_DIRS="nsrc" buildworld 1>&2
+	make -DLOADER_TFTP_SUPPORT LOCAL_DIRS="nsrc" buildworld 1>&2
 fi
 if [ "${NO_BUILD_KERNEL}" = "" ] ; then
 	make buildkernel 1>&2
@@ -62,7 +62,15 @@ if [ "${BUILD_PORTS}" != "" ] ; then
 	mount -t devfs devfs ${DESTDIR}/dev
 	mount_nullfs -o ro /usr/ports ${DESTDIR}/usr/ports
 	mount_nullfs ${OBJDIR}/portsdists ${DESTDIR}/usr/ports/distfiles
+	if [ "$(uname -p)" = "amd64" ] ; then
+		if [ ${TARGET_ARCH} = i386 ] ; then
+			cp ${DESTDIR}/libexec/ld-elf.so.1 ${DESTDIR}/libexec/ld-elf32.so.1
+		fi
+	fi
+	export UNAME_m=${TARGET_ARCH}
+	export UNAME_p=${TARGET_ARCH}
 	chroot ${DESTDIR} /portbuild.sh 1>&2
+	rm ${DESTDIR}/libexec/ld-elf32.so.1
 	umount ${DESTDIR}/usr/ports/distfiles
 	umount ${DESTDIR}/usr/ports
 	umount ${DESTDIR}/dev
