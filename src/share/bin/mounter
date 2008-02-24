@@ -26,8 +26,15 @@
 
 # $Id$
 
+# We pass options via environment variables, as it makes parsing things
+# simpler. Plus, spaces can be used explicitly.
+#
+# Also, force noatime mounting, it's unnecessary.
+
 if [ "${OPTIONS}" != "" ] ; then
-	OPTIONS="-o ${OPTIONS}"
+	OPTIONS="-o noatime,${OPTIONS}"
+else
+	OPTIONS="-o noatime"
 fi
 
 case "${1}" in
@@ -70,6 +77,13 @@ case "${1}" in
 		fi
 	;;
   	[lL][iI][sS][tT])
+
+	# We silently drop if someone types 'mounter list', however, 
+	# if the third argument is a directory, we assume the user 
+	# wants to automount volumes into that directory. For example, 
+	# mounter list ufs /media will mount all ufs partitions into 
+	# /media named after their geom name. ie, /media/da0s1a, etc.
+
 		if [ "${2}" != "" ] ; then
 			for i in $(lsvol | grep :${2})
 			do

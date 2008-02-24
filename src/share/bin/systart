@@ -56,10 +56,27 @@ export MACHINE=$(sysctl -n hw.machine)
 
 
 echo -n "Merging directories						"
+
 sh /share/bin/merger / /
+
+# This is the cutoff point, everything after this can be dynamically linked, 
+# and everything before it, HAS to be statically linked. No exceptions.
+#
+# merger is what mounts /libexec and /lib so we have a proper dynamic 
+# linker and basic libraries.
+
 mount_nullfs -o union,ro /share/bin/ /bin/
 export PATH=/bin
 echo "[DONE]"
+
+# The fastest root filesystem consistancy check in history.
+# Since the probability that random corruption will cause changes to
+# both the disk, and the fingerprint on that sector to match it exactly
+# is so high, we can assume that if the fingerprint matches the
+# output of sha256 of the device node, that the root filesystem is sane.
+#
+# If not, we reboot forever, as there is nothing else we can really do
+# at this point.
 
 echo -n "Verifying root filesystem					"
 ROOTFINGERPRINT=$(kenv -q dsbsd.fingerprint)
@@ -79,6 +96,10 @@ done
 echo "[DONE]"
 
 echo -n "Creating /tmp							"
+
+# If we are running 7 or higher releases, use tmpfs, everything else,
+# create a large ramdisk.
+
 if [ "${OS}" = "FreeBSD" ] ; then
 	if [ "${ABI}" -ge "7" ] ; then
 		mount -t tmpfs tmpfs /tmp
@@ -86,6 +107,7 @@ if [ "${OS}" = "FreeBSD" ] ; then
 		mdmfs -s60m md /tmp
 	fi
 fi
+
 export LIBDIR=/tmp/lib
 mkdir /tmp/lib
 export RUNDIR=/tmp/run
@@ -128,14 +150,28 @@ if [ "${IF}" = "" ] ; then
 	IF="$(list_if | head -n 1)"
 fi
 
+# This is /needed/, else some programs will just not work, as they need
+# some ip available.
+
 ifconfig lo0 inet 127.0.0.1 netmask 255.255.255.255
+ifconfig lo0 up
+
+# Grab the ip, netmask, and gateway from kenv so pxebooting doesn't need
+# an extra dhcp request. For robustness.
+
 IP="$(kenv -q boot.netif.ip)"
 NETMASK="$(kenv -q boot.netif.netmask)"
 GATEWAY="$(kenv -q boot.netif.gateway)"
+
+# Unfortunately, doesn't exist yet. Yay! Add it here as a reminder that
+# I should request it.
+
 DNS="$(kenv -q boot.netif.dns)"
+
 if [ "${IP}" != "" -a "${NETMASK}" != "" -a "${GATEWAY}" != "" ] ; then
 	ifconfig ${IF} inet ${IP} netmask ${NETMASK}
 	route add default ${GATEWAY} 2>/dev/null >/dev/null
+
 	if [ "${DNS}" = "" ] ; then
 		echo "nameserver ${GATEWAY}" >/tmp/lib/resolv.conf
 	else
@@ -143,31 +179,44 @@ if [ "${IP}" != "" -a "${NETMASK}" != "" -a "${GATEWAY}" != "" ] ; then
 	fi
 
 else
+
+# If /anything/ is missing, dhclient it. Where else are we going to get it from?
+
 	dhclient ${IF} >/dev/null 2>/dev/null
 fi
-ifconfig lo0 up
+
 for if in $(list_if)
 do
 	ifconfig ${if} up
 done
+
 echo "[DONE]"
 
 echo -n "Starting powerd							"
+# Always start powerd if available, some machines do not have proper heat management
+# and it can be an issue. 
+#
+# Do not remove under penalty of death!
 powerd >/dev/null 2>/dev/null
 echo "[DONE]"
 
 
-#echo -n "Starting moused							"
-#cd /dev
-#for i in ums* psm0
-#do
-#	moused -p /dev/${i} -3 -I /tmp/pid/${i}.pid 2>/dev/null
-#done
-#for ttyv in /dev/ttyv* ; do
-#	vidcontrol < ${ttyv} -m on
-#done
+echo -n "Starting moused							"
+if [ "$(kenv -q dsbsd.moused)" != "" ] ; then
+	cd /dev
+	# Auto configure moused (note, it is disabled by default as it does slow 
+	# down the boot a bit.)
+	for i in ums* psm*
+	do
+		moused -p /dev/${i} -3 -I /tmp/pid/${i}.pid 2>/dev/null
+	done
+	for ttyv in /dev/ttyv* ; do
+		vidcontrol < ${ttyv} -m on
+	done
+fi
+echo "[DONE]"
 
-#echo "[DONE]"
+# syslogd is currently unnecessary, may uncomment later
 
 #echo -n "Starting syslogd						"
 #echo "syslog		514/udp" >> /tmp/lib/services
@@ -185,6 +234,9 @@ echo "[DONE]"
 echo -n "Starting sshd							"
 mkdir -p /tmp/lib/ssh
 ssh-keygen -t dsa -f /tmp/lib/ssh/ssh_key -N '' >/dev/null 2>/dev/null
+
+# Don't change these under penalty of death!
+
 cat >/tmp/lib/ssh/sshd.conf << "EOF"
 HostKey /tmp/lib/ssh/ssh_key
 PermitRootLogin yes
@@ -200,6 +252,8 @@ StrictHostKeyChecking no
 EOF
 /bin/sshd -f /tmp/lib/ssh/sshd.conf 2>/dev/null
 echo "[DONE]"
+
+# ftpd is unnecessary, rather have only ssh.
 
 #echo -n "Starting ftpd							"
 #echo "ftp	21/tcp" >>/tmp/lib/services

@@ -43,10 +43,12 @@ if [ -d "${DESTDIR}" ] ; then
 	do
 		if [ -d "${SRCDIR}/${distset}" ] ; then
 			cd ${SRCDIR}/${distset}
+			# src and kernels both have multiple sets in a directory; luckily, since they are cat'd, they all have a .aa with the name.
 			for dist in *.aa
 			do
 				distfile=$(echo ${dist} | cut -d \. -f 1)
 				echo -n " * Extracting ${distset}/${distfile} ....."
+				# Dists are extracted to different places depending upon the set, so handle them here.
 				case "${distset}" in
 					src)
 						DESTINATION=${DESTDIR}/usr/src
