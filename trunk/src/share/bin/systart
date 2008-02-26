@@ -48,6 +48,7 @@ list_if () {
 umask 077
 export TERM=cons25
 export DISPLAY=:-0
+export DEVICES=/dev
 
 export OS=$(sysctl -n kern.ostype)
 export ABI=$(sysctl -n kern.osrelease | cut -d . -f 1)
@@ -80,19 +81,31 @@ echo "[DONE]"
 
 echo -n "Verifying root filesystem					"
 ROOTFINGERPRINT=$(kenv -q dsbsd.fingerprint)
+ROOTDEV=$(mount -p | awk '{ if ($2 == "/") { print $1 } }')
 if [ "${ROOTFINGERPRINT}" != "" ] ; then
-	if [ "${ROOTFINGERPRINT}" != "$(sha256 -q /dev/md0)" ] ; then
+	if [ "${ROOTFINGERPRINT}" != "$(sha256 -q ${ROOTDEV})" ] ; then
 		echo "[FAILED]"
 		reboot
 	fi
 fi
 echo "[DONE]"
 
-echo -n "Adding swap							"
+echo -n "Adding swap, dump,  and entropy		"
+
 for swap in $(mounter list swap)
 do
 	mounter swap ${swap} enc
 done
+
+for entropy in $(mounter list entropy)
+do
+	mounter entropy ${entropy}
+done
+
+DUMPDEV=$(mounter list dump | awk '{ print $1 }')
+
+mounter dump ${DUMPDEV}
+
 echo "[DONE]"
 
 echo -n "Creating /tmp							"
@@ -131,12 +144,12 @@ echo -n "Generating passwd files						"
 RPASSWD='$1$1QgK4Xsg$.PInGIAb4c0nznxpRkUPk.'
 
 echo "root:${RPASSWD}:0:0::0:0:Super-User:/home/root:/bin/tcsh" >>/tmp/lib/master.passwd
-echo "nobody:NOTREALPASSWORD:1:1::0:0:nobody:/tmp/empty:/dev/null" >>/tmp/lib/master.passwd
+echo "nobody:NOTREALPASSWORD:1:1::0:0:nobody:/tmp/empty:${DEVICES}/null" >>/tmp/lib/master.passwd
 echo "wheel:*:0:" >>/tmp/lib/group
 echo "operator:*:5:" >>/tmp/lib/group
 mdmfs -s 2m md /home/root
 
-pwd_mkdb -i -p -d /tmp/lib/ /tmp/lib/master.passwd 2>/dev/null
+pwd_mkdb -i -p -d /tmp/lib/ /tmp/lib/master.passwd 2>${DEVICES}/null
 cap_mkdb -f /tmp/lib/login.conf.db /share/lib/login.conf
 echo "/bin/tcsh" >>/tmp/lib/shells
 echo "/bin/csh" >>/tmp/lib/shells
@@ -170,7 +183,7 @@ DNS="$(kenv -q boot.netif.dns)"
 
 if [ "${IP}" != "" -a "${NETMASK}" != "" -a "${GATEWAY}" != "" ] ; then
 	ifconfig ${IF} inet ${IP} netmask ${NETMASK}
-	route add default ${GATEWAY} 2>/dev/null >/dev/null
+	route add default ${GATEWAY} 2>${DEVICES}/null >${DEVICES}/null
 
 	if [ "${DNS}" = "" ] ; then
 		echo "nameserver ${GATEWAY}" >/tmp/lib/resolv.conf
@@ -182,7 +195,7 @@ else
 
 # If /anything/ is missing, dhclient it. Where else are we going to get it from?
 
-	dhclient ${IF} >/dev/null 2>/dev/null
+	dhclient ${IF} >${DEVICES}/null 2>/${DEVICES}/null
 fi
 
 for if in $(list_if)
@@ -197,20 +210,20 @@ echo -n "Starting powerd							"
 # and it can be an issue. 
 #
 # Do not remove under penalty of death!
-powerd >/dev/null 2>/dev/null
+powerd >${DEVICES}/null 2>${DEVICES}/null
 echo "[DONE]"
 
 
 echo -n "Starting moused							"
 if [ "$(kenv -q dsbsd.moused)" != "" ] ; then
-	cd /dev
+	cd ${DEVICES}
 	# Auto configure moused (note, it is disabled by default as it does slow 
 	# down the boot a bit.)
 	for i in ums* psm*
 	do
-		moused -p /dev/${i} -3 -I /tmp/pid/${i}.pid 2>/dev/null
+		moused -p ${DEVICES}/${i} -3 -I /tmp/pid/${i}.pid 2>${DEVICES}/null
 	done
-	for ttyv in /dev/ttyv* ; do
+	for ttyv in ${DEVICES}/ttyv* ; do
 		vidcontrol < ${ttyv} -m on
 	done
 fi
@@ -233,7 +246,7 @@ echo "[DONE]"
 
 echo -n "Starting sshd							"
 mkdir -p /tmp/lib/ssh
-ssh-keygen -t dsa -f /tmp/lib/ssh/ssh_key -N '' >/dev/null 2>/dev/null
+ssh-keygen -t dsa -f /tmp/lib/ssh/ssh_key -N '' >${DEVICES}/null 2>${DEVICES}/null
 
 # Don't change these under penalty of death!
 
@@ -250,7 +263,7 @@ EOF
 cat >/tmp/lib/ssh/ssh_config << "EOF"
 StrictHostKeyChecking no
 EOF
-/bin/sshd -f /tmp/lib/ssh/sshd.conf 2>/dev/null
+/bin/sshd -f /tmp/lib/ssh/sshd.conf 2>${DEVICES}/null
 echo "[DONE]"
 
 # ftpd is unnecessary, rather have only ssh.

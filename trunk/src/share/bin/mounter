@@ -37,6 +37,14 @@ else
 	OPTIONS="-o noatime"
 fi
 
+if [ ! -c "${DEVICES}/null" ] ; then
+	if [ -c "/dev/null" ] ; then
+		DEVICES=/dev
+	else
+		echo "Error, no device nodes found"
+		exit 1
+	fi
+fi
 case "${1}" in
 	[fF][tT][pP])
 		if [ "${2}" != "" ] ; then
@@ -59,20 +67,38 @@ case "${1}" in
 			fi
 		fi
 	;;
+	[nN][tT][fF][sS])
+		if [ -c "${DEVICES}/${2}" ] ; then
+			if [ -d "${3}" ] ; then
+				ntfs-3g ${OPTIONS} ${DEVICES}/${2} ${3}
+			fi
+		fi
+	;;
+
 	[sS][wW][aA][pP])
 		if [ "${2}" != "" ] ; then
 			if [ "${3}" = "enc" ] ; then
 				geli onetime ${2}
 				swapon ${2}.eli
 			else 
-				swapin ${2}
+				swapon ${2}
 			fi
 		fi
 	;;
-	[nN][tT][fF][sS])
-		if [ -c /dev/"${2}" ] ; then
-			if [ -d "${3}" ] ; then
-				ntfs-3g ${OPTIONS} /dev/${2} ${3}
+
+	[dD][uU][mM][pP])
+		if [ "${2}" != "" ] ; then
+			echo ${DEVICES}/${2}
+			dumpon ${DEVICES}/${2}
+		fi
+	;;
+
+	[eE][nN][tT][rR][oO][pP][yY])
+		if [ "${2}" != "" ] ; then
+			if [ "${3}" = "save" ] ; then
+				dd if=${DEVICES}/random of=${DEVICES}/${2} bs=2048 count=1 2>/dev/null
+			else 
+				dd of=${DEVICES}/random if=${DEVICES}/${2} bs=2048 count=1 2>/dev/null
 			fi
 		fi
 	;;
@@ -97,9 +123,9 @@ case "${1}" in
 		fi
 	;;
 	*)
-		if [ -c /dev/"${2}" ] ; then
+		if [ -c ${DEVICES}/"${2}" ] ; then
 			if [ -d "${3}" ] ; then
-				mount ${OPTIONS} -t ${TYPE} /dev/${2} ${3}
+				mount ${OPTIONS} -t ${TYPE} ${DEVICES}/${2} ${3}
 			fi
 		fi
 	;;
