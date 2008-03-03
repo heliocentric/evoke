@@ -26,7 +26,8 @@
 # $Id$
 
 # Our build targets for the root.fs image.
-export TARGETS="6.3-RELEASE/amd64 7.0-RELEASE/amd64 6.3-RELEASE/i386 7.0-RELEASE/i386"
+export TARGETS="6.3-RELEASE/amd64 6.3-RELEASE/i386 7.0-RELEASE/i386 7.0-RELEASE/amd64"
+export ACTIVE="7.0-RELEASE/i386"
 
 # DamnSmallBSD Version
 export VERSION="HEAD"

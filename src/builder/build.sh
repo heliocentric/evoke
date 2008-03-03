@@ -147,6 +147,7 @@ for module in ${MODULES} $(grep ^M ${BUILDDIR}/portlist | cut -d : -f 2)
 do
 	echo "${module}_load=\"YES\"" >>${BOOTDIR}${BOOTPATH}/loader.conf
 done
+
 cat >>${BOOTDIR}${BOOTPATH}/loader.conf << EOF
 kernel="${KERNCONF}"
 kernel_options="-r"
