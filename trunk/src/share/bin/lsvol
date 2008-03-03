@@ -48,7 +48,10 @@ awk '{
 			print $3":entropy";
 		}
 		if ($11 == "!72717d60-1a4b-43e2-bca3-4418bc0669ee") {
-			print $3":buildenv";
+			print $3":buildenv-v1";
+		}
+		if ($11 == "!730ce0da-b0fd-4d05-a023-69ce0d749763") {
+			print $3":workenv-v1";
 		}
 	}
 	if ($2 == "BSD") {
