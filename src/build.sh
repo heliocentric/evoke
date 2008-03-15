@@ -26,7 +26,7 @@
 # $Id$
 
 # Our build targets for the root.fs image.
-export TARGETS="6.3-RELEASE/amd64 6.3-RELEASE/i386 7.0-RELEASE/i386 7.0-RELEASE/amd64"
+export TARGETS="7.0-RELEASE/i386"
 export ACTIVE="7.0-RELEASE/i386"
 
 # DamnSmallBSD Version
@@ -67,7 +67,7 @@ export ROOTDIR=`pwd`
 # Overridable options
 
 if [ "${TMPDIR}" = "" ] ; then
-	export TMPDIR="/tmp"
+	export TMPDIR="/usr/obj"
 fi
 if [ "${NDISTDIR}" = "" ] ; then
 	export NDISTDIR="${ROOTDIR}/dists"
