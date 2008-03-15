@@ -32,7 +32,7 @@ cd ${WORKDIR}/usr/src/sys/boot/
 #    sed -i .bak "s_/BOOT_$(echo ${BOOTPATH} | tr a-z A-Z)_g" ${WORKDIR}${file} 2>>${ERRFILE} >>${ERRFILE}
 #done
 sed -i .bak '/pxe_setnfshandle(rootpath);/d' ${WORKDIR}/usr/src/sys/boot/i386/libi386/pxe.c 2>>${ERRFILE} >>${ERRFILE}
-sed -i .bak "s_\"/rescue_\"${NBINDIR}_g" ${WORKDIR}/usr/src/include/paths.h 2>>${ERRFILE} >>${ERRFILE}
+sed -i .bak "s_\"/rescue_\"${N_BIN}_g" ${WORKDIR}/usr/src/include/paths.h 2>>${ERRFILE} >>${ERRFILE}
 sed -i .bak "s_\"/etc/rc_\"/share/bin/systart_g" ${WORKDIR}/usr/src/sbin/init/pathnames.h 2>>${ERRFILE} >>${ERRFILE}
 cp ${BUILDDIR}/lazybox.static ${WORKDIR}/usr/src/rescue/rescue/Makefile
 echo " [DONE]"
@@ -56,9 +56,9 @@ priv make distribution 2>>${ERRFILE} >>${ERRFILE}
 echo " [DONE]"
 
 echo -n " * ${target} = Populating FSDIR ....."
-mkdir -p ${FSDIR}${NBINDIR} 2>>${ERRFILE} >>${ERRFILE}
-mkdir -p ${FSDIR}${NDIR}/lib 2>>${ERRFILE} >>${ERRFILE}
-mkdir -p ${FSDIR}${NDIR}/libexec 2>>${ERRFILE} >>${ERRFILE}
-cd ${WORKDIR}/rescue && tar -cf - * | tar -xf - -C ${FSDIR}${NBINDIR} 2>>${ERRFILE} >>${ERRFILE}
+mkdir -p ${FSDIR}${N_BIN} 2>>${ERRFILE} >>${ERRFILE}
+mkdir -p ${FSDIR}${N_LIB} 2>>${ERRFILE} >>${ERRFILE}
+mkdir -p ${FSDIR}${N_LIBEXEC 2>>${ERRFILE} >>${ERRFILE}
+cd ${WORKDIR}/rescue && tar -cf - * | tar -xf - -C ${FSDIR}${N_BIN} 2>>${ERRFILE} >>${ERRFILE}
 echo " [DONE]"
 

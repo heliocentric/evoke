@@ -81,7 +81,7 @@ echo "[DONE]"
 
 echo -n "Verifying root filesystem					"
 ROOTFINGERPRINT=$(kenv -q dsbsd.fingerprint)
-ROOTDEV=$(mount -p | awk '{ if ($2 == "/") { print $1 } }')
+ROOTDEV=${DEVICES}/$(mount | awk '{ if ($3 == "/") { print $1 } }')
 if [ "${ROOTFINGERPRINT}" != "" ] ; then
 	if [ "${ROOTFINGERPRINT}" != "$(sha256 -q ${ROOTDEV})" ] ; then
 		echo "[FAILED]"
