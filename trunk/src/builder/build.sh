@@ -257,8 +257,8 @@ trackfile_load="YES"
 trackfile_type="mfs_root"
 trackfile_name="${BOOTPREFIX}/trackfile"
 dsbsd.fingerprint="${FINGERPRINT}" 
-boot_multicons="YES"
-hw.firewire.dcons_crom.force_console=1
+# boot_multicons="YES"
+# hw.firewire.dcons_crom.force_console=1
 kern.hz=100
 EOF
 
@@ -306,7 +306,7 @@ echo -n " * share = Making ISO image"
 # Don't ask; cdboot is the main reason why bootloader versioning was turned off for so damned long.
 
 mkdir -p ${BOOTDIR}/boot
-cp ${BOOTDIR}/dsbsd/${VERSION}/freebsd$(echo ${ACTIVE} | cut -d "-" -f 1)/$(echo ${ACTIVE} | cut -d "/" -f 2)/cdboot ${BOOTDIR}/boot/cdboot
+cp ${BOOTDIR}/dsbsd/${VERSION}/freebsd$(echo ${ACTIVE} | cut -d "." -f 1)/$(echo ${ACTIVE} | cut -d "/" -f 2)/cdboot ${BOOTDIR}/boot/cdboot
 cd ${RELEASEDIR}
 
 # DO NOT TOUCH UNDER PENALTY OF DEATH.
