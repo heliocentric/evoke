@@ -95,23 +95,23 @@ do
 	mkdir -p ${BOOTDIR}${BOOTPATH}
 
 	# Patch these files to our paths, so they don't collide.
-	sed -i .bak "s_/boot/device.hints_${BOOTPATH}/device.hints_g" ${WORKDIR}/usr/src/sys/boot/forth/loader.conf 1>&2
-	sed -i .bak "s_/boot/loader.conf_${BOOTPREFIX}/loader.conf_g" ${WORKDIR}/usr/src/sys/boot/forth/loader.conf 1>&2
-	sed -i .bak "s_/boot/loader.conf.local_${BOOTPREFIX}/loader.conf.local_g" ${WORKDIR}/usr/src/sys/boot/forth/loader.conf 1>&2
+	sed -i .bak "s@/boot/device.hints@${BOOTPATH}/device.hints@g" ${WORKDIR}/usr/src/sys/boot/forth/loader.conf 1>&2
+	sed -i .bak "s@/boot/loader.conf@${BOOTPREFIX}/loader.conf@g" ${WORKDIR}/usr/src/sys/boot/forth/loader.conf 1>&2
+	sed -i .bak "s@/boot/loader.conf.local@${BOOTPREFIX}/loader.conf.local@g" ${WORKDIR}/usr/src/sys/boot/forth/loader.conf 1>&2
 
 	for file in $(cat ${ROOTDIR}/bootlist)
 	do
 	    # This works for most.
-	    sed -i .bak "s_/boot_${BOOTPATH}_g" ${WORKDIR}${file} 1>&2
+	    sed -i .bak "s@/boot@${BOOTPATH}@g" ${WORKDIR}${file} 1>&2
 	    # This is for cdboot. Case specific
-	    sed -i .bak "s_/BOOT_$(echo ${BOOTPATH} | tr a-z A-Z)_g" ${WORKDIR}${file} 1>&2
+	    sed -i .bak "s@/BOOT@$(echo ${BOOTPATH} | tr a-z A-Z)@g" ${WORKDIR}${file} 1>&2
 	done
 	# Get rid of this latency addition in pxeboot (fixed in 7.0, but necessary on 6.x)
 	sed -i .bak '/pxe_setnfshandle(rootpath);/d' ${WORKDIR}/usr/src/sys/boot/i386/libi386/pxe.c 1>&2
 
 	# rescue binaries hard code /rescue; for us, it's more productive to point it to the abi/arch 
 	# directory directly. It makes systart transparent.
-	sed -i .bak "s_\"/rescue_\"${N_BIN}_g" ${WORKDIR}/usr/src/include/paths.h 1>&2
+	sed -i .bak "s@\"/rescue@\"${N_BIN}@g" ${WORKDIR}/usr/src/include/paths.h 1>&2
 
 
 	# we don't have a real /etc, so point init to systart.
