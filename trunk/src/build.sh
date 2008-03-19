@@ -35,7 +35,7 @@ export VERSION="HEAD"
 
 # Release Engineer
 export ENGINEER="Dylan Cochran"
-
+export REVISION=$(echo "$Rev$")
 
 # List of programs in base to add to the image.
 # The script already handles resolving libraries, and lazybox provides
