@@ -269,19 +269,21 @@ EOF
 
 echo "					[DONE]"
 
+mkdir -p ${RELEASEDIR}${BOOTPREFIX}
+
 echo -n " * share = Making cmdlist and modlist image"
 
 # Easier to list it this way now.
 
 for i in ${MODULES} $(grep ^M ${BUILDDIR}/portlist | cut -d : -f 2 | sort | uniq)
 do
-	echo ${i} >>${RELEASEDIR}/modlist
+	echo ${i} >>${BOOTDIR}${BOOTPREFIX}/modlist
 done
 
 for i in ${PROGS} $(grep ^B ${BUILDDIR}/portlist | cut -d : -f 2) $(grep CRUNCH_LINKS ${BUILDDIR}/lazybox.dynamic | grep -v ^# | grep -v for | cut -d ' ' -f 2-20 | paste -d " " - - - - - - - - - - - - - - - - - - - - - ) $(grep CRUNCH_PROGS ${BUILDDIR}/lazybox.dynamic | grep -v ^# | grep -v for | cut -d ' ' -f 2-20 | paste -d " " - - - - - - - - - - - - - - - - - - - - -) 
 do
 	echo ${i}
-done | sort | uniq >>${RELEASEDIR}/cmdlist
+done | sort | uniq >>${BOOTDIR}${BOOTPREFIX}/cmdlist
 
 echo "					[DONE]"
 
@@ -302,9 +304,12 @@ DEVICE=$(mdconfig -af ${BOOTDIR}${BOOTPREFIX}/trackfile)
 geom label load
 geom label label trackfile /dev/${DEVICE}
 mdconfig -d -u $(echo ${DEVICE} | cut -b 3-7)
-cp ${BOOTDIR}${BOOTPREFIX}/trackfile ${RELEASEDIR}/
-
 echo "					[DONE]"
+
+echo -n " * share = Creating RELEASEDIR"
+cd ${BOOTDIR}${BOOTPREFIX}
+tar -cf - * | tar -xf - -C ${RELEASEDIR}${BOOTPREFIX}/
+echo ""
 
 echo -n " * share = Making ISO image"
 
@@ -312,7 +317,8 @@ echo -n " * share = Making ISO image"
 
 mkdir -p ${BOOTDIR}/boot
 cp ${BOOTDIR}/dsbsd/${VERSION}/freebsd$(echo ${ACTIVE} | cut -d "." -f 1)/$(echo ${ACTIVE} | cut -d "/" -f 2)/cdboot ${BOOTDIR}/boot/cdboot
-cd ${RELEASEDIR}
+mkdir -p ${RELEASEDIR}/ISO-IMAGES/${VERSION}
+cd ${RELEASEDIR}/ISO-IMAGES/${VERSION}
 
 # DO NOT TOUCH UNDER PENALTY OF DEATH.
 mkisofs -b boot/cdboot -no-emul-boot -r -J -V DSBSD-${VERSION} -p "${ENGINEER}" -publisher "http://www.damnsmallbsd.org" -o dsbsd.iso ${BOOTDIR} 1>&2
