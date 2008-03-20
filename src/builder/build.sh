@@ -22,6 +22,11 @@ export BOOTDIR=${OBJDIR}/bdir
 # FSDIR is the root of the root.fs image
 export FSDIR=${OBJDIR}/fsdir
 
+if [ "${VERSION}" = "HEAD" ] ; then
+	if [ "${REVISION}" != "" ] ; then
+		export VERSION=r${REVISION}
+	fi
+fi
 # The prefix for this version, for BOOTDIR, so we can avoid collisions with FreeBSD.
 export BOOTPREFIX=/dsbsd/${VERSION}
 

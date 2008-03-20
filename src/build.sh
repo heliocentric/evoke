@@ -32,10 +32,10 @@ export ACTIVE="7.0-RELEASE/i386"
 
 # DamnSmallBSD Version
 export VERSION="HEAD"
+export REVISION=$(echo "$Rev$" | awk ' { print $2 }')
 
 # Release Engineer
 export ENGINEER="Dylan Cochran"
-export REVISION=$(echo "$Rev$")
 
 # List of programs in base to add to the image.
 # The script already handles resolving libraries, and lazybox provides
