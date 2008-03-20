@@ -86,10 +86,8 @@ export ERRFILE=${ROOTDIR}/logs/$(date +%Y%m%d%H%M%S).log
 echo -n " * share = Cleaning up"
 
 chflags -R noschg ${OBJDIR} 2>>${ERRFILE}
-rm -r ${RELEASEDIR} 2>>${ERRFILE}
 rm -r ${OBJDIR} 2>>${ERRFILE}
 mkdir -p ${OBJDIR} 2>>${ERRFILE}
-mkdir -p ${RELEASEDIR} 2>>${ERRFILE}
 
 export BUILDDIR=${ROOTDIR}/builder
 echo "						[DONE]"
