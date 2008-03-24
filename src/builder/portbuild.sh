@@ -29,9 +29,13 @@ export WRKDIRPREFIX=/usr/obj
 export PACKAGES=/packages
 mkdir ${PACKAGES}
 unexport DESTDIR
+unexport TMPDIR
+unexport KERNCONF
+unexport ABI
+unset ABI
 unset DESTDIR
 unset TMPDIR
-unexport TMPDIR
+unset KERNCONF
 for port in $(cat /portlist | cut -d : -f 3  | sort | uniq)
 do
 	cd /usr/ports/${port}/

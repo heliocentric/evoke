@@ -57,11 +57,7 @@ mount_msdosfs
 # List of kernel objects in base that will be on the image. Ports modules
 # are added automatically.
 
-export MODULES="
-acpi dcons dcons_crom geom_label geom_mirror geom_concat geom_eli
-geom_nop geom_raid3 geom_shsec geom_stripe pf crypto zlib speaker tmpfs
-mac_portacl
-"
+export MODULES="acpi tmpfs"
 
 export ROOTDIR=`pwd`
 
