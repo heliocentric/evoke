@@ -52,10 +52,10 @@ options 	NULLFS
 options 	PORTALFS
 options 	PROCFS
 options 	PSEUDOFS
-options 	SMBFS
 options 	UNIONFS
 options 	EXT2FS
 options 	REISERFS
 options 	XFS
 options 	LINPROCFS
 options		LINSYSFS
+options 	COMPAT_LINUX32
