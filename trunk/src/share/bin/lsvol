@@ -50,13 +50,21 @@ awk '{
 		if ($11 == "!72717d60-1a4b-43e2-bca3-4418bc0669ee") {
 			print $3":buildenv-v1";
 		}
-		if ($11 == "!730ce0da-b0fd-4d05-a023-69ce0d749763") {
-			print $3":workenv-v1";
+		if ($11 == "!0b79a13e-87f2-4238-a86d-d00bd1fce04e") {
+			print $3":object";
+		}
+		if ($11 == "!12f31621-10a0-4a3c-a0e8-9406c2e485f0") {
+			print $3":boot-ufs";
 		}
 	}
 	if ($2 == "BSD") {
 		if ($11 == "7") {
-			print $3":ufs";
+			if ($3 ~ /a$/) { 
+				print $3":boot-ufs";
+			}
+			else {
+				print $3":ufs";
+			}
 		}
 		if ($11 == "8") {
 			print $3":msdosfs";
