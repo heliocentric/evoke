@@ -1,0 +1,81 @@
+#!/bin/sh
+# Copyright 2007-2008 Dylan Cochran
+# All rights reserved
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted providing that the following conditions
+# are met:
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+# IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
+# DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+# STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
+# IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
+
+# $Id$
+
+# Set this so we can call this file again if a filename passed is a directory.
+BIN="$0"
+
+# This works whether TRACKFILE is a device node, or a regular file.
+
+if [ ! -r "${TRACKFILE}" -o -d "${TRACKFILE}" ] ; then
+	unset TRACKFILE
+fi
+
+if [ ! -d "${PREFIX}" ] ; then
+	unset PREFIX
+fi
+
+while [ "${1}" != "" ]
+do
+	TYPES="sha256 md5"
+
+	if [ "${1}" = "-w" ] ; then
+		# We export this so that the recursion portion will be able to write as well
+		export WRITE="yes"
+
+	elif [ -d "${1}" ] ; then
+
+		# Note that this doesn't work as expected when the directory is empty; sh 
+		# interprets * as being a file name, for some reason.
+		# Other then that, it works great for recursion.
+		${BIN} ${1}/*
+
+	elif [ -r "${1}" -a ! -c "${1}" -a ! -b "${1}" ] ; then 
+		for type in ${TYPES}
+		do
+			# We always need the file's hash from the contents, so keep it out
+			# of the conditional
+			RHASH=$(${type} -q "${1}" 2>/dev/null)
+
+			if [ "${WRITE}" = "yes" ] ; then
+				setextattr system ${type} ${RHASH} "${1}" 2>/dev/null
+			else
+				if [ "${FHASH}" = "" ] ; then
+					FHASH=$(getextattr -q system ${type} "${1}" 2>/dev/null)
+				fi
+				if [ "${RHASH}" != "${FHASH}" ] ; then
+					echo "${type} fail ${1}"					
+				else
+					echo "${type} pass ${1}"
+				fi	
+			fi
+		done
+	else
+		echo "error 1 ${1}"
+	fi
+	shift
+done

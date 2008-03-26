@@ -26,9 +26,9 @@
 # $Id$
 
 # Our build targets for the root.fs image.
-export TARGETS="7.0-RELEASE/amd64"
+export TARGETS="7.0-RELEASE/i386"
 #export TARGETS="7.0-RELEASE/i386 6.3-RELEASE/i386 7.0-RELEASE/amd64"
-export ACTIVE="7.0-RELEASE/amd64"
+export ACTIVE="7.0-RELEASE/i386"
 
 # DamnSmallBSD Version
 export VERSION="HEAD"
@@ -51,7 +51,7 @@ mdmfs mkdir more mount moused mv nc newfs pciconf ping powerd ps pwd
 pwd_mkdb reboot rm route sed sh sha1 sha256 ssh ssh-keygen sshd stty 
 swapon swapoff swapinfo syslogd tail tar tcsh tftp tftpd top umount 
 uniq unlink usbdevs vidcontrol whoami zcat sort pfctl du makefs 
-mount_msdosfs
+mount_msdosfs getextattr setextattr
 "
 
 # List of kernel objects in base that will be on the image. Ports modules
