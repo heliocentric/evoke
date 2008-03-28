@@ -316,11 +316,11 @@ echo -n " * share = Making ISO image"
 # Don't ask; cdboot is the main reason why bootloader versioning was turned off for so damned long.
 
 mkdir -p ${BOOTDIR}/boot
-cp ${BOOTDIR}/dsbsd/${VERSION}/freebsd$(echo ${ACTIVE} | cut -d "." -f 1)/$(echo ${ACTIVE} | cut -d "/" -f 2)/cdboot ${BOOTDIR}/boot/cdboot
+cp ${BOOTDIR}/dsbsd/${VERSION}/freebsd$(echo ${i386_ACTIVE} | cut -d "." -f 1)/$(echo ${i386_ACTIVE} | cut -d "/" -f 2)/cdboot ${BOOTDIR}/cdboot/i386
 mkdir -p ${RELEASEDIR}/ISO-IMAGES/${VERSION}
 cd ${RELEASEDIR}/ISO-IMAGES/${VERSION}
 
 # DO NOT TOUCH UNDER PENALTY OF DEATH.
-mkisofs -b boot/cdboot -no-emul-boot -r -J -V DSBSD-${VERSION} -p "${ENGINEER}" -publisher "http://www.damnsmallbsd.org" -o dsbsd.iso ${BOOTDIR} 1>&2
+mkisofs -b cdboot/i386 -no-emul-boot -r -J -V DSBSD-${VERSION} -p "${ENGINEER}" -publisher "http://www.damnsmallbsd.org" -o dsbsd.iso ${BOOTDIR} 1>&2
 echo "					[DONE]"
 

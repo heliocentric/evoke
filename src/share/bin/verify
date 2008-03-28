@@ -42,7 +42,6 @@ fi
 while [ "${1}" != "" ]
 do
 	TYPES="sha256 md5"
-
 	if [ "${1}" = "-w" ] ; then
 		# We export this so that the recursion portion will be able to write as well
 		export WRITE="yes"
@@ -60,10 +59,10 @@ do
 			# We always need the file's hash from the contents, so keep it out
 			# of the conditional
 			RHASH=$(${type} -q "${1}" 2>/dev/null)
-
 			if [ "${WRITE}" = "yes" ] ; then
 				setextattr system ${type} ${RHASH} "${1}" 2>/dev/null
 			else
+				unset FHASH
 				if [ "${FHASH}" = "" ] ; then
 					FHASH=$(getextattr -q system ${type} "${1}" 2>/dev/null)
 				fi
