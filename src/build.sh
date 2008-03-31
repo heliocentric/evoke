@@ -73,7 +73,7 @@ if [ "${OBJDIR}" = "" ] ; then
 	export OBJDIR="${ROOTDIR}/obj"
 fi
 if [ "${RELEASEDIR}" = "" ] ; then
-	export RELEASEDIR="${ROOTDIR}/obj/release"
+	export RELEASEDIR="/releases"
 fi
 
 unset WRKDIRPREFIX

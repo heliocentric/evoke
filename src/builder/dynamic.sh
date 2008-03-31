@@ -144,6 +144,7 @@ chmod a+w *
 
 
 PROGS="${PROGS} $(grep ^B ${BUILDDIR}/portlist | cut -d : -f 2)"
+
 # "Mommy Mommy! Can I see some ugly shell scripting?"
 # "Yes dear, but only if you gouge one eye out first"
 # "Awwww"
@@ -151,6 +152,7 @@ PROGS="${PROGS} $(grep ^B ${BUILDDIR}/portlist | cut -d : -f 2)"
 # Seriously though, as you can see, we create a for loop to generate a list of libraries by using readelf on a binary,
 # then we consolidate all libs (so there are no duplicates). Then we feed that to another for loop, which copies the libs in question to FSDIR, while creating compatibility symlinks.
 # See? Simple. Just, slightly confusing if you aren't used to dealing with loop constructs like this.
+
 for lib in $( for i in ${PROGS} ${DESTDIR}/mnt/lib/pam*.so.?
 	do
 		${CROSSTOOLSPATH}/readelf -d ${i} | grep '(NEEDED)' | cut -d [ -f 2 | cut -d ] -f 1

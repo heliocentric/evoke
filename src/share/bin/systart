@@ -58,7 +58,7 @@ export MACHINE=$(sysctl -n hw.machine)
 
 echo -n "Merging directories						"
 
-sh /share/bin/merger / /
+sh /system/share/bin/merger /system/ /
 
 # This is the cutoff point, everything after this can be dynamically linked, 
 # and everything before it, HAS to be statically linked. No exceptions.
@@ -66,7 +66,7 @@ sh /share/bin/merger / /
 # merger is what mounts /libexec and /lib so we have a proper dynamic 
 # linker and basic libraries.
 
-mount_nullfs -o union,ro /share/bin/ /bin/
+mount_nullfs -o union,ro /system/share/bin/ /bin/
 export PATH=/bin
 echo "[DONE]"
 
@@ -108,7 +108,7 @@ mounter dump ${DUMPDEV}
 
 echo "[DONE]"
 
-echo -n "Creating /tmp							"
+echo -n "Creating /mem							"
 
 # If we are running 7 or higher releases, use tmpfs, everything else,
 # create a large ramdisk.
@@ -121,39 +121,62 @@ if [ "${OS}" = "FreeBSD" ] ; then
 	fi
 fi
 
-export LIBDIR=/tmp/lib
-mkdir /tmp/lib
-export RUNDIR=/tmp/run
-mkdir /tmp/run
-export PIDDIR=/tmp/pid
-mkdir /tmp/pid
-export DBDIR=/tmp/db
-mkdir /tmp/db
-mkdir /tmp/mnt
-mkdir /tmp/empty
-mkdir /tmp/scratch
+# Memory store
+export N_MEMDIR=/mem
+
+# 'Running' files. mainly lockfiles
+export N_RUNDIR=${N_MEMDIR}/run
+mkdir -p ${N_RUNDIR}
+
+# PID files, format is logicalname.pid
+export N_PIDDIR=${N_MEMDIR}/pid
+mkdir -p ${N_PIDDIR}
+
+# DB files, mostly storage of leases, etc.
+export N_DBDIR=${N_MEMDIR}/db
+mkdir -p ${N_DBDIR}
+
+# Temporary mountpoint, ie, /mnt.
+export N_MNTDIR=${N_MEMDIR}/mnt
+mkdir -p ${N_MNTDIR}
+
+# Empty directory
+export N_NULLDIR=${N_MEMDIR}/empty
+mkdir -p ${N_NULLDIR}
+
+# Scratch directory
+export TMPDIR=${N_MEMDIR}/scratch
+mkdir -p ${TMPDIR}
 chmod 777 /tmp/scratch
 chmod +t /tmp/scratch
-export TMPDIR=/tmp/scratch
-mount_nullfs -o union,ro /share/lib/ /cfg/
-mount_nullfs -o union,ro /tmp/lib/ /cfg/
-export CFGDIR=/cfg
+
+# Lib Dir (ie, automagically generated config files.)
+
+export N_LIBDIR=${N_MEMDIR}/lib
+mkdir -p ${N_LIBDIR}
+
+mount_nullfs -o union,ro /system/share/lib/ /config/
+mount_nullfs -o union,ro /mem/lib/ /config/
+export N_CFGDIR=/config
+
 echo "[DONE]"
 
 echo -n "Generating passwd files						"
 RPASSWD='$1$1QgK4Xsg$.PInGIAb4c0nznxpRkUPk.'
 
-echo "root:${RPASSWD}:0:0::0:0:Super-User:/home/root:/bin/tcsh" >>/tmp/lib/master.passwd
-echo "nobody:NOTREALPASSWORD:1:1::0:0:nobody:/tmp/empty:${DEVICES}/null" >>/tmp/lib/master.passwd
-echo "wheel:*:0:" >>/tmp/lib/group
-echo "operator:*:5:" >>/tmp/lib/group
-mdmfs -s 2m md /home/root
+export HOME=${N_MEMDIR}/home
+mkdir -p ${HOME}
 
-pwd_mkdb -i -p -d /tmp/lib/ /tmp/lib/master.passwd 2>${DEVICES}/null
-cap_mkdb -f /tmp/lib/login.conf.db /share/lib/login.conf
-echo "/bin/tcsh" >>/tmp/lib/shells
-echo "/bin/csh" >>/tmp/lib/shells
-echo "/bin/sh" >>/tmp/lib/shells
+echo "root:${RPASSWD}:0:0::0:0:Super-User:${HOME}:/bin/tcsh" >>${N_LIBDIR}/master.passwd
+echo "nobody:NOTREALPASSWORD:1:1::0:0:nobody:${N_NULLDIR}:${DEVICES}/null" >>${N_LIBDIR}/master.passwd
+echo "wheel:*:0:" >>${N_LIBDIR}/group
+echo "operator:*:5:" >>${N_LIBDIR}/group
+
+pwd_mkdb -i -p -d ${N_LIBDIR} ${N_LIBDIR}/master.passwd 2>${DEVICES}/null
+cap_mkdb -f ${N_LIBDIR}/login.conf.db ${N_CFGDIR}/login.conf
+echo "/bin/tcsh" >>${N_LIBDIR}/shells
+echo "/bin/csh" >>${N_LIBDIR}/shells
+echo "/bin/sh" >>${N_LIBDIR}/shells
 echo "[DONE]"
 
 
@@ -221,7 +244,7 @@ if [ "$(kenv -q dsbsd.moused)" != "" ] ; then
 	# down the boot a bit.)
 	for i in ums* psm*
 	do
-		moused -p ${DEVICES}/${i} -3 -I /tmp/pid/${i}.pid 2>${DEVICES}/null
+		moused -p ${DEVICES}/${i} -3 -I ${N_PIDDIR}/${i}.pid 2>${DEVICES}/null
 	done
 	for ttyv in ${DEVICES}/ttyv* ; do
 		vidcontrol < ${ttyv} -m on
@@ -232,48 +255,48 @@ echo "[DONE]"
 # syslogd is currently unnecessary, may uncomment later
 
 #echo -n "Starting syslogd						"
-#echo "syslog		514/udp" >> /tmp/lib/services
-#echo "" >/tmp/db/log
-#cat >/tmp/lib/syslogd.conf << EOF
-#33*.notice;authpriv.none;kern.debug;*.info;*.crit;*.err	/tmp/db/log
+#echo "syslog		514/udp" >> ${N_LIBDIR}/services
+#echo "" >${N_DBDIR}/log
+#cat >${N_LIBDIR}/syslogd.conf << EOF
+#33*.notice;authpriv.none;kern.debug;*.info;*.crit;*.err	${N_DBDIR}/log
 #!ftpd
-#*.*	/tmp/db/log
+#*.*	${N_DBDIR}/log
 #!sshd
-#*.*	/tmp/db/log
+#*.*	${N_DBDIR}/log
 #EOF
-#syslogd -ss -f /tmp/lib/syslogd.conf -P /tmp/pid/syslogd.pid -p /tmp/run/log
+#syslogd -ss -f ${N_CFGDIR}/syslogd.conf -P ${N_PIDDIR}/syslogd.pid -p ${N_RUNDIR}/log
 #echo "[DONE]"
 
 echo -n "Starting sshd							"
-mkdir -p /tmp/lib/ssh
-ssh-keygen -t dsa -f /tmp/lib/ssh/ssh_key -N '' >${DEVICES}/null 2>${DEVICES}/null
+ln -s . ${N_LIBDIR}/ssh
+ssh-keygen -t dsa -f ${N_LIBDIR}/ssh_key -N '' >${DEVICES}/null 2>${DEVICES}/null
 
 # Don't change these under penalty of death!
 
-cat >/tmp/lib/ssh/sshd.conf << "EOF"
-HostKey /tmp/lib/ssh/ssh_key
+cat >${N_LIBDIR}/sshd.conf << "EOF"
+HostKey ${N_CFGDIR}/ssh_key
 PermitRootLogin yes
 UsePrivilegeSeparation no                       
 UseDNS no
-PidFile /tmp/pid/sshd.pid
+PidFile ${N_PIDDIR}/sshd.pid
 PasswordAuthentication yes
 PermitEmptyPasswords no
 ForceCommand tcsh
 EOF
-cat >/tmp/lib/ssh/ssh_config << "EOF"
+cat >${N_LIBDIR}/ssh_config << "EOF"
 StrictHostKeyChecking no
 EOF
-/bin/sshd -f /tmp/lib/ssh/sshd.conf 2>${DEVICES}/null
+/bin/sshd -f ${N_CFGDIR}/sshd.conf 2>${DEVICES}/null
 echo "[DONE]"
 
 # ftpd is unnecessary, rather have only ssh.
 
 #echo -n "Starting ftpd							"
-#echo "ftp	21/tcp" >>/tmp/lib/services
-#cat >/tmp/lib/ftpusers << EOF
+#echo "ftp	21/tcp" >>${N_LIBDIR}/services
+#cat >${N_LIBDIR}/ftpusers << EOF
 # blah
 #EOF
-#ftpd -D -d -p /tmp/pid/ftpd.pid
+#ftpd -D -d -p ${N_PIDDIR}/ftpd.pid
 #echo "[DONE]"
 
 cd /
