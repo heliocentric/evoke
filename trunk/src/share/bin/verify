@@ -29,6 +29,16 @@
 # Set this so we can call this file again if a filename passed is a directory.
 BIN="$0"
 
+# Check for the existence of the DEVICES variable, and whether it's what we need. if not, fall back to /dev
+if [ ! -c "${DEVICES}/null" ] ; then
+	if [ -c "/dev/null" ] ; then
+		DEVICES=/dev
+	else
+		echo "Error, no device nodes found"
+		exit 1
+	fi
+fi
+
 # This works whether TRACKFILE is a device node, or a regular file.
 
 if [ ! -r "${TRACKFILE}" -o -d "${TRACKFILE}" ] ; then
@@ -58,13 +68,13 @@ do
 		do
 			# We always need the file's hash from the contents, so keep it out
 			# of the conditional
-			RHASH=$(${type} -q "${1}" 2>/dev/null)
+			RHASH=$(${type} -q "${1}" 2>${DEVICES}/null)
 			if [ "${WRITE}" = "yes" ] ; then
-				setextattr system ${type} ${RHASH} "${1}" 2>/dev/null
+				setextattr system ${type} ${RHASH} "${1}" 2>${DEVICES}/null
 			else
 				unset FHASH
 				if [ "${FHASH}" = "" ] ; then
-					FHASH=$(getextattr -q system ${type} "${1}" 2>/dev/null)
+					FHASH=$(getextattr -q system ${type} "${1}" 2>${DEVICES}/null)
 				fi
 				if [ "${RHASH}" != "${FHASH}" ] ; then
 					echo "${type} fail ${1}"					

@@ -96,9 +96,9 @@ case "${1}" in
 	[eE][nN][tT][rR][oO][pP][yY])
 		if [ "${2}" != "" ] ; then
 			if [ "${3}" = "save" ] ; then
-				dd if=${DEVICES}/random of=${DEVICES}/${2} bs=2048 count=1 2>/dev/null
+				dd if=${DEVICES}/random of=${DEVICES}/${2} bs=2048 count=1 2>${DEVICES}/null
 			else 
-				dd of=${DEVICES}/random if=${DEVICES}/${2} bs=2048 count=1 2>/dev/null
+				dd of=${DEVICES}/random if=${DEVICES}/${2} bs=2048 count=1 2>${DEVICES}/null
 			fi
 		fi
 	;;

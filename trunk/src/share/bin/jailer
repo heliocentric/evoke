@@ -26,9 +26,18 @@
 
 # $Id$
 
+if [ ! -c "${DEVICES}/null" ] ; then
+	if [ -c "/dev/null" ] ; then
+		DEVICES=/dev
+	else
+		echo "Error, no device nodes found"
+		exit 1
+	fi
+fi
+
 case "${1}" in
 	[mM][oO][uU][nN][tT])
-		if [ -c "/dev/${2}" ] ; then
+		if [ -c "${DEVICES}/${2}" ] ; then
 			sysctl -b kern.geom.conftxt | grep -aw ${2} |  awk '{
 				if ($2 == "BSD") {
 					if ($11 == "7") {
@@ -37,7 +46,7 @@ case "${1}" in
 				};
 			}'
 		else
-			echo "/dev/${2} is not a device node"  >&2 
+			echo "${DEVICES}/${2} is not a device node"  >&2 
 		fi
 	;;
 	[rR][uU][nN])

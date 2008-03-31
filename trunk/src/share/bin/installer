@@ -24,10 +24,14 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 # $Id$
-	#
-    #
-if [ "${TMPDIR}" = "" ] ; then
-	export TMPDIR=/tmp/scratch
+
+if [ ! -c "${DEVICES}/null" ] ; then
+	if [ -c "/dev/null" ] ; then
+		DEVICES=/dev
+	else
+		echo "Error, no device nodes found"
+		exit 1
+	fi
 fi
 
 get_disk () {
@@ -35,8 +39,8 @@ get_disk () {
 }
 
 real_install () {
-	if [ -c /dev/label/trackfile ] ; then
-		CLEANFILE=$(grep -v ^# /dev/label/trackfile)
+	if [ -c ${DEVICES}/label/trackfile ] ; then
+		CLEANFILE=$(grep -v ^# ${DEVICES}/label/trackfile)
 		for i in $(echo ${CLEANFILE} | grep ^F)
 		do
 			echo "${i}"

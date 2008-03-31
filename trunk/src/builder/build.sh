@@ -62,7 +62,9 @@ do
 
 	# N_ prefix variables are for the file copies from DESTDIR to FSDIR, the 
 	# targets are arch and abi specific.
-	export N_DIR=/.FreeBSD-${ABI}/${TARGET}
+	export N_DIR=/system/FreeBSD-${ABI}/${TARGET}
+	export N_SHAREBIN=/system/share/bin
+	export N_SHARELIB=/system/share/lib
 	export N_BIN=${N_DIR}/bin
 	export N_LIB=${N_DIR}/lib
 	export N_LIBEXEC=${N_DIR}/libexec
@@ -120,7 +122,7 @@ do
 
 
 	# we don't have a real /etc, so point init to systart.
-	sed -i .bak "s_\"/etc/rc_\"/share/bin/systart_g" ${WORKDIR}/usr/src/sbin/init/pathnames.h 1>&2
+	sed -i .bak "s_\"/etc/rc_\"${N_SHAREBIN}/systart_g" ${WORKDIR}/usr/src/sbin/init/pathnames.h 1>&2
 	echo ""
 
 	# We use TMPDIR so that it can be different then the OBJDIR, as TMPDIR is write heavy.
@@ -192,26 +194,24 @@ done
 
 echo -n " * share = Populating FSDIR"
 
-# This is needed for tcsh
-mkdir -p ${FSDIR}/usr/share/misc
-ln -s /share/lib/termcap ${FSDIR}/usr/share/misc/
-# Hard coded paths. Will be removed at some point
-ln -s /lib ${FSDIR}/usr/lib
-mkdir -p ${FSDIR}/cfg
-mkdir -p ${FSDIR}/tmp
-mkdir -p ${FSDIR}/home/root
-mkdir -p ${FSDIR}/dev
-
-# union mount directories.
+# These directories are defined in the Hierarchy.
 mkdir -p ${FSDIR}/bin
 mkdir -p ${FSDIR}/lib
 mkdir -p ${FSDIR}/libexec
 mkdir -p ${FSDIR}/boot
-
+mkdir -p ${FSDIR}/dev
+mkdir -p ${FSDIR}/mem
+mkdir -p ${FSDIR}/config
 
 # Compat scaffolding; Be patched out eventually. However, as all it does is make things look worse, it isn't that bad.
-ln -s /cfg  ${FSDIR}/etc
-ln -s /tmp  ${FSDIR}/var
+
+# This is needed for tcsh
+mkdir -p ${FSDIR}/usr/share/misc
+ln -s /config/termcap ${FSDIR}/usr/share/misc/
+ln -s /lib ${FSDIR}/usr/lib
+mkdir -p ${FSDIR}/home/root
+ln -s /config  ${FSDIR}/etc
+ln -s /mem  ${FSDIR}/var
 ln -s /bin ${FSDIR}/sbin
 
 
@@ -219,16 +219,16 @@ cd ${ROOTDIR}
 # Mirror directory tree of share/
 for dir in $(find share/ -not -path \*.svn\* -type d)
 do
-	mkdir -p ${FSDIR}/${dir}
+	mkdir -p ${FSDIR}/system/${dir}
 done
 
 # Add files in share/ to FSDIR/share, however, strip them of all comments and copyrights for space saving.
 for file in $(find share/ -not -path \*.svn\* -not -type d)
 do
-	grep '#!' ${file} | head -1 >${FSDIR}/${file}
-	grep '$Id' ${file} | head -1 >>${FSDIR}/${file}
-	grep -v '^#' ${file} | grep -v '[[:space:]]#' >>${FSDIR}/${file}
-	chmod a+rx ${FSDIR}/${file}
+	grep '#!' ${file} | head -1 >${FSDIR}/system/${file}
+	grep '$Id' ${file} | head -1 >>${FSDIR}/system/${file}
+	grep -v '^#' ${file} | grep -v '[[:space:]]#' >>${FSDIR}/system/${file}
+	chmod a+rx ${FSDIR}/system/${file}
 done
 
 echo "					[DONE]"
