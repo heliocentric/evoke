@@ -110,19 +110,20 @@ echo "[DONE]"
 
 echo -n "Creating /mem							"
 
+
+# Memory store
+export N_MEMDIR=/mem
+
 # If we are running 7 or higher releases, use tmpfs, everything else,
 # create a large ramdisk.
 
 if [ "${OS}" = "FreeBSD" ] ; then
 	if [ "${ABI}" -ge "7" ] ; then
-		mount -t tmpfs tmpfs /tmp
+		mount -t tmpfs tmpfs ${N_MEMDIR}
 	else
-		mdmfs -s60m md /tmp
+		mdmfs -s60m md ${N_MEMDIR}
 	fi
 fi
-
-# Memory store
-export N_MEMDIR=/mem
 
 # 'Running' files. mainly lockfiles
 export N_RUNDIR=${N_MEMDIR}/run
@@ -147,8 +148,8 @@ mkdir -p ${N_NULLDIR}
 # Scratch directory
 export TMPDIR=${N_MEMDIR}/scratch
 mkdir -p ${TMPDIR}
-chmod 777 /tmp/scratch
-chmod +t /tmp/scratch
+chmod 777 ${TMPDIR}
+chmod +t ${TMPDIR}
 
 # Lib Dir (ie, automagically generated config files.)
 
