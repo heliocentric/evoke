@@ -27,12 +27,12 @@
 
 # Our build targets for the root.fs image.
 export TARGETS="7.0-RELEASE/i386"
-#export TARGETS="7.0-RELEASE/i386 6.3-RELEASE/i386 7.0-RELEASE/amd64"
+export TARGETS="7.0-RELEASE/i386"
 export i386_ACTIVE="7.0-RELEASE/i386"
 
 # DamnSmallBSD Version
 export VERSION="HEAD"
-export REVISION=$(svn info | grep ^Revision | awk '{ print $2; }')
+export REVISION=$(svnversion)
 
 # Release Engineer
 export ENGINEER="Dylan Cochran"
