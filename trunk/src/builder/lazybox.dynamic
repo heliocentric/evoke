@@ -58,7 +58,7 @@ CRUNCH_LIBS+= -lutil -ll -ledit -ltermcap -lcrypt
 #
 CRUNCH_SRCDIRS+= bin usr.bin
 CRUNCH_PROGS_bin= sh test
-CRUNCH_PROGS_usr.bin= cut
+CRUNCH_PROGS_usr.bin= cut uname
 
 # Additional options for specific programs
 CRUNCH_ALIAS_test= [

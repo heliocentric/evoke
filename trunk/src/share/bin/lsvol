@@ -27,6 +27,19 @@
 # $Id$
 sysctl -b kern.geom.conftxt | \
 awk '{
+	if ($2 == "DISK") {
+		if ($3 ~ /cd/) {
+			print $3":cd9660";
+		}
+		else {
+			if ($3 ~ /fd/) {
+				print $3":floppy";
+			}
+			else {
+				print $3":disk";
+			}
+		}
+	}
 	if ($2 == "PART") {
 		# FreeBSD defined values.
 

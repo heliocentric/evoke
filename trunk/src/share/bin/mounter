@@ -31,10 +31,10 @@
 #
 # Also, force noatime mounting, it's unnecessary.
 
-if [ "${OPTIONS}" != "" ] ; then
-	OPTIONS="-o noatime,${OPTIONS}"
+if [ "${MOPTIONS}" != "" ] ; then
+	MOPTIONS="-o noatime,${OPTIONS}"
 else
-	OPTIONS="-o noatime"
+	MOPTIONS="-o noatime"
 fi
 
 if [ ! -c "${DEVICES}/null" ] ; then
@@ -49,28 +49,28 @@ case "${1}" in
 	[fF][tT][pP])
 		if [ "${2}" != "" ] ; then
 			if [ -d "${3}" ] ; then
-				curlftpfs ${OPTIONS} ${2} ${3}
+				curlftpfs ${MOPTIONS} ${2} ${3}
 			fi
 		fi
 	;;
 	[sS][sS][hH])
 		if [ "${2}" != "" ] ; then
 			if [ -d "${3}" ] ; then
-				sshfs ${OPTIONS} -C ${2} ${3}
+				sshfs ${MOPTIONS} -C ${2} ${3}
 			fi
 		fi
 	;;
 	[wW][eE][bB][dD][aA][vV])
 		if [ "${2}" != "" ] ; then
 			if [ -d "${3}" ] ; then
-				wdfs ${OPTIONS} -o accept_sslcert -o svn_mode ${2} ${3}
+				wdfs ${MOPTIONS} -o accept_sslcert -o svn_mode ${2} ${3}
 			fi
 		fi
 	;;
 	[nN][tT][fF][sS])
 		if [ -c "${DEVICES}/${2}" ] ; then
 			if [ -d "${3}" ] ; then
-				ntfs-3g ${OPTIONS} ${DEVICES}/${2} ${3}
+				ntfs-3g ${MOPTIONS} ${DEVICES}/${2} ${3}
 			fi
 		fi
 	;;
@@ -125,7 +125,7 @@ case "${1}" in
 	*)
 		if [ -c ${DEVICES}/"${2}" ] ; then
 			if [ -d "${3}" ] ; then
-				mount ${OPTIONS} -t ${TYPE} ${DEVICES}/${2} ${3}
+				mount ${MOPTIONS} -t ${TYPE} ${DEVICES}/${2} ${3}
 			fi
 		fi
 	;;

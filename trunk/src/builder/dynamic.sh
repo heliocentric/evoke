@@ -38,15 +38,17 @@ cp ${BUILDDIR}/kernels/${RELEASE}/${TARGET} ${WORKDIR}/usr/src/sys/${TARGET}/con
 # Patch in the binary path into the kernel directly, so that loader.conf doesn't need to.
 echo "options INIT_PATH=${N_BIN}/init:/sbin/init:/stand/sysinstall" >> ${WORKDIR}/usr/src/sys/${TARGET}/conf/${KERNCONF}
 
-echo -n " * ${target} = Building World "
 cd ${WORKDIR}/usr/src/
 if [ "${NO_BUILD_WORLD}" = "" ] ; then
+	echo -n " * ${target} = Building World "
 	make -DLOADER_TFTP_SUPPORT LOCAL_DIRS="nsrc" buildworld 1>&2
+	echo ""
 fi
 if [ "${NO_BUILD_KERNEL}" = "" ] ; then
+	echo -n " * ${target} = Building Kernel "
 	make buildkernel 1>&2
+	echo ""
 fi
-echo "				[DONE]"
 
 echo -n " * ${target} = Populating DESTDIR"
 priv make hierarchy 1>&2

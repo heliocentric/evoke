@@ -262,8 +262,8 @@ trackfile_load="YES"
 trackfile_type="mfs_root"
 trackfile_name="${BOOTPREFIX}/trackfile"
 dsbsd.fingerprint="${FINGERPRINT}" 
-# boot_multicons="YES"
-# hw.firewire.dcons_crom.force_console=1
+boot_multicons="YES"
+hw.firewire.dcons_crom.force_console=1
 kern.hz=100
 EOF
 
