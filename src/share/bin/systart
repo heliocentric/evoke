@@ -50,11 +50,34 @@ export TERM=cons25
 export DISPLAY=:-0
 export DEVICES=/dev
 
-export OS=$(sysctl -n kern.ostype)
-export ABI=$(sysctl -n kern.osrelease | cut -d . -f 1)
-export ARCH=$(sysctl -n hw.machine_arch)
-export MACHINE=$(sysctl -n hw.machine)
-
+# Set the OS and ABI environment variables, so we can handle multiple
+# abis/architectures in a neutral way
+export OS=$(uname)
+case "${OS}" in
+	OpenBSD)
+		export ABI="$(sysctl -n kern.osrelease)"
+		export MACHINE="$(machine)"
+		export ARCH="$(machine -a)"
+	;;
+	Darwin)
+		export ABI="$(sysctl -n kern.osrelease | cut -d . -f 1)"
+		export MACHINE="$(sysctl -n hw.machine)"
+		if [ "${MACHINE}" != "i386" ] ; then
+			export MACHINE="powerpc"
+		fi
+		export ARCH="${MACHINE}"
+	;;
+	DragonFly)
+		export ABI="$(sysctl -n kern.osrelease | cut -d . -f 1,2)"
+		export MACHINE="$(sysctl -n hw.machine)"
+		export ARCH="$(sysctl -n hw.machine_arch)"
+	;;
+	*)
+		export ABI="$(sysctl -n kern.osrelease | cut -d . -f 1)"
+		export MACHINE="$(sysctl -n hw.machine)"
+		export ARCH="$(sysctl -n hw.machine_arch)"
+	;;
+esac
 
 echo -n "Merging directories						"
 
@@ -88,6 +111,7 @@ if [ "${ROOTFINGERPRINT}" != "" ] ; then
 		reboot
 	fi
 fi
+mount -o update,rw,async ${ROOTDEV} /
 echo "[DONE]"
 
 echo -n "Adding swap, dump,  and entropy		"

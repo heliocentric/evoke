@@ -25,6 +25,8 @@
 
 # $Id$
 
+# Generic wrappers so that installer will work on FreeBSD.
+
 if [ ! -c "${DEVICES}/null" ] ; then
 	if [ -c "/dev/null" ] ; then
 		DEVICES=/dev
@@ -34,116 +36,12 @@ if [ ! -c "${DEVICES}/null" ] ; then
 	fi
 fi
 
-get_disk () {
-       sysctl -b kern.geom.conftxt | grep -a DISK | awk '{ print $3; }' | grep -v afd | grep -v cd | grep -v acd | grep -v fd | sort
-}
-
-real_install () {
-	if [ -c ${DEVICES}/label/trackfile ] ; then
-		CLEANFILE=$(grep -v ^# ${DEVICES}/label/trackfile)
-		for i in $(echo ${CLEANFILE} | grep ^F)
-		do
-			echo "${i}"
-		done
-	else
-		echo "Trackfile not found"
+if [ "${N_MNTDIR}" = "" ] ; then
+	if [ -d /media ] ; then
+		export N_MNTDIR="/media"
 	fi
-	case "${TYPE}" in
-		tftp)
-			SOURCEDIR=${TMPDIR}/$$/source
-			TARGETDIR=${TMPDIR}/$$/target
-			mkdir -p ${SOURCEDIR}
-			mkdir -p ${TARGETDIR}
-		;;
-		disk)
-			
-		;;
-	esac
-}
+fi
 
-dsbsd_install () {
-	# expect TYPE= to be set to either tftp, cd, or disk.
-	# for tftp, use TFTP_IP as the ip of the tftp server. Always verify.
-	# Use TDISK as the target
-	if [ "${TDISK}" != "" ] ; then
-		echo "Are you absolutely sure you want to DESTROY all data on ${TDISK}?"
-		read -p "Choice: [y/N] " CHOICE
-		case "${CHOICE}" in
-			[yY])
-				real_install
-			;;
-		esac
-	fi
-}
-
-choose_dsbsd_target () {
-	until [ "${BREAKOUT}" = "yes" ] 
-	do
-		clear
-		echo "Choose Target"
-		echo ""
-		echo "-----------------------------"
-		echo ""
-		get_disk | awk '{ print " " NR ") " $0; }'
-		echo " q) Exit"
-		echo ""
-		echo ""
-		read -p "Choice: " CHOICE
-		case "${CHOICE}" in
-			[qQ])
-				return
-			;;
-			*)
-				export TDISK=$(get_disk | awk "NR == ${CHOICE}")
-				return
-			;;
-		esac
-	done
-
-}
-choose_dsbsd_source () {
-		clear
-		echo "Choose Source"
-		echo ""
-		echo "-----------------------------"
-		echo ""
-		echo " t) TFTP"
-		echo " q) Exit"
-		echo ""
-		echo ""
-		read -p "Choice: " CHOICE
-		case "${CHOICE}" in
-			[qQ])
-				return
-			;;
-			[tT])
-				read -p "Enter IP of TFTP server: [$(kenv -q boot.nfsroot.server)]" IP
-				if [ "${IP}" = "" ] ; then
-					export TFTP_IP=$(kenv -q boot.nfsroot.server)
-				else
-					export TFTP_IP=${IP}
-				fi
-				export TYPE=tftp
-			;;
-			*)
-				return
-			;;
-		esac
-
-}
-
-dsbsd_installer () {
-	clear
-	echo "*** Warning! ***"
-	echo "Installer destroys all data on the target device, and does not give you the"
-	echo "option to keep anything. It should only be used for Dedicated DamnSmallBSD boot"
-	echo "devices."
-	echo ""
-	read -p "Press Enter to Continue.  " CHOICE
-	choose_dsbsd_source
-	choose_dsbsd_target
-	dsbsd_install
-}
 
 main_installer () {
 	until [ "${BREAKOUT}" = "yes" ] 
@@ -153,14 +51,22 @@ main_installer () {
 		echo ""
 		echo "-----------------------------"
 		echo ""
-		echo " 1) Install DamnSmallBSD "
+		echo " 1) Prepare Disks"
+		echo " 2) Install FreeBSD"
+		echo " 3) Install DamnSmallBSD "
+		echo " 4) Activater"
 		echo " q) Exit "
 		echo ""
 		echo ""
 		read -p "Choice: " CHOICE
 		case "${CHOICE}" in
-			1)
+			2)
+				bsd_chooser
 				dsbsd_installer
+			;;
+			3)
+				bsd_chooser
+				freebsd_installer
 			;;
 			[qQ])
 				return
@@ -168,5 +74,20 @@ main_installer () {
 		esac
 	done
 }
+
+
+# Main program. Note, we use random sha256 hashes, so that installer 
+# can theoretically be run on a multi-user system
+# Due to other reasons, it can't, but it's not /our/ fault.
+# Not like we can unlink device nodes until we are done, 
+# then relink it, causing exclusivity for our process and it's children.
+# 
+# Give the admin the option, and hope to hell they are smart enough not 
+# to run installer on the same device nodes.
+
+export SOURCEDIR=${N_MNTDIR}/$(dd if=/dev/random bs=4m count=1 2>/dev/null | sha256 -q)
+export DESTDIR=${N_MNTDIR}/$(dd if=/dev/random bs=4m count=1 2>/dev/null | sha256 -q)
+mkdir -p ${SOURCEDIR}
+mkdir -p ${DESTDIR}
 
 main_installer
