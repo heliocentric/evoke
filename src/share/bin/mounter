@@ -78,10 +78,10 @@ case "${1}" in
 	[sS][wW][aA][pP])
 		if [ "${2}" != "" ] ; then
 			if [ "${3}" = "enc" ] ; then
-				geli onetime ${2}
+				geom eli onetime ${DEVICES/${2}
 				swapon ${2}.eli
 			else 
-				swapon ${2}
+				swapon ${DEVICES}/${2}
 			fi
 		fi
 	;;
