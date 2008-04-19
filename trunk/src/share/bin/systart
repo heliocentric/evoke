@@ -235,9 +235,9 @@ if [ "${IP}" != "" -a "${NETMASK}" != "" -a "${GATEWAY}" != "" ] ; then
 	route add default ${GATEWAY} 2>${DEVICES}/null >${DEVICES}/null
 
 	if [ "${DNS}" = "" ] ; then
-		echo "nameserver ${GATEWAY}" >/tmp/lib/resolv.conf
+		echo "nameserver ${GATEWAY}" >/mem/lib/resolv.conf
 	else
-		echo "nameserver ${DNS}" >/tmp/lib/resolv.conf
+		echo "nameserver ${DNS}" >/mem/lib/resolv.conf
 	fi
 
 else
