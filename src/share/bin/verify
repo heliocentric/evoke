@@ -49,42 +49,62 @@ if [ ! -d "${PREFIX}" ] ; then
 	unset PREFIX
 fi
 
-while [ "${1}" != "" ]
-do
-	TYPES="sha256 md5"
-	if [ "${1}" = "-w" ] ; then
-		# We export this so that the recursion portion will be able to write as well
-		export WRITE="yes"
+verify_loop() {
+	while [ "${1}" != "" ]
+	do
+		TYPES="sha256 md5"
+		if [ "${1}" = "-w" ] ; then
+			# We export this so that the recursion portion will be able to write as well
+			export WRITE="yes"
 
-	elif [ -d "${1}" ] ; then
-
-		# Note that this doesn't work as expected when the directory is empty; sh 
-		# interprets * as being a file name, for some reason.
-		# Other then that, it works great for recursion.
-		${BIN} ${1}/*
-
-	elif [ -r "${1}" -a ! -c "${1}" -a ! -b "${1}" ] ; then 
-		for type in ${TYPES}
-		do
-			# We always need the file's hash from the contents, so keep it out
-			# of the conditional
-			RHASH=$(${type} -q "${1}" 2>${DEVICES}/null)
-			if [ "${WRITE}" = "yes" ] ; then
-				setextattr system ${type} ${RHASH} "${1}" 2>${DEVICES}/null
-			else
-				unset FHASH
-				if [ "${FHASH}" = "" ] ; then
-					FHASH=$(getextattr -q system ${type} "${1}" 2>${DEVICES}/null)
-				fi
-				if [ "${RHASH}" != "${FHASH}" ] ; then
-					echo "${type} fail ${1}"					
-				else
-					echo "${type} pass ${1}"
-				fi	
-			fi
-		done
-	else
-		echo "error 1 ${1}"
-	fi
-	shift
-done
+		else 
+			export $(stat -f "STAT_DEV=%d STAT_TYPE=%HT" "${1}")
+			case "${STAT_TYPE}" in	
+				Directory)
+					export STAT_NDEV=$(stat -f "%d" "$(dirname ${1})")
+					if [ "${NO_RECURSE}" != "" -a "${STAT_NDEV}" != "${STAT_DEV}" ] ; then
+						echo "error 2 ${1}"
+					else
+						# We replaced the ${BIN} ${1}/* with this for loop,
+						# as it works around sh's restriction.
+						for entry in $(ls -a ${1})
+						do
+							if [ "${entry}" != "." -a "${entry}" != ".." ] ; then
+								verify_loop ${1}/${entry}
+							fi
+						done
+					fi
+				;;
+				Symbolic*)
+					verify_loop ${1}
+				;;
+				Regular)
+					for type in ${TYPES}
+					do
+						# We always need the file's hash from the contents, so keep it out
+						# of the conditional
+						RHASH=$(${type} -q "${1}" 2>${DEVICES}/null)
+						if [ "${WRITE}" = "yes" ] ; then
+							setextattr system ${type} ${RHASH} "${1}" 2>${DEVICES}/null
+						else
+							unset FHASH
+							if [ "${FHASH}" = "" ] ; then
+								FHASH=$(getextattr -q system ${type} "${1}" 2>${DEVICES}/null)
+							fi
+							if [ "${RHASH}" != "${FHASH}" ] ; then
+								echo "${type} fail ${1}"					
+							else
+								echo "${type} pass ${1}"
+							fi	
+						fi
+					done
+				;;
+				*)
+					echo "error 1 ${1}"
+				;;
+			esac
+		fi
+		shift
+	done
+}
+verify_loop $@
