@@ -212,6 +212,7 @@ ln -s /lib ${FSDIR}/usr/lib
 mkdir -p ${FSDIR}/home/root
 ln -s /config  ${FSDIR}/etc
 ln -s /mem  ${FSDIR}/var
+ln -s /mem/scratch ${FSDIR}/tmp
 ln -s /bin ${FSDIR}/sbin
 
 
