@@ -205,7 +205,7 @@ add_new_resolv_conf() {
 	# thus broke the script. This code creates the resolv.conf if either
 	# are provided.
 
-	local tmpres=${N_RUNDIR}/resolv.conf.${interface}
+	local tmpres=/mem/run/resolv.conf.${interface}
 	rm -f $tmpres
 
 	if [ -n "$new_domain_name" ]; then
@@ -238,14 +238,14 @@ add_new_resolv_conf() {
 		# the new data in the correct location.
 
 		if [ -f /config/resolv.conf ]; then
-			cat /config/resolv.conf > ${N_LIBDIR}/resolv.conf.save
+			cat /config/resolv.conf > /mem/lib/resolv.conf.save
 		fi
-		cat $tmpres > ${N_LIBDIR}/resolv.conf
+		cat $tmpres > /mem/lib/resolv.conf
 		rm -f $tmpres
 
 		# Try to ensure correct ownership and permissions.
-		chown -RL root:wheel ${N_LIBDIR}/resolv.conf
-		chmod -RL 644 ${N_LIBDIR}/resolv.conf
+		chown -RL root:wheel /mem/lib/resolv.conf
+		chmod -RL 644 /mem/lib/resolv.conf
 
 		return 0
 	fi
@@ -335,7 +335,7 @@ EXPIRE|FAIL)
 	# XXX Why add alias we just deleted above?
 	add_new_alias
 	if [ -f /config/resolv.conf.save ]; then
-		cat /config/resolv.conf.save > ${N_LIBDIR}/resolv.conf
+		cat /config/resolv.conf.save > /mem/lib/resolv.conf
 	fi
 	;;
 

@@ -47,7 +47,6 @@ if [ -d "${DESTDIR}" ] ; then
 			for dist in *.aa
 			do
 				distfile=$(echo ${dist} | cut -d \. -f 1)
-				echo -n " * Extracting ${distset}/${distfile} ....."
 				# Dists are extracted to different places depending upon the set, so handle them here.
 				case "${distset}" in
 					src)
@@ -62,11 +61,20 @@ if [ -d "${DESTDIR}" ] ; then
 				esac
 				mkdir -p ${DESTINATION}
 				if [ "${EXCLUDES}" = "" ] ; then
-					cat ${distfile}.?? | gunzip | tar -xpf - -C ${DESTINATION}
+					if [ "${USE_PV}" != "" ] ; then
+						pv ${distfile}.?? -N ${distfile} | gunzip | tar -xpf - -C ${DESTINATION}
+					else
+						echo "Extracting ${distfile}"
+						cat ${distfile}.?? | gunzip | tar -xpf - -C ${DESTINATION}
+					fi
 				else
-					cat ${distfile}.?? | gunzip | tar -xpf - --exclude "${EXCLUDES}" -C ${DESTINATION}
+					if [ "${USE_PV}" != "" ] ; then
+						pv ${distfile}.?? -N ${distfile} | gunzip | tar -xpf - --exclude "${EXCLUDES}" -C ${DESTINATION}
+					else
+						echo "Extracting ${distfile}"
+						cat ${distfile}.?? | gunzip | tar -xpf - --exclude "${EXCLUDES}" -C ${DESTINATION}
+					fi
 				fi
-				echo " [DONE]"
 			done
 		else
 			exit 5
