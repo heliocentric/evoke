@@ -78,7 +78,7 @@ case "${1}" in
 	[sS][wW][aA][pP])
 		if [ "${2}" != "" ] ; then
 			if [ "${3}" = "enc" ] ; then
-				geom eli onetime ${DEVICES}/${2}
+				geom eli onetime -d ${DEVICES}/${2}
 				swapon ${DEVICES}/${2}.eli
 			else 
 				swapon ${DEVICES}/${2}

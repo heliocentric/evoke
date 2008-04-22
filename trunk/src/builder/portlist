@@ -5,7 +5,7 @@ B:mount_fusefs:sysutils/fusefs-kmod:
 B:wdfs:sysutils/fusefs-wdfs:
 B:sshfs:sysutils/fusefs-sshfs:
 B:vac:devel/plan9port:
-
+B:pv:sysutils:pv:
 
 B:makefs:sysutils/makefs:
 B:nano:editors/nano:
