@@ -32,7 +32,7 @@
 # Also, force noatime mounting, it's unnecessary.
 
 if [ "${MOPTIONS}" != "" ] ; then
-	MOPTIONS="-o noatime,${OPTIONS}"
+	MOPTIONS="-o noatime,${MOPTIONS}"
 else
 	MOPTIONS="-o noatime"
 fi
@@ -88,7 +88,6 @@ case "${1}" in
 
 	[dD][uU][mM][pP])
 		if [ "${2}" != "" ] ; then
-			echo ${DEVICES}/${2}
 			dumpon ${DEVICES}/${2}
 		fi
 	;;
@@ -101,6 +100,21 @@ case "${1}" in
 				dd of=${DEVICES}/random if=${DEVICES}/${2} bs=2048 count=1 2>${DEVICES}/null
 			fi
 		fi
+	;;
+	[uU][nN][mM][oO][uU][nN][tT])
+		mount | awk -v MOUNTPOINT=$2 '{
+			mount=$3
+			devicenode=$1
+			if (mount == MOUNTPOINT) {
+				if (devicenode ~ /fuse/) {
+					system("umount " devicenode);
+					close("umount " devicenode);
+				} else {
+					system("umount " mount);
+					close ("umount " mount);
+				}
+			}
+		}'
 	;;
   	[lL][iI][sS][tT])
 
@@ -125,7 +139,7 @@ case "${1}" in
 	*)
 		if [ -c ${DEVICES}/"${2}" ] ; then
 			if [ -d "${3}" ] ; then
-				mount ${MOPTIONS} -t ${TYPE} ${DEVICES}/${2} ${3}
+				mount -t ${1} ${MOPTIONS} ${DEVICES}/${2} ${3}
 			fi
 		fi
 	;;
