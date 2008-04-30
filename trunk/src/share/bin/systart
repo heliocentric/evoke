@@ -199,7 +199,6 @@ cap_mkdb -f ${N_LIBDIR}/login.conf.db ${N_CFGDIR}/login.conf
 echo "/bin/tcsh" >>${N_LIBDIR}/shells
 echo "/bin/csh" >>${N_LIBDIR}/shells
 echo "/bin/sh" >>${N_LIBDIR}/shells
-echo "[DONE]"
 
 
 echo "Configuring network"

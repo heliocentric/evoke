@@ -90,7 +90,6 @@ bsd_chooser() {
 		ROOTFS=$(menu "Choose Root Filesystem" "mounter list boot-ufs")
 	fi
 	mounter ufs ${ROOTFS} ${DESTDIR}
-
 }
 
 # Disk partitioning function
@@ -125,6 +124,9 @@ menu() {
 	echo "" 1>&2
 	read -p "Choice: " CHOICE
 	$2 | awk -v CHOICE=${CHOICE} '{ if (NR == CHOICE) { print $1 } }'
+}
+
+freebsd_installer() {
 }
 
 # Main program. Note, we use random sha256 hashes, so that installer 

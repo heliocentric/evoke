@@ -123,18 +123,45 @@ case "${1}" in
 	# wants to automount volumes into that directory. For example, 
 	# mounter list ufs /media will mount all ufs partitions into 
 	# /media named after their geom name. ie, /media/da0s1a, etc.
+		case "${2}" in
+			[Ff][sS])
+				lsvfs | awk '{ 
+					if (NR > 2) 
+					{
+						if ($3 != "synthetic" && $3 != "loopback" && $1 != "tmpfs") {
+							print $1 
+						}
+					}
+				}'
+				for fuse in wdfs sshfs curlftpfs ntfs-3g
+				do
+					command -v ${fuse} >${DEVICES}/null 
+					if [ "$?" != "127" ] ; then
+						case "${fuse}" in
+							sshfs) echo ssh ;;
+							ntfs-3g) echo ntfs ;;
+							curlftpfs) echo ftp ;;
+							wdfs) echo webdav ;;
+						esac
+					fi
+				done
+				
+			;;
 
-		if [ "${2}" != "" ] ; then
-			for i in $(lsvol | grep :${2})
-			do
-				if [ -d "${3}" ] ; then
-					mkdir -p ${3}/${i}
-					mounter ${2} ${i} ${3}/${i}
-				else
-					echo ${i} | cut -d : -f 1
+			*)
+				if [ "${2}" != "" ] ; then
+					for i in $(lsvol | grep :${2})
+					do
+						if [ -d "${3}" ] ; then
+							mkdir -p ${3}/${i}
+							mounter ${2} ${i} ${3}/${i}
+						else
+							echo ${i} | cut -d : -f 1
+						fi
+					done
 				fi
-			done
-		fi
+			;;
+		esac
 	;;
 	*)
 		if [ -c ${DEVICES}/"${2}" ] ; then

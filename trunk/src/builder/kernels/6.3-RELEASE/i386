@@ -42,7 +42,6 @@ device		pfsync
 options 	FFS
 options 	FDESCFS
 options 	MSDOSFS
-options 	NTFS
 options 	NULLFS
 options 	PORTALFS
 options 	PROCFS
