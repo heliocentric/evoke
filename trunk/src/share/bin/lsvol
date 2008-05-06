@@ -68,6 +68,7 @@ awk '{
 		}
 		if ($11 == "!12f31621-10a0-4a3c-a0e8-9406c2e485f0") {
 			print $3":boot-ufs";
+			print $3":ufs";
 		}
 	}
 	if ($2 == "BSD") {
@@ -75,9 +76,8 @@ awk '{
 			if ($3 ~ /a$/) { 
 				print $3":boot-ufs";
 			}
-			else {
-				print $3":ufs";
-			}
+			print $3":ufs";
+
 		}
 		if ($11 == "8") {
 			print $3":msdosfs";

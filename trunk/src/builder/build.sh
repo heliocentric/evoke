@@ -24,6 +24,7 @@ export FSDIR=${OBJDIR}/fsdir
 
 if [ "${VERSION}" = "HEAD" ] ; then
 	if [ "${REVISION}" != "" ] ; then
+		export RVERSION="HEAD"
 		export VERSION=r${REVISION}
 	fi
 fi
@@ -310,6 +311,8 @@ echo "					[DONE]"
 echo -n " * share = Creating RELEASEDIR"
 cd ${BOOTDIR}${BOOTPREFIX}
 tar -cf - * | tar -xf - -C ${RELEASEDIR}${BOOTPREFIX}/
+rm ${RELEASEDIR}/dsbsd/{RVERSION}
+ln -s ${VERSION} ${RELEASEDIR}/dsbsd/${RVERSION}
 echo ""
 
 echo -n " * share = Making ISO image"

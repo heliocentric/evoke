@@ -42,6 +42,12 @@ if [ "${N_MNTDIR}" = "" ] ; then
 	fi
 fi
 
+echo "WARNING. installer is experimental, and there ARE bugs"
+echo "that will result in loss of data. DO NOT USE"
+read -p "Continue? [yN]: " CONT
+if [ "${CONT}" != "y" ] ; then
+	exit
+fi
 
 main_installer () {
 	until [ "${BREAKOUT}" = "yes" ] 
@@ -87,6 +93,7 @@ bsd_chooser() {
 	esac
 	clear
 	if [ "${ROOTFS}" = "" ] ; then
+		clear
 		ROOTFS=$(menu "Choose Root Filesystem" "mounter list boot-ufs")
 	fi
 	mounter ufs ${ROOTFS} ${DESTDIR}
@@ -100,7 +107,7 @@ partdisk() {
 	read ANSWER
 	case "${ANSWER}" in
 		[yY])
-			dd if=/dev/zero bs=4m count=1 of=${DEVICES}/${RESULT}
+			dd if=/dev/zero bs=4m count=1 of=${DEVICES}/${RESULT} 2>${DEVICES}/null
 			fdisk -IB ${DEVICES}/${RESULT}
 			bsdlabel -wB ${DEVICES}/${RESULT}s1
 			bsdlabel -e ${DEVICES}/${RESULT}s1
@@ -120,13 +127,31 @@ partdisk() {
 menu() {
 	echo "${1}:" 1>&2
 	echo "" 1>&2
-	$2 | awk '{ print " " NR ") " $1 }' 1>&2
+	eval $2 | awk '{ print " " NR ") " $0 }' 1>&2
 	echo "" 1>&2
 	read -p "Choice: " CHOICE
-	$2 | awk -v CHOICE=${CHOICE} '{ if (NR == CHOICE) { print $1 } }'
+	eval $2 | awk -v CHOICE=${CHOICE} '{ if (NR == CHOICE) { print $0 } }'
 }
 
 freebsd_installer() {
+	unset BREAKOUT
+	while [ "${BREAKOUT}" != "yes" ]
+	do
+		clear
+		SRCFS=$(menu "Choose Source" "mounter list fs")
+		clear
+		SRCLOC=$(menu "Choose Location" "(mounter list ${SRCFS} ; echo Enter Location)")
+		if [ "${SRCLOC}" = "Enter Location" ] ; then
+			echo "Please type the device node or URL you wish to use."
+			echo "ex. ad0s1a, or http:///www.google.com"
+			read -p ": " SRCLOC
+		fi
+		BREAKOUT="yes"
+	done
+	mounter ${SRCFS} ${SRCLOC} ${SOURCEDIR}
+}
+
+dsbsd_installer() {
 }
 
 # Main program. Note, we use random sha256 hashes, so that installer 
@@ -144,7 +169,8 @@ export DESTDIR=${N_MNTDIR}/$(dd if=/dev/random bs=4m count=1 2>/dev/null | sha25
 mkdir -p ${SOURCEDIR}
 mkdir -p ${DESTDIR}
 
-main_installer
+#main_installer
+freebsd_installer
 mounter unmount ${DESTDIR}
 mounter unmount ${SOURCEDIR}
 rm -r ${SOURCEDIR}
