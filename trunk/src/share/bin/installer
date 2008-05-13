@@ -138,7 +138,7 @@ freebsd_installer() {
 	while [ "${BREAKOUT}" != "yes" ]
 	do
 		clear
-		SRCFS=$(menu "Choose Source" "mounter list fs")
+		SRCFS=$(menu "Choose Source" "mounter list fs | sort")
 		clear
 		SRCLOC=$(menu "Choose Location" "(mounter list ${SRCFS} ; echo Enter Location)")
 		if [ "${SRCLOC}" = "Enter Location" ] ; then
@@ -149,6 +149,7 @@ freebsd_installer() {
 		BREAKOUT="yes"
 	done
 	mounter ${SRCFS} ${SRCLOC} ${SOURCEDIR}
+
 }
 
 dsbsd_installer() {

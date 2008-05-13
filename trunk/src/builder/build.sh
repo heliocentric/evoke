@@ -311,7 +311,7 @@ echo "					[DONE]"
 echo -n " * share = Creating RELEASEDIR"
 cd ${BOOTDIR}${BOOTPREFIX}
 tar -cf - * | tar -xf - -C ${RELEASEDIR}${BOOTPREFIX}/
-rm ${RELEASEDIR}/dsbsd/{RVERSION}
+rm ${RELEASEDIR}/dsbsd/${RVERSION}
 ln -s ${VERSION} ${RELEASEDIR}/dsbsd/${RVERSION}
 echo ""
 

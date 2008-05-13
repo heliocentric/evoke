@@ -56,3 +56,4 @@ options 	XFS
 options 	LINPROCFS
 options		LINSYSFS
 options 	COMPAT_LINUX
+device if_bridge
