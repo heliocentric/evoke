@@ -29,14 +29,14 @@ sysctl -b kern.geom.conftxt | \
 awk '{
 	if ($2 == "DISK") {
 		if ($3 ~ /cd/) {
-			print $3":cd9660";
+			print "cd9660:"$3;
 		}
 		else {
 			if ($3 ~ /fd/) {
-				print $3":floppy";
+				print "floppy:"$3;
 			}
 			else {
-				print $3":disk";
+				print "disk:"$3;
 			}
 		}
 	}
@@ -44,84 +44,90 @@ awk '{
 		# FreeBSD defined values.
 
 		if ($11 == "freebsd-ufs") {
-			print $3":ufs";
+			print "ufs:"$3;
 		}
 		if ($11 == "freebsd-swap") {
-			print $3":swap";
+			print "swap:"$3;
 		}
 
 		# Our usage values.
 		if ($11 == "!4b4cf826-e53e-4b56-86b6-0f9b728e0436") {
-			print $3":nvram";
+			print "nvram:"$3;
 		}
 		if ($11 == "!fa8e2f44-6728-490a-89ae-a8e286be45af") {
-			print $3":dump";
+			print "dump:"$3;
 		}
 		if ($11 == "!ac4b7c4a-9c4c-4687-b55f-f51a731d36d2") {
-			print $3":entropy";
+			print "entropy:"$3;
 		}
 		if ($11 == "!72717d60-1a4b-43e2-bca3-4418bc0669ee") {
-			print $3":buildenv-v1";
+			print "buildenv-v1:"$3;
 		}
 		if ($11 == "!0b79a13e-87f2-4238-a86d-d00bd1fce04e") {
-			print $3":object";
+			print "object:"$3;
 		}
 		if ($11 == "!12f31621-10a0-4a3c-a0e8-9406c2e485f0") {
-			print $3":boot-ufs";
-			print $3":ufs";
+			print "boot-ufs:"$3;
+			print "ufs:"$3;
 		}
 	}
 	if ($2 == "BSD") {
 		if ($11 == "7") {
 			if ($3 ~ /a$/) { 
-				print $3":boot-ufs";
+				print "boot-ufs:"$3;
 			}
-			print $3":ufs";
+			print "ufs:"$3;
 
 		}
 		if ($11 == "8") {
-			print $3":msdosfs";
+			print "msdosfs:"$3;
 		}
 		if ($11 == "1") {
-			print $3":swap";
+			print "swap:"$3;
 		}
 		if ($11 == "12") {
-			print $3":cd9660";
+			print "cd9660:"$3;
 		}
 		if ($11 == "17") {
-			print $3":ext2fs";
+			print "ext2fs:"$3;
 		}
 		if ($11 == "18") {
-			print $3":ntfs";
+			print "ntfs:"$3;
 		}
 		if ($11 == "24") {
-			print $3":udf";
+			print "udf:"$3;
 		}
 		if ($11 == "27") {
-			print $3":zfs";
+			print "zfs:"$3;
 		}
 	}
 	else if ($2 == "MBR") {
 		if ($11 == "4") {
-			print $3":msdosfs";
+			print "msdosfs:"$3;
 		}
 		else if ($11 == "6") {
-			print $3":msdosfs";
+			print "msdosfs:"$3;
 		} 
 		else if ($11 == "130") {
-			print $3":swap";
+			print "swap:"$3;
 		} 
 		else if ($11 == "131") {
-			print $3":linux";
+			print "linux:"$3;
 		} 
 		else if ($11 == "11") {
-			print $3":msdosfs";
+			print "msdosfs:"$3;
 		} 
 		else if ($11 == "14") {
-			print $3":msdosfs";
+			print "msdosfs:"$3;
 		} 
 		else if ($11 == "7") {
-			print $3":ntfs";
+			print "ntfs:"$3;
 		} 
 	}
 }'
+if [ "${FTPURLS}" != "" ] ; then
+	for url in ${FTPURLS}
+	do
+		echo ftp:${url}
+	done
+fi

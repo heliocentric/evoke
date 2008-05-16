@@ -52,7 +52,6 @@ fi
 main_installer () {
 	until [ "${BREAKOUT}" = "yes" ] 
 	do
-		clear
 		echo "Installer"
 		echo ""
 		echo "-----------------------------"
@@ -91,7 +90,6 @@ bsd_chooser() {
 			partdisk freebsd
 		;;
 	esac
-	clear
 	if [ "${ROOTFS}" = "" ] ; then
 		clear
 		ROOTFS=$(menu "Choose Root Filesystem" "mounter list boot-ufs")
@@ -101,7 +99,6 @@ bsd_chooser() {
 
 # Disk partitioning function
 partdisk() {
-	clear
 	RESULT=$(menu "Choose Disk" "mounter list disk")
 	echo -n "Do you want to use the entire disk? [yN]"
 	read ANSWER
@@ -135,21 +132,34 @@ menu() {
 
 freebsd_installer() {
 	unset BREAKOUT
+	export FTPURLS="ftp.freebsd.org/pub/FreeBSD/releases
+			ftp-archive.freebsd.org/pub/FreeBSD-Archive/old-releases"
 	while [ "${BREAKOUT}" != "yes" ]
 	do
-		clear
 		SRCFS=$(menu "Choose Source" "mounter list fs | sort")
-		clear
 		SRCLOC=$(menu "Choose Location" "(mounter list ${SRCFS} ; echo Enter Location)")
 		if [ "${SRCLOC}" = "Enter Location" ] ; then
 			echo "Please type the device node or URL you wish to use."
-			echo "ex. ad0s1a, or http:///www.google.com"
+			echo "ex. ad0s1a, or ftp.freebsd.org/pub/FreeBSD/"
 			read -p ": " SRCLOC
 		fi
-		BREAKOUT="yes"
+		RSRCDIR=${SOURCEDIR}
+		mounter ${SRCFS} ${SRCLOC} ${SOURCEDIR}
+		RELEASES="$(ls -p ${SOURCEDIR} | grep /$ | cut -d / -f 1 | egrep '^[0-9.]+-[a-zA-Z0-9]')" >/dev/null
+		if [ "${RELEASES}" = "" ] ; then
+			ARCH=$(menu "Choose Architecture" "ls -p ${SOURCEDIR} | grep /$ | cut -d / -f 1")
+			RELEASES="$(ls -p ${SOURCEDIR}/${ARCH} |  grep /$ | cut -d / -f 1 | egrep '^[0-9.]+-[a-zA-Z0-9]')" >/dev/null
+			if [ "${RELEASES}" = "" ] ; then
+				echo "Error, unable to find a suitable release"
+				mounter unmount ${RSRCDIR}
+			else
+				RELEASE=$(menu "Choose Release" "ls -p ${SOURCEDIR}/${ARCH} | grep /$ | cut -d / -f 1 | grep '^[0-9].[0-9].[a-zA-Z0-9].'")
+				BREAKOUT="yes"
+			fi		
+		else
+			BREAKOUT="yes"
+		fi
 	done
-	mounter ${SRCFS} ${SRCLOC} ${SOURCEDIR}
-
 }
 
 dsbsd_installer() {
