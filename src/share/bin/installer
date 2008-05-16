@@ -154,12 +154,20 @@ freebsd_installer() {
 				mounter unmount ${RSRCDIR}
 			else
 				RELEASE=$(menu "Choose Release" "ls -p ${SOURCEDIR}/${ARCH} | grep /$ | cut -d / -f 1 | grep '^[0-9].[0-9].[a-zA-Z0-9].'")
+				export SRCDIR=${SOURCEDIR}/${ARCH}/${RELEASE}
 				BREAKOUT="yes"
 			fi		
 		else
+			RELEASE=$(menu "Choose Release" "ls -p ${SOURCEDIR}/${ARCH} | grep /$ | cut -d / -f 1 | grep '^[0-9].[0-9].[a-zA-Z0-9].'")
+			export SRCDIR=${SOURCEDIR}/${RELEASE}
 			BREAKOUT="yes"
 		fi
 	done
+	read -p "Last Chance, are you sure you want to install ${RELEASE}/${ARCH}? [y/N] " ANSWER
+	if [ "${ANSWER}" = "y" ] ; then
+		DISTS="base catpages doc games info manpages kernels proflibs src" distextract
+	fi
+	tcsh
 }
 
 dsbsd_installer() {
@@ -180,8 +188,8 @@ export DESTDIR=${N_MNTDIR}/$(dd if=/dev/random bs=4m count=1 2>/dev/null | sha25
 mkdir -p ${SOURCEDIR}
 mkdir -p ${DESTDIR}
 
-#main_installer
-freebsd_installer
+main_installer
+#freebsd_installer
 mounter unmount ${DESTDIR}
 mounter unmount ${SOURCEDIR}
 rm -r ${SOURCEDIR}
