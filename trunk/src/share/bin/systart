@@ -50,6 +50,7 @@ export TERM=cons25
 export DISPLAY=:-0
 export DEVICES=/dev
 export EDITOR=nano
+export USE_PV=yes
 
 # Set the OS and ABI environment variables, so we can handle multiple
 # abis/architectures in a neutral way

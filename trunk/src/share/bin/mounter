@@ -150,13 +150,14 @@ case "${1}" in
 
 			*)
 				if [ "${2}" != "" ] ; then
-					for i in $(lsvol | grep :${2})
+					for i in $(lsvol | grep ${2}:)
 					do
+						DEVNODE=$(echo ${i} | cut -d : -f 2)
 						if [ -d "${3}" ] ; then
 							mkdir -p ${3}/${i}
-							mounter ${2} ${i} ${3}/${i}
+							mounter ${2} ${DEVNODE} ${3}/${DEVNODE}
 						else
-							echo ${i} | cut -d : -f 1
+							echo ${DEVNODE}
 						fi
 					done
 				fi
