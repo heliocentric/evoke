@@ -322,6 +322,11 @@ echo -n " * share = Making ISO image"
 mkdir -p ${BOOTDIR}/cdboot
 cp ${BOOTDIR}/dsbsd/${VERSION}/freebsd$(echo ${i386_ACTIVE} | cut -d "." -f 1)/$(echo ${i386_ACTIVE} | cut -d "/" -f 2)/cdboot ${BOOTDIR}/cdboot/i386
 mkdir -p ${RELEASEDIR}/ISO-IMAGES/${VERSION}
+if [ -d "${BOOTOVERLAY}" ] ; then
+	cd ${BOOTOVERLAY}
+	tar -cf - --exclude ".." --exclude "." * .* | tar -xf - -C ${BOOTDIR}/
+fi
+
 cd ${RELEASEDIR}/ISO-IMAGES/${VERSION}
 
 # DO NOT TOUCH UNDER PENALTY OF DEATH.

@@ -53,3 +53,5 @@ options 	LINPROCFS
 options		LINSYSFS
 options 	COMPAT_LINUX32
 device if_bridge
+device		atapicam
+nodevice	atapicd
