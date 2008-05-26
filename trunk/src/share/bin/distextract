@@ -65,14 +65,14 @@ if [ -d "${DESTDIR}" ] ; then
 						pv ${distfile}.?? -N ${distfile} | gunzip | tar -xpf - -C ${DESTINATION}
 					else
 						echo "Extracting ${distfile}"
-						cat ${distfile}.?? | gunzip | tar -xpf - -C ${DESTINATION}
+						cat ${distfile}.?? | gunzip | tar -xpvf - -C ${DESTINATION}
 					fi
 				else
 					if [ "${USE_PV}" != "" ] ; then
 						pv ${distfile}.?? -N ${distfile} | gunzip | tar -xpf - --exclude "${EXCLUDES}" -C ${DESTINATION}
 					else
 						echo "Extracting ${distfile}"
-						cat ${distfile}.?? | gunzip | tar -xpf - --exclude "${EXCLUDES}" -C ${DESTINATION}
+						cat ${distfile}.?? | gunzip | tar -xpvf - --exclude "${EXCLUDES}" -C ${DESTINATION}
 					fi
 				fi
 			done

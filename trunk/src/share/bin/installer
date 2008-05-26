@@ -136,18 +136,27 @@ freebsd_installer() {
 			ftp-archive.freebsd.org/pub/FreeBSD-Archive/old-releases"
 	while [ "${BREAKOUT}" != "yes" ]
 	do
-		SRCFS=$(menu "Choose Source" "mounter list fs | sort")
+		SRCFS=$(menu "Choose Source" "mounter list fs | sort ; echo Select Path")
 		SRCLOC=$(menu "Choose Location" "(mounter list ${SRCFS} ; echo Enter Location)")
-		if [ "${SRCLOC}" = "Enter Location" ] ; then
-			echo "Please type the device node or URL you wish to use."
-			echo "ex. ad0s1a, or ftp.freebsd.org/pub/FreeBSD/"
-			read -p ": " SRCLOC
-		fi
 		RSRCDIR=${SOURCEDIR}
-		mounter ${SRCFS} ${SRCLOC} ${SOURCEDIR}
+		if [ "${SRCLOC}" = "Enter Location" ] ; then
+			if [ "${SRCFS}" = "Select Path" ] ; then
+				echo "Please type the full path name, starting at /"
+				read -p ": " SOURCEDIR
+				export SOURCEDIR
+			else
+				echo "Please type the device node or URL you wish to use."
+				echo "ex. ad0s1a, or ftp.freebsd.org/pub/FreeBSD/"
+				read -p ": " SRCLOC
+				mounter ${SRCFS} ${SRCLOC} ${SOURCEDIR}
+			fi
+		else
+			mounter ${SRCFS} ${SRCLOC} ${SOURCEDIR}
+
+		fi
 		RELEASES="$(ls -p ${SOURCEDIR} | grep /$ | cut -d / -f 1 | egrep '^[0-9.]+-[a-zA-Z0-9]')" >/dev/null
 		if [ "${RELEASES}" = "" ] ; then
-			ARCH=$(menu "Choose Architecture" "ls -p ${SOURCEDIR} | grep /$ | cut -d / -f 1")
+			ARCH=$(menu "Choose Architecture" "ls -p ${SOURCEDIR} | grep /$ | cut -d / -f 1 | grep -v dsbsd | grep -v boot | grep -v cdboot")
 			RELEASES="$(ls -p ${SOURCEDIR}/${ARCH} |  grep /$ | cut -d / -f 1 | egrep '^[0-9.]+-[a-zA-Z0-9]')" >/dev/null
 			if [ "${RELEASES}" = "" ] ; then
 				echo "Error, unable to find a suitable release"
@@ -167,7 +176,14 @@ freebsd_installer() {
 	if [ "${ANSWER}" = "y" ] ; then
 		DISTS="base catpages doc games info manpages kernels proflibs src" distextract
 	fi
-	tcsh
+cat >>${DESTDIR}/boot/loader.conf << EOF
+kernel="GENERIC"
+vfs.root.mountfrom="ufs:ufs/${ROOTHASH}"
+geom_label_load="YES"
+EOF
+cat >>${DESTDIR}/etc/fstab << EOF
+/dev/ufs/${ROOTHASH}	/	ufs	rw,noatime	1	1
+EOF
 }
 
 dsbsd_installer() {
@@ -192,5 +208,6 @@ main_installer
 #freebsd_installer
 mounter unmount ${DESTDIR}
 mounter unmount ${SOURCEDIR}
-rm -r ${SOURCEDIR}
-rm -r ${DESTDIR}
+rmdir ${SOURCEDIR}
+rmdir ${DESTDIR}
+rmdir ${RSRCDIR}
