@@ -34,12 +34,14 @@ list_if () {
                        ;;
                         slip*)
                        ;;
-                        fwe*)
+                        fw*)
                        ;;
                         ppp*)
                        ;;
 			net*)
 		       ;;
+			pf*)
+			;;
                        *)
 				echo ${i}
                        ;;
@@ -227,7 +229,7 @@ GATEWAY="$(kenv -q boot.netif.gateway)"
 # I should request it.
 
 DNS="$(kenv -q boot.netif.dns)"
-
+sysctl net.inet6.ip6.accept_rtadv=1
 INTERFACES=$(list_if)
 for network in ${INTERFACES}
 do
@@ -239,12 +241,13 @@ do
 	ifconfig ${BRIDGEIF} lladdr ${NICLINK}
 	ifconfig ${network} up
 	ifconfig ${BRIDGEIF} addm ${network} stp ${network} up
-	ifconfig ${BRIDGEIF} name 
+	ifconfig ${BRIDGEIF} name ${NETNAME}
 	if [ "${network}" = "${IF}" ] ; then
 		IF=${NETNAME}
 	fi
 	rtsol ${network}
 done
+sysctl net.inet6.ip6.accept_rtadv=0
 
 if [ "${IP}" != "" -a "${NETMASK}" != "" -a "${GATEWAY}" != "" ] ; then
 	ifconfig ${IF} inet ${IP} netmask ${NETMASK}
