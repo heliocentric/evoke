@@ -51,7 +51,7 @@ pwd_mkdb reboot rm route sed sh sha1 sha256 ssh ssh-keygen sshd stty
 swapon swapoff swapinfo syslogd tail tar tcsh tftp tftpd top umount 
 uniq unlink usbdevs vidcontrol whoami zcat sort pfctl du makefs 
 mount_msdosfs getextattr setextattr devinfo newfs_msdos stat dirname lsvfs
-rtsol egrep mount_cd9660
+rtsol egrep mount_cd9660 rmdir
 "
 
 # List of kernel objects in base that will be on the image. Ports modules
