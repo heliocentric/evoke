@@ -122,17 +122,17 @@ echo "Adding swap, dump,  and entropy"
 
 for swap in $(mounter list swap)
 do
-	mounter swap ${swap} enc
+#	mounter swap ${swap} enc
 done
 
 for entropy in $(mounter list entropy)
 do
-	mounter entropy ${entropy}
+#	mounter entropy ${entropy}
 done
 
 DUMPDEV=$(mounter list dump | awk '{ print $1 }')
 
-mounter dump ${DUMPDEV}
+#mounter dump ${DUMPDEV}
 
 
 echo "Creating /mem"
@@ -231,22 +231,22 @@ GATEWAY="$(kenv -q boot.netif.gateway)"
 DNS="$(kenv -q boot.netif.dns)"
 sysctl net.inet6.ip6.accept_rtadv=1
 INTERFACES=$(list_if)
-for network in ${INTERFACES}
-do
-	BRIDGEIF=$(ifconfig bridge create)
-	NETNAME=net$(echo ${BRIDGEIF} | cut -c 7-100)
-	NICLINK=$(ifconfig ${network} | grep ether | awk ' { print $2 }')
-	BRIDGELINK=$(ifconfig ${BRIDGEIF} | grep ether | awk ' { print $2 }')
-	ifconfig ${network} lladdr ${BRIDGELINK}
-	ifconfig ${BRIDGEIF} lladdr ${NICLINK}
-	ifconfig ${network} up
-	ifconfig ${BRIDGEIF} addm ${network} stp ${network} up
-	ifconfig ${BRIDGEIF} name ${NETNAME}
-	if [ "${network}" = "${IF}" ] ; then
-		IF=${NETNAME}
-	fi
-	rtsol ${network}
-done
+#for network in ${INTERFACES}
+#do
+#	BRIDGEIF=$(ifconfig bridge create)
+#	NETNAME=net$(echo ${BRIDGEIF} | cut -c 7-100)
+#	NICLINK=$(ifconfig ${network} | grep ether | awk ' { print $2 }')
+#	BRIDGELINK=$(ifconfig ${BRIDGEIF} | grep ether | awk ' { print $2 }')
+#	ifconfig ${network} lladdr ${BRIDGELINK}
+#	ifconfig ${BRIDGEIF} lladdr ${NICLINK}
+#	ifconfig ${network} up
+#	ifconfig ${BRIDGEIF} addm ${network} stp ${network} up
+#	ifconfig ${BRIDGEIF} name ${NETNAME}
+#	if [ "${network}" = "${IF}" ] ; then
+#		IF=${NETNAME}
+#	fi
+#	rtsol ${network}
+#done
 sysctl net.inet6.ip6.accept_rtadv=0
 
 if [ "${IP}" != "" -a "${NETMASK}" != "" -a "${GATEWAY}" != "" ] ; then
