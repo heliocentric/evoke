@@ -103,9 +103,11 @@ awk '{
 	}
 	else if ($2 == "MBR") {
 		if ($11 == "4") {
+			print "boot-msdosfs:"$3;
 			print "msdosfs:"$3;
 		}
 		else if ($11 == "6") {
+			print "boot-msdosfs:"$3;
 			print "msdosfs:"$3;
 		} 
 		else if ($11 == "130") {
@@ -115,9 +117,11 @@ awk '{
 			print "linux:"$3;
 		} 
 		else if ($11 == "11") {
+			print "boot-msdosfs:"$3;
 			print "msdosfs:"$3;
 		} 
 		else if ($11 == "14") {
+			print "boot-msdosfs:"$3;
 			print "msdosfs:"$3;
 		} 
 		else if ($11 == "7") {
