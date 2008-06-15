@@ -30,148 +30,150 @@
 # simpler. Plus, spaces can be used explicitly.
 #
 # Also, force noatime mounting, it's unnecessary.
-
-if [ "${MOPTIONS}" != "" ] ; then
-	MOPTIONS="-o noatime,${MOPTIONS}"
-else
-	MOPTIONS="-o noatime"
-fi
-
-if [ ! -c "${DEVICES}/null" ] ; then
-	if [ -c "/dev/null" ] ; then
-		DEVICES=/dev
+old_mounter () {
+	if [ "${MOPTIONS}" != "" ] ; then
+		MOPTIONS="-o noatime,${MOPTIONS}"
 	else
-		echo "Error, no device nodes found"
-		exit 1
+		MOPTIONS="-o noatime"
 	fi
-fi
-case "${1}" in
-	[fF][tT][pP])
-		if [ "${2}" != "" ] ; then
-			if [ -d "${3}" ] ; then
-				curlftpfs ${MOPTIONS} ${2} ${3}
-			fi
-		fi
-	;;
-	[sS][sS][hH])
-		if [ "${2}" != "" ] ; then
-			if [ -d "${3}" ] ; then
-				sshfs ${MOPTIONS} -C ${2} ${3}
-			fi
-		fi
-	;;
-	[wW][eE][bB][dD][aA][vV])
-		if [ "${2}" != "" ] ; then
-			if [ -d "${3}" ] ; then
-				wdfs ${MOPTIONS} -o accept_sslcert -o svn_mode ${2} ${3}
-			fi
-		fi
-	;;
-	[nN][tT][fF][sS])
-		if [ -c "${DEVICES}/${2}" ] ; then
-			if [ -d "${3}" ] ; then
-				ntfs-3g ${MOPTIONS} ${DEVICES}/${2} ${3}
-			fi
-		fi
-	;;
 
-	[sS][wW][aA][pP])
-		if [ "${2}" != "" ] ; then
-			if [ "${3}" = "enc" ] ; then
-				geom eli onetime -d ${DEVICES}/${2}
-				swapon ${DEVICES}/${2}.eli
-			else 
-				swapon ${DEVICES}/${2}
+	if [ ! -c "${DEVICES}/null" ] ; then
+		if [ -c "/dev/null" ] ; then
+			DEVICES=/dev
+		else
+			echo "Error, no device nodes found"
+			exit 1
+		fi
+	fi
+	case "${1}" in
+		[fF][tT][pP])
+			if [ "${2}" != "" ] ; then
+				if [ -d "${3}" ] ; then
+					curlftpfs ${MOPTIONS} ${2} ${3}
+				fi
 			fi
-		fi
-	;;
-
-	[dD][uU][mM][pP])
-		if [ "${2}" != "" ] ; then
-			dumpon ${DEVICES}/${2}
-		fi
-	;;
-
-	[eE][nN][tT][rR][oO][pP][yY])
-		if [ "${2}" != "" ] ; then
-			if [ "${3}" = "save" ] ; then
-				dd if=${DEVICES}/random of=${DEVICES}/${2} bs=2048 count=1 2>${DEVICES}/null
-			else 
-				dd of=${DEVICES}/random if=${DEVICES}/${2} bs=2048 count=1 2>${DEVICES}/null
+		;;
+		[sS][sS][hH])
+			if [ "${2}" != "" ] ; then
+				if [ -d "${3}" ] ; then
+					sshfs ${MOPTIONS} -C ${2} ${3}
+				fi
 			fi
-		fi
-	;;
-	[uU][nN][mM][oO][uU][nN][tT])
-		mount | awk -v MOUNTPOINT=$2 '{
-			mount=$3
-			devicenode=$1
-			if (mount == MOUNTPOINT) {
-				if (devicenode ~ /fuse/) {
-					system("umount " devicenode);
-					close("umount " devicenode);
-				} else {
-					system("umount " mount);
-					close ("umount " mount);
-				}
-			}
-		}'
-	;;
-  	[lL][iI][sS][tT])
-
-	# We silently drop if someone types 'mounter list', however, 
-	# if the third argument is a directory, we assume the user 
-	# wants to automount volumes into that directory. For example, 
-	# mounter list ufs /media will mount all ufs partitions into 
-	# /media named after their geom name. ie, /media/da0s1a, etc.
-		case "${2}" in
-			[Ff][sS])
-				lsvfs | awk '{ 
-					if (NR > 2) 
-					{
-						if ($3 != "synthetic" && $3 != "loopback" && $1 != "tmpfs") {
-							print $1 
-						}
+		;;
+		[wW][eE][bB][dD][aA][vV])
+			if [ "${2}" != "" ] ; then
+				if [ -d "${3}" ] ; then
+					wdfs ${MOPTIONS} -o accept_sslcert -o svn_mode ${2} ${3}
+				fi
+			fi
+		;;
+		[nN][tT][fF][sS])
+			if [ -c "${DEVICES}/${2}" ] ; then
+				if [ -d "${3}" ] ; then
+					ntfs-3g ${MOPTIONS} ${DEVICES}/${2} ${3}
+				fi
+			fi
+		;;
+	
+		[sS][wW][aA][pP])
+			if [ "${2}" != "" ] ; then
+				if [ "${3}" = "enc" ] ; then
+					geom eli onetime -d ${DEVICES}/${2}
+					swapon ${DEVICES}/${2}.eli
+				else 
+					swapon ${DEVICES}/${2}
+				fi
+			fi
+		;;
+	
+		[dD][uU][mM][pP])
+			if [ "${2}" != "" ] ; then
+				dumpon ${DEVICES}/${2}
+			fi
+		;;
+	
+		[eE][nN][tT][rR][oO][pP][yY])
+			if [ "${2}" != "" ] ; then
+				if [ "${3}" = "save" ] ; then
+					dd if=${DEVICES}/random of=${DEVICES}/${2} bs=2048 count=1 2>${DEVICES}/null
+				else 
+					dd of=${DEVICES}/random if=${DEVICES}/${2} bs=2048 count=1 2>${DEVICES}/null
+				fi
+			fi
+		;;
+		[uU][nN][mM][oO][uU][nN][tT])
+			mount | awk -v MOUNTPOINT=$2 '{
+				mount=$3
+				devicenode=$1
+				if (mount == MOUNTPOINT) {
+					if (devicenode ~ /fuse/) {
+						system("umount " devicenode);
+						close("umount " devicenode);
+					} else {
+						system("umount " mount);
+						close ("umount " mount);
 					}
-				}'
-				for fuse in wdfs sshfs curlftpfs ntfs-3g
-				do
-					command -v ${fuse} >${DEVICES}/null 
-					if [ "$?" != "127" ] ; then
-						case "${fuse}" in
-							sshfs) echo ssh ;;
-							ntfs-3g) echo ntfs ;;
-							curlftpfs) echo ftp ;;
-							wdfs) echo webdav ;;
-						esac
-					fi
-				done
-				
-			;;
-
-			*)
-				if [ "${2}" != "" ] ; then
-					for i in $(lsvol | grep ${2}:)
+				}
+			}'
+		;;
+	  	[lL][iI][sS][tT])
+	
+		# We silently drop if someone types 'mounter list', however, 
+		# if the third argument is a directory, we assume the user 
+		# wants to automount volumes into that directory. For example, 
+		# mounter list ufs /media will mount all ufs partitions into 
+		# /media named after their geom name. ie, /media/da0s1a, etc.
+			case "${2}" in
+				[Ff][sS])
+					lsvfs | awk '{ 
+						if (NR > 2) 
+						{
+							if ($3 != "synthetic" && $3 != "loopback" && $1 != "tmpfs") {
+								print $1 
+							}
+						}
+					}'
+					echo "boot-ufs"
+					for fuse in wdfs sshfs curlftpfs ntfs-3g
 					do
-						DEVNODE=$(echo ${i} | cut -d : -f 2)
-						if [ -d "${3}" ] ; then
-							mkdir -p ${3}/${i}
-							mounter ${2} ${DEVNODE} ${3}/${DEVNODE}
-						else
-							echo ${DEVNODE}
+						command -v ${fuse} >${DEVICES}/null 
+						if [ "$?" != "127" ] ; then
+							case "${fuse}" in
+								sshfs) echo ssh ;;
+								ntfs-3g) echo ntfs ;;
+								curlftpfs) echo ftp ;;
+								wdfs) echo webdav ;;
+							esac
 						fi
 					done
-				fi
-			;;
-		esac
-	;;
-	*)
-		if [ -c ${DEVICES}/"${2}" ] ; then
-			if [ -d "${3}" ] ; then
-				mount -t ${1} ${MOPTIONS} ${DEVICES}/${2} ${3}
-			fi
-		fi
-	;;
-esac
+					
+				;;
 
+				*)
+					if [ "${2}" != "" ] ; then
+						for i in $(lsvol | grep ^${2}:)
+						do
+							DEVNODE=$(echo ${i} | cut -d : -f 2)
+							if [ -d "${3}" ] ; then
+								mkdir -p ${3}/${i}
+								mounter ${2} ${DEVNODE} ${3}/${DEVNODE}
+							else
+								echo ${DEVNODE}
+							fi
+						done
+					fi
+				;;
+			esac
+		;;
+		*)
+			if [ -c ${DEVICES}/"${2}" ] ; then
+				if [ -d "${3}" ] ; then
+					mount -t ${1} ${MOPTIONS} ${DEVICES}/${2} ${3}
+				fi
+			fi
+		;;
+	esac
+}
+old_mounter $*
 
 
