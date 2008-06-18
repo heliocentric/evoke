@@ -180,20 +180,58 @@ new_mounter () {
 		if [ "$( echo ${1} | grep :)" != "" ] ; then
 			# Since a : is in the first argument, we treat it as a proto:source, rather then a command
 
-			M_PROTO=$(echo "${1}" | cut -d : -f 1)
-			M_SOURCE=$(echo "${1}" | cut -d : -f 2-60)
+			M_PROTO="$(echo "${1}" | cut -d : -f 1)"
+			M_SOURCE="$(echo "${1}" | cut -d : -f 2-60)"
 			if [ "$( echo ${M_PROTO} | grep +)" != "" ] ; then
 				# Since it's in the form proto+transport, set M_TRANSPORT first, then M_PROTO to the 'real' protocol.
-				M_TRANSPORT=$(echo "${M_PROTO}" | cut -d + -f 2)
-				M_PROTO=$(echo "${M_PROTO}" | cut -d + -f 1)
+				M_TRANSPORT="$(echo "${M_PROTO}" | cut -d + -f 2)"
+				M_PROTO="$(echo "${M_PROTO}" | cut -d + -f 1)"
 			fi
 			case "${M_SOURCE}" in
 				//*)
-					M_SOURCE=$(echo ${M_SOURCE} | cut -b 3-400 )
+					M_SOURCE="$(echo ${M_SOURCE} | cut -b 3-400 )"
 					M_TYPE="URI"
+
+					# Everything after the first / is treated as a file specification.
+					# This does cause things to blow up, particularly if your password contains 
+					# a /. Unfortunately, there is no way to handle this, yet.
+
 					if [ "$( echo ${M_SOURCE} | grep /)" != "" ] ; then
-						M_FILE=/$(echo ${M_SOURCE} | cut -d / -f 2-400)
+						M_FILE="/$(echo ${M_SOURCE} | cut -d / -f 2-400)"
+						M_SOURCE="$(echo ${M_SOURCE} | cut -d / -f 1)"
 					fi
+
+					# Everything after the first @ is considered a host, before it, part of the 
+					# auth. This also breaks unusual passwords. Sorry.
+
+					if [ "$( echo ${M_SOURCE} | grep @)" != "" ] ; then
+						M_AUTH="$(echo ${M_SOURCE} | cut -d @ -f 1)"
+						if [ "$( echo ${M_AUTH} | grep :)" != "" ] ; then
+							M_USERNAME="$( echo ${M_AUTH} | cut -d : -f 1)"
+							M_PASSWORD="$( echo ${M_AUTH} | cut -d : -f 2)"
+						else
+							M_USERNAME="${M_AUTH}"
+						fi
+						unset M_AUTH
+						M_SOURCE="$(echo ${M_SOURCE} | cut -d @ -f 2)"
+					fi
+					# We need to check if it's an ipv6 address, or a hostname/ipv4 address, as 
+					# it changes how M_PORT is used (due to ipv6 notation using the : character)
+					# 
+					# ipv6 addresses use a [host]:port notation, everything else uses
+					# host:port
+					if [ "$( echo ${M_SOURCE} | cut -b 1)" = "[" ] ; then
+						M_HOST="$( echo ${M_SOURCE} | cut -d [ -f 2 | cut -d ] -f 1)"
+						M_PORT="$( echo ${M_SOURCE} | cut -d [ -f 2 | cut -d ] -f 2 | cut -d : -f 2 )"
+					else
+						if [ "$( echo ${M_SOURCE} | grep :)" != "" ] ; then
+							M_HOST="$( echo ${M_SOURCE} | cut -d : -f 1)"
+							M_PORT="$( echo ${M_SOURCE} | cut -d : -f 2)"
+						else
+							M_HOST="${M_SOURCE}"
+						fi
+					fi
+					unset M_SOURCE
 				;;
 				/*)
 					M_TYPE="FILE"
@@ -291,6 +329,6 @@ mounter_command () {
 		;;
 	esac
 }
-old_mounter $*
+new_mounter $*
 
 
