@@ -82,6 +82,15 @@ case "${OS}" in
 		export ABI="$(sysctl -n kern.osrelease | cut -d . -f 1)"
 		export MACHINE="$(sysctl -n hw.machine)"
 		export ARCH="$(sysctl -n hw.machine_arch)"
+		MODEL="$(kenv -q smbios.system.maker)"
+		case "${MODEL}" in
+			EeePC-1234567890)
+				MODEL="EEEPC-$(kenv -q smbios.system.serial)"
+			;;
+			*)
+				MODEL="GENERIC"
+			;;
+		esac
 	;;
 esac
 
