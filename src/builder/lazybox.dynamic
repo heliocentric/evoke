@@ -57,7 +57,7 @@ CRUNCH_LIBS+= -lutil -ll -ledit -ltermcap -lcrypt
 # /usr/include/paths.h as well!  You were warned!
 #
 CRUNCH_SRCDIRS+= bin usr.bin
-CRUNCH_PROGS_bin= sh test
+CRUNCH_PROGS_bin= sh test kenv
 CRUNCH_PROGS_usr.bin= cut uname
 
 # Additional options for specific programs
