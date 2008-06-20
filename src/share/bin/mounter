@@ -234,7 +234,16 @@ new_mounter () {
 					unset M_SOURCE
 				;;
 				/*)
-					M_TYPE="FILE"
+					TYPE=$( stat -f "%HT" ${M_SOURCE})
+					case "${TYPE}" in
+						Character*)
+							
+						;;
+						*)
+							M_TYPE="FILE"						
+						;;
+					esac
+					
 				;;
 				[aA][lL][lL])
 					M_TYPE="ALL"

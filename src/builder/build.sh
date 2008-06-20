@@ -102,11 +102,27 @@ do
 	export BOOTPATH="${BOOTPREFIX}/freebsd${ABI}/${TARGET}"
 	mkdir -p ${BOOTDIR}${BOOTPATH}
 
+	# Get rid of /libexec/ld-elf.so.1, and use the rtld in each arch+abi specific directory.
+	for file in /usr/src/sys/${TARGET}/${TARGET}/elf_machdep.c
+	do
+		sed -i .bak "s@/libexec/ld-elf.so.1@${N_LIBEXEC}/ld-elf.so.1" ${WORKDIR}${file} 1>&2
+	done
+
+	# Point rtld to ${N_LIBDIR} instead of the /lib, hopefully, this will allow us to compile the system with 
+	# only init statically linked. 
+	sed -i .bak "s@/lib:/usr/lib@${N_LIBDIR}" ${WORKDIR}/usr/src/libexec/rtld-elf/rtld.h 1>&2
+
+	# Remove the ld-elf32.so.1 kludge in favor of a more universal method.
+	for file in /usr/src/sys/compat/ia32/ia32_sysvec.c /usr/src/libexec/rtld-elf/rtld.c /usr/src/libexec/rtld-elf/debug.h
+	do
+		sed -i .bak "s@/libexec/ld-elf32.so.1@/system/FreeBSD-${ABI}/i386/libexec/ld-elf.so.1" ${WORKDIR}${file} 1>&2
+	done
+
 	# Patch these files to our paths, so they don't collide.
+	# This is the bulk of the boot loader versioning support.
 	sed -i .bak "s@/boot/device.hints@${BOOTPATH}/device.hints@g" ${WORKDIR}/usr/src/sys/boot/forth/loader.conf 1>&2
 	sed -i .bak "s@/boot/loader.conf@${BOOTPREFIX}/loader.conf@g" ${WORKDIR}/usr/src/sys/boot/forth/loader.conf 1>&2
 	sed -i .bak "s@/boot/loader.conf.local@${BOOTPREFIX}/loader.conf.local@g" ${WORKDIR}/usr/src/sys/boot/forth/loader.conf 1>&2
-
 	for file in $(cat ${ROOTDIR}/bootlist)
 	do
 	    # This works for most.
@@ -114,6 +130,7 @@ do
 	    # This is for cdboot. Case specific
 	    sed -i .bak "s@/BOOT@$(echo ${BOOTPATH} | tr a-z A-Z)@g" ${WORKDIR}${file} 1>&2
 	done
+
 	# Get rid of this latency addition in pxeboot (fixed in 7.0, but necessary on 6.x)
 	sed -i .bak '/pxe_setnfshandle(rootpath);/d' ${WORKDIR}/usr/src/sys/boot/i386/libi386/pxe.c 1>&2
 
