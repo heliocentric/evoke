@@ -190,7 +190,7 @@ new_mounter () {
 			case "${M_SOURCE}" in
 				//*)
 					M_SOURCE="$(echo ${M_SOURCE} | cut -b 3-400 )"
-					M_TYPE="URI"
+					M_STYPE="URI"
 
 					# Everything after the first / is treated as a file specification.
 					# This does cause things to blow up, particularly if your password contains 
@@ -215,11 +215,13 @@ new_mounter () {
 						unset M_AUTH
 						M_SOURCE="$(echo ${M_SOURCE} | cut -d @ -f 2)"
 					fi
+
 					# We need to check if it's an ipv6 address, or a hostname/ipv4 address, as 
 					# it changes how M_PORT is used (due to ipv6 notation using the : character)
 					# 
 					# ipv6 addresses use a [host]:port notation, everything else uses
 					# host:port
+
 					if [ "$( echo ${M_SOURCE} | cut -b 1)" = "[" ] ; then
 						M_HOST="$( echo ${M_SOURCE} | cut -d [ -f 2 | cut -d ] -f 1)"
 						M_PORT="$( echo ${M_SOURCE} | cut -d [ -f 2 | cut -d ] -f 2 | cut -d : -f 2 )"
@@ -240,32 +242,106 @@ new_mounter () {
 							
 						;;
 						*)
-							M_TYPE="FILE"						
+							M_STYPE="FILE"						
 						;;
 					esac
 					
 				;;
 				[aA][lL][lL])
-					M_TYPE="ALL"
+					M_STYPE="ALL"
 				;;
 				*)
-					M_TYPE="GEOM"
+					M_STYPE="GEOM"
 				;;
 			esac
-
-			echo "proto=${M_PROTO}"
-			echo "transport=${M_TRANSPORT}"
-			echo "type=${M_TYPE}"
-			echo "username=${M_USERNAME}"
-			echo "password=${M_PASSWORD}"
-			echo "host=${M_HOST}"
-			echo "port=${M_PORT}"
-			echo "file=${M_FILE}"
+			shift
+			mount_proto $*
 		else
 			mounter_command $*
 		fi 
 	fi
 }
+mount_proto () {
+	case "${M_PROTO}" in
+		ufs)
+			M_PTYPE="FS"
+			prep_transport
+		;;
+	esac
+	
+			echo "proto=${M_PROTO}"
+			echo "prototype=${M_PTYPE}"
+			echo "transport=${M_TRANSPORT}"
+			echo "type=${M_STYPE}"
+			echo "username=${M_USERNAME}"
+			echo "password=${M_PASSWORD}"
+			echo "host=${M_HOST}"
+			echo "port=${M_PORT}"
+			echo "file=${M_FILE}"
+			echo "mountpoint=$*"
+}
+
+
+# The transport prep routine. Always set M_PTYPE before calling.
+# Note: if the M_PTYPE is NET, then nothing happens. We don't support
+# tunneling as of yet.
+
+prep_transport () {
+	case "${M_PTYPE}" in
+		FS)
+			if [ "${M_STYPE}" = "URI" ] ; then
+				case "${M_TRANSPORT}" in
+					[gG][gG][aA][tT][eE])
+						ggate_handler
+					;;
+					*)
+						ggate_handler
+					;;
+				esac
+			fi
+		;;
+	esac
+}
+ggate_handler () {
+	if [ "${M_PORT}" != "" ] ; then
+		GOPTS="-p ${M_PORT}"
+	fi
+	if [ "${M_HOST}" = "" ] ; then
+		mexit 1
+	fi
+	if [ "${M_FILE}" = "" ] ; then
+		mexit 2
+	fi
+	echo "ggatec create ${GOPTS} ${M_HOST} ${M_FILE}"
+	# Need to catch ggatec connect errors here.
+	M_STYPE="GEOM"
+	M_FILE="${GATEDEV}"
+}
+
+# mexit is our wrapper for exit. prints a standard error message.
+
+mexit () {
+	case "${1}" in
+		1)
+			# Use if ${M_HOST} is empty or unusable.
+			echo "No route to host"
+			exit 85
+		;;
+		2)
+			# Use if ${M_FILE} is empty or unusable.
+			echo "No such file or directory"
+			exit 2
+		;;
+		*)
+			echo "General Error" >&2
+			exit 255
+		;;
+	esac
+}
+
+
+# The main command parsing portion.
+# It's static, and could be shared, but isn't for other reasons.
 
 mounter_command () {
 	case "${1}" in
