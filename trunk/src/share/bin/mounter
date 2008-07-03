@@ -469,15 +469,19 @@ unmount_handler () {
 			if (devicenode ~ /fuse/) {
 				unmount(devicenode);
 			} else {
+				umount(mount);
 				if (devicenode ~ /md/) {
-					unmount(mount);
 					# This strips ${DEVICES} and md from the node name, so mdconfig -d -u # will work
 					sub(DEVICES"/md","",devicenode)
 					system("mdconfig -d -u " devicenode " 2>/dev/null >/dev/null");
 					close("mdconfig -d -u " devicenode " 2>/dev/null >/dev/null");
 
-				} else {
-					unmount(mount);
+				}
+				if (devicenode ~ /ggate/) {
+					# same as md
+					sub(DEVICES"/ggate","",devicenode)
+					system("ggatec destroy -u " devicenode " 2>/dev/null >/dev/null");
+					close("ggatec destroy -u " devicenode " 2>/dev/null >/dev/null");
 				}
 			}
 					
