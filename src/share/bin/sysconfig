@@ -23,28 +23,16 @@
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+
 # $Id$
 
-if [ "${1}" = "" ] ; then
-	SOURCE=""
-else
-	SOURCE="${1}"
-fi
-if [ "${2}" = "" ] ; then
-	TARGET=""
-else
-	TARGET="${2}"
+if [ ! -c "${DEVICES}/null" ] ; then
+	if [ -c "/dev/null" ] ; then
+		DEVICES=/dev
+	else
+		echo "Error, no device nodes found"
+		exit 1
+	fi
 fi
 
-if [ -d "${SOURCE}/${OS}-${ABI}/${ARCH}/lib" ] ; then
-	mount_nullfs -o union,ro ${SOURCE}/${OS}-${ABI}/${ARCH}/lib ${TARGET}/lib
-fi
-if [ -d "${SOURCE}/${OS}-${ABI}/${ARCH}/libexec" ] ; then
-	mount_nullfs -o union,ro ${SOURCE}/${OS}-${ABI}/${ARCH}/libexec ${TARGET}/libexec
-fi
-if [ -d "${SOURCE}/${OS}-${ABI}/${ARCH}/bin" ] ; then
-	mount_nullfs -o union,ro ${SOURCE}/${OS}-${ABI}/${ARCH}/bin ${TARGET}/bin
-fi
-if [ -d "${SOURCE}/${OS}-${ABI}/${ARCH}/boot" ] ; then
-	mount_nullfs -o union,ro ${SOURCE}/${OS}-${ABI}/${ARCH}/boot ${TARGET}/boot
-fi
+mounter list nvram
