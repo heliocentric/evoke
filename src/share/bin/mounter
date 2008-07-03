@@ -179,18 +179,24 @@ old_mounter () {
 
 new_mounter () {
 	if [ "${1}" != "" ] ; then
+		# if a : is in the first argument, we treat it as a proto:source, rather then a command
 		if [ "$( echo ${1} | grep :)" != "" ] ; then
-			# Since a : is in the first argument, we treat it as a proto:source, rather then a command
 
 			M_PROTO="$(echo "${1}" | cut -d : -f 1)"
 			M_SOURCE="$(echo "${1}" | cut -d : -f 2-60)"
+
+			# shift it so that it is easier to deal with spaces in a destination directory.
 			shift
+
+			# If it's in the form proto+transport, set M_TRANSPORT first, then M_PROTO to the 'real' protocol.
+			
 			if [ "$( echo ${M_PROTO} | grep +)" != "" ] ; then
-				# Since it's in the form proto+transport, set M_TRANSPORT first, then M_PROTO to the 'real' protocol.
 				M_TRANSPORT="$(echo "${M_PROTO}" | cut -d + -f 2)"
 				M_PROTO="$(echo "${M_PROTO}" | cut -d + -f 1)"
 			fi
 
+			# Bail out if there is no mountpoint specified.
+			# XXX helio swap and dump are 'special', may need to move it into the actual 'mount' routines
 			if [ "${*}" != "" ] ; then
 				if [ -d "${*}" ] ; then
 					M_DESTINATION="${*}"
@@ -200,6 +206,12 @@ new_mounter () {
 			else
 				mexit 3
 			fi
+
+			# We handle four specifications:
+			# 	proto://URI
+			#	proto:/file/name
+			#	proto:geomname
+			#	proto:all
 
 			case "${M_SOURCE}" in
 				//*)
@@ -254,15 +266,17 @@ new_mounter () {
 					case "${TYPE}" in
 						Directory)
 							M_STYPE="DIRECTORY"
+							M_FILE="${M_SOURCE}"
 						;;
 						Character*)
+						# XXX helio this needs to be filled out, we change the M_STYPE but not the M_FILE
 							M_STYPE="GEOM"
 						;;
 						*)
-							M_STYPE="FILE"						
+							M_STYPE="FILE"
+							M_FILE="${M_SOURCE}"
 						;;
 					esac
-					
 				;;
 				[aA][lL][lL])
 					M_STYPE="ALL"
@@ -276,6 +290,8 @@ new_mounter () {
 		else
 			mounter_command $*
 		fi 
+	else
+		mexit 5
 	fi
 }
 
@@ -296,11 +312,16 @@ echo_config () {
 	fi
 }
 
+
+# Mount protocol wrapper; here we special case fuse and swap.
+# We also detect if a filesystem is 'native' via lsvfs
+# Only two MPTYPEs: NET and DEV
+
 mount_proto () {
 	case "${M_PROTO}" in
 		*)
 			if [ "$(lsvfs | grep "^${M_PROTO}")" != "" ] ; then
-				M_PTYPE="FS"
+				M_PTYPE="DEV"
 				prep_transport
 				nativefs_mount
 			else
@@ -318,24 +339,48 @@ mount_proto () {
 prep_transport () {
 	echo_config
 	case "${M_PTYPE}" in
-		FS)
-			if [ "${M_STYPE}" = "URI" ] ; then
-				case "${M_TRANSPORT}" in
-					[gG][gG][aA][tT][eE])
-						ggate_handler
-					;;
-					*)
-						ggate_handler
-					;;
-				esac
-			fi
+		DEV)
+			case "${M_STYPE}" in
+				URI)
+					case "${M_TRANSPORT}" in
+						[gG][gG][aA][tT][eE])
+							ggate_handler
+						;;
+						*)
+							ggate_handler
+						;;
+					esac
+				;;
+				FILE)
+					mdconfig_handler
+				;;
+			esac
 		;;
 	esac
 }
 
+# mdconfig wrapper, trap errors, and terminate if necessary.
+
+mdconfig_handler () {
+	local MD_DEV=$(mdconfig -af "${M_FILE}" 2>/dev/null)
+	local ERROR=$?
+	# XXX helio someone needs to fill out the error codes mdconfig can return.
+	case "${ERROR}" in
+		0)
+		;;
+		*)
+			mexit 6
+		;;
+	esac
+	M_STYPE="GEOM"
+	M_FILE="${MD_DEV}"
+}
+
+# ggate wrapper, push options into the ggatec command line, then catch errors ggatec can return.
+
 ggate_handler () {
 	if [ "${M_PORT}" != "" ] ; then
-		GOPTS="-p ${M_PORT}"
+		local GOPTS="-p ${M_PORT}"
 	fi
 	if [ "${M_HOST}" = "" ] ; then
 		mexit 1
@@ -343,8 +388,16 @@ ggate_handler () {
 	if [ "${M_FILE}" = "" ] ; then
 		mexit 2
 	fi
-	echo ggatec create ${GOPTS} ${M_HOST} ${M_FILE}
-	# Need to catch ggatec connect errors here.
+	local GATEDEV=$(ggatec create ${GOPTS} ${M_HOST} ${M_FILE})
+	local ERROR=$?
+	# XXX helio someone needs to fill out the error codes ggatec can return.
+	case "${ERROR}" in
+		0)
+		;;
+		*)
+			mexit 6
+		;;
+	esac
 	M_STYPE="GEOM"
 	M_FILE="${GATEDEV}"
 }
@@ -356,7 +409,7 @@ nativefs_mount () {
 	echo_config
 	if [ "${M_STYPE}" = "GEOM" ] ; then
 		if [ -c "${DEVICES}/${M_FILE}" ] ; then
-			echo mount -t ${M_PROTO} ${DEVICES}/${M_FILE} ${DESTINATION}
+			mount -t ${M_PROTO} ${DEVICES}/${M_FILE} ${M_DESTINATION}
 		fi
 	fi
 }
@@ -377,13 +430,23 @@ mexit () {
 		;;
 		3)
 			# Use if ${M_DESTINATION} isn't set, or isn't a directory.
-			echo "No such file or directory"
+			echo "Destination directory required"
 			exit 2
 		;;
 		4)
 			# Use if filesystem type isn't found.
-			echo "Filesystem not found"
-			exit 2
+			echo "Inappropriate file type or format"
+			exit 79
+		;;
+		5)
+			# Use if argument list is empty
+			echo "Invalid Argument"
+			exit 22
+		;;
+		6)
+			# A command we ran external to this utility failed, abort.
+			echo "External command terminated abnormally"
+			exit 255
 		;;
 		*)
 			echo "General Error" >&2
@@ -392,6 +455,35 @@ mexit () {
 	esac
 }
 
+unmount_handler () {
+	mount | awk -v MOUNTPOINT=$1 -v DEVICES=${DEVICES} '
+	function unmount(spec) {
+		system("umount " spec);
+		close("umount " spec);			
+	}
+
+	{
+		mount=$3
+		devicenode=$1
+		if (mount == MOUNTPOINT) {
+			if (devicenode ~ /fuse/) {
+				unmount(devicenode);
+			} else {
+				if (devicenode ~ /md/) {
+					unmount(mount);
+					# This strips ${DEVICES} and md from the node name, so mdconfig -d -u # will work
+					sub(DEVICES"/md","",devicenode)
+					system("mdconfig -d -u " devicenode " 2>/dev/null >/dev/null");
+					close("mdconfig -d -u " devicenode " 2>/dev/null >/dev/null");
+
+				} else {
+					unmount(mount);
+				}
+			}
+					
+		}
+	}'
+}
 
 # The main command parsing portion.
 # It's static, and could be shared, but isn't for other reasons.
@@ -399,19 +491,11 @@ mexit () {
 mounter_command () {
 	case "${1}" in
 		[uU][nN][mM][oO][uU][nN][tT])
-			mount | awk -v MOUNTPOINT=$2 '{
-				mount=$3
-				devicenode=$1
-				if (mount == MOUNTPOINT) {
-					if (devicenode ~ /fuse/) {
-						system("umount " devicenode);
-						close("umount " devicenode);
-					} else {
-						system("umount " mount);
-						close ("umount " mount);
-					}
-				}
-			}'
+			unmount_handler "${2}"
+		;;
+		# For compat purposes
+		[uU][mM][oO][uU][nN][tT])
+			unmount_handler "${2}"
 		;;
 	  	[lL][iI][sS][tT])
 	
