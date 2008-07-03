@@ -30,6 +30,16 @@
 # simpler. Plus, spaces can be used explicitly.
 #
 # Also, force noatime mounting, it's unnecessary.
+
+if [ ! -c "${DEVICES}/null" ] ; then
+	if [ -c "/dev/null" ] ; then
+		DEVICES=/dev
+	else
+		echo "Error, no device nodes found"
+		exit 1
+	fi
+fi
+
 old_mounter () {
 	if [ "${MOPTIONS}" != "" ] ; then
 		MOPTIONS="-o noatime,${MOPTIONS}"
@@ -37,14 +47,6 @@ old_mounter () {
 		MOPTIONS="-o noatime"
 	fi
 
-	if [ ! -c "${DEVICES}/null" ] ; then
-		if [ -c "/dev/null" ] ; then
-			DEVICES=/dev
-		else
-			echo "Error, no device nodes found"
-			exit 1
-		fi
-	fi
 	case "${1}" in
 		[fF][tT][pP])
 			if [ "${2}" != "" ] ; then
@@ -182,11 +184,23 @@ new_mounter () {
 
 			M_PROTO="$(echo "${1}" | cut -d : -f 1)"
 			M_SOURCE="$(echo "${1}" | cut -d : -f 2-60)"
+			shift
 			if [ "$( echo ${M_PROTO} | grep +)" != "" ] ; then
 				# Since it's in the form proto+transport, set M_TRANSPORT first, then M_PROTO to the 'real' protocol.
 				M_TRANSPORT="$(echo "${M_PROTO}" | cut -d + -f 2)"
 				M_PROTO="$(echo "${M_PROTO}" | cut -d + -f 1)"
 			fi
+
+			if [ "${*}" != "" ] ; then
+				if [ -d "${*}" ] ; then
+					M_DESTINATION="${*}"
+				else
+					mexit 3
+				fi
+			else
+				mexit 3
+			fi
+
 			case "${M_SOURCE}" in
 				//*)
 					M_SOURCE="$(echo ${M_SOURCE} | cut -b 3-400 )"
@@ -238,8 +252,11 @@ new_mounter () {
 				/*)
 					TYPE=$( stat -f "%HT" ${M_SOURCE})
 					case "${TYPE}" in
+						Directory)
+							M_STYPE="DIRECTORY"
+						;;
 						Character*)
-							
+							M_STYPE="GEOM"
 						;;
 						*)
 							M_STYPE="FILE"						
@@ -252,33 +269,45 @@ new_mounter () {
 				;;
 				*)
 					M_STYPE="GEOM"
+					M_FILE="${M_SOURCE}"
 				;;
 			esac
-			shift
-			mount_proto $*
+			mount_proto
 		else
 			mounter_command $*
 		fi 
 	fi
 }
+
+# Echo configuration parameters if DEBUG is set.
+
+echo_config () {
+	if [ "${DEBUG}" != "" ] ; then
+		echo "proto=${M_PROTO}"
+		echo "prototype=${M_PTYPE}"
+		echo "transport=${M_TRANSPORT}"
+		echo "type=${M_STYPE}"
+		echo "username=${M_USERNAME}"
+		echo "password=${M_PASSWORD}"
+		echo "host=${M_HOST}"
+		echo "port=${M_PORT}"
+		echo "file=${M_FILE}"
+		echo "mountpoint=${M_DESTINATION}"
+	fi
+}
+
 mount_proto () {
 	case "${M_PROTO}" in
-		ufs)
-			M_PTYPE="FS"
-			prep_transport
+		*)
+			if [ "$(lsvfs | grep "^${M_PROTO}")" != "" ] ; then
+				M_PTYPE="FS"
+				prep_transport
+				nativefs_mount
+			else
+				mexit 4
+			fi
 		;;
 	esac
-	
-			echo "proto=${M_PROTO}"
-			echo "prototype=${M_PTYPE}"
-			echo "transport=${M_TRANSPORT}"
-			echo "type=${M_STYPE}"
-			echo "username=${M_USERNAME}"
-			echo "password=${M_PASSWORD}"
-			echo "host=${M_HOST}"
-			echo "port=${M_PORT}"
-			echo "file=${M_FILE}"
-			echo "mountpoint=$*"
 }
 
 
@@ -287,6 +316,7 @@ mount_proto () {
 # tunneling as of yet.
 
 prep_transport () {
+	echo_config
 	case "${M_PTYPE}" in
 		FS)
 			if [ "${M_STYPE}" = "URI" ] ; then
@@ -302,6 +332,7 @@ prep_transport () {
 		;;
 	esac
 }
+
 ggate_handler () {
 	if [ "${M_PORT}" != "" ] ; then
 		GOPTS="-p ${M_PORT}"
@@ -312,10 +343,22 @@ ggate_handler () {
 	if [ "${M_FILE}" = "" ] ; then
 		mexit 2
 	fi
-	echo "ggatec create ${GOPTS} ${M_HOST} ${M_FILE}"
+	echo ggatec create ${GOPTS} ${M_HOST} ${M_FILE}
 	# Need to catch ggatec connect errors here.
 	M_STYPE="GEOM"
 	M_FILE="${GATEDEV}"
+}
+
+
+# Native filesystem mounter. For filesystems that can be used via nmount.
+
+nativefs_mount () {
+	echo_config
+	if [ "${M_STYPE}" = "GEOM" ] ; then
+		if [ -c "${DEVICES}/${M_FILE}" ] ; then
+			echo mount -t ${M_PROTO} ${DEVICES}/${M_FILE} ${DESTINATION}
+		fi
+	fi
 }
 
 # mexit is our wrapper for exit. prints a standard error message.
@@ -330,6 +373,16 @@ mexit () {
 		2)
 			# Use if ${M_FILE} is empty or unusable.
 			echo "No such file or directory"
+			exit 2
+		;;
+		3)
+			# Use if ${M_DESTINATION} isn't set, or isn't a directory.
+			echo "No such file or directory"
+			exit 2
+		;;
+		4)
+			# Use if filesystem type isn't found.
+			echo "Filesystem not found"
 			exit 2
 		;;
 		*)
