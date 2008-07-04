@@ -576,6 +576,27 @@ ftp_mount () {
 # XXX helio needs filling out.
 
 ssh_mount () {
+	if [ "${M_STYPE}" = "URI" ] ; then
+		local SSHFS_OPTIONS="-o workaround=all -o idmap=user -o transform_symlinks"
+		local SSHFS_OPTIONS="${SSHFS_OPTIONS} -o follow_symlinks -o compression=yes"
+		if [ "${M_PORT}" != "" ] ; then
+			local SSHFS_OPTIONS="${SSHFS_OPTIONS} -o port=${M_PORT}"
+		fi
+		if [ "${M_HOST}" != "" ] ; then
+			local HOST=${M_HOST}:
+			if [ "${M_USERNAME}" != "" ] ; then
+				local HOST="${M_USERNAME}@${HOST}"
+			fi
+			if [ "${M_FILE}" != "" ] ; then
+				local HOST="${HOST}${M_FILE}"
+			fi
+			sshfs ${SSHFS_OPTIONS} ${HOST} ${M_DESTINATION}
+		else
+			mexit 7
+		fi
+	else
+		mexit 8
+	fi
 }
 
 
