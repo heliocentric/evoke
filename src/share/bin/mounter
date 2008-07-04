@@ -40,6 +40,66 @@ if [ ! -c "${DEVICES}/null" ] ; then
 	fi
 fi
 
+
+# mexit is our wrapper for exit. prints a standard error message.
+
+mexit () {
+	case "${1}" in
+		1)
+			# Use if ${M_HOST} is empty or unusable.
+			echo "No route to host"
+			exit 85
+		;;
+		2)
+			# Use if ${M_FILE} is empty or unusable.
+			echo "No such file or directory"
+			exit 2
+		;;
+		3)
+			# Use if ${M_DESTINATION} isn't set, or isn't a directory.
+			echo "Destination directory required"
+			exit 2
+		;;
+		4)
+			# Use if filesystem type isn't found.
+			echo "Inappropriate file type or format"
+			exit 79
+		;;
+		5)
+			# Use if argument list is empty
+			echo "Invalid Argument"
+			exit 22
+		;;
+		6)
+			# A command we ran external to this utility failed, abort.
+			echo "External command terminated abnormally"
+			exit 255
+		;;
+		*)
+			echo "General Error" >&2
+			exit 255
+		;;
+	esac
+}
+
+
+# Echo configuration parameters if DEBUG is set.
+
+echo_config () {
+	if [ "${DEBUG}" != "" ] ; then
+		echo "proto=${M_PROTO}"
+		echo "prototype=${M_PTYPE}"
+		echo "transport=${M_TRANSPORT}"
+		echo "type=${M_STYPE}"
+		echo "username=${M_USERNAME}"
+		echo "password=${M_PASSWORD}"
+		echo "host=${M_HOST}"
+		echo "port=${M_PORT}"
+		echo "file=${M_FILE}"
+		echo "mountpoint=${M_DESTINATION}"
+	fi
+}
+
 old_mounter () {
 	if [ "${MOPTIONS}" != "" ] ; then
 		MOPTIONS="-o noatime,${MOPTIONS}"
@@ -295,23 +355,6 @@ new_mounter () {
 	fi
 }
 
-# Echo configuration parameters if DEBUG is set.
-
-echo_config () {
-	if [ "${DEBUG}" != "" ] ; then
-		echo "proto=${M_PROTO}"
-		echo "prototype=${M_PTYPE}"
-		echo "transport=${M_TRANSPORT}"
-		echo "type=${M_STYPE}"
-		echo "username=${M_USERNAME}"
-		echo "password=${M_PASSWORD}"
-		echo "host=${M_HOST}"
-		echo "port=${M_PORT}"
-		echo "file=${M_FILE}"
-		echo "mountpoint=${M_DESTINATION}"
-	fi
-}
-
 
 # Mount protocol wrapper; here we special case fuse and swap.
 # We also detect if a filesystem is 'native' via lsvfs
@@ -319,8 +362,35 @@ echo_config () {
 
 mount_proto () {
 	case "${M_PROTO}" in
+		http*)
+			if list_proto | grep http >/dev/null ; then
+				M_PTYPE="NET"
+				prep_transport
+				webdav_mount
+			else
+				mexit 4
+			fi
+		;;
+		ftp)
+			if list_proto | grep http >/dev/null ; then
+				M_PTYPE="NET"
+				prep_transport
+				ftp_mount
+			else
+				mexit 4
+			fi
+		;;
+		ssh)
+			if list_proto | grep http >/dev/null ; then
+				M_PTYPE="NET"
+				prep_transport
+				ssh_mount
+			else
+				mexit 4
+			fi
+		;;
 		*)
-			if [ "$(lsvfs | grep "^${M_PROTO}")" != "" ] ; then
+			if [ "$(mounter_command list fs | grep "^${M_PROTO}")" != "" ] ; then
 				M_PTYPE="DEV"
 				prep_transport
 				nativefs_mount
@@ -414,46 +484,27 @@ nativefs_mount () {
 	fi
 }
 
-# mexit is our wrapper for exit. prints a standard error message.
 
-mexit () {
-	case "${1}" in
-		1)
-			# Use if ${M_HOST} is empty or unusable.
-			echo "No route to host"
-			exit 85
-		;;
-		2)
-			# Use if ${M_FILE} is empty or unusable.
-			echo "No such file or directory"
-			exit 2
-		;;
-		3)
-			# Use if ${M_DESTINATION} isn't set, or isn't a directory.
-			echo "Destination directory required"
-			exit 2
-		;;
-		4)
-			# Use if filesystem type isn't found.
-			echo "Inappropriate file type or format"
-			exit 79
-		;;
-		5)
-			# Use if argument list is empty
-			echo "Invalid Argument"
-			exit 22
-		;;
-		6)
-			# A command we ran external to this utility failed, abort.
-			echo "External command terminated abnormally"
-			exit 255
-		;;
-		*)
-			echo "General Error" >&2
-			exit 255
-		;;
-	esac
+# WebDAV filesystem wrapper; supports both http and https
+# XXX helio needs filling out.
+
+webdav_mount () {
 }
+
+
+# FTP filesystem wrapper; supports ftp only.
+# XXX helio needs filling out.
+
+ftp_mount () {
+}
+
+
+# SFTP filesystem support. 
+# XXX helio needs filling out.
+
+ssh_mount () {
+}
+
 
 unmount_handler () {
 	mount | awk -v MOUNTPOINT=$1 -v DEVICES=${DEVICES} '
@@ -489,6 +540,35 @@ unmount_handler () {
 	}'
 }
 
+# List available protocols to stdout in newline deliminated form.
+
+list_proto () {
+	lsvfs | awk '{ 
+		if (NR > 2) 
+		{
+			if ($3 != "synthetic" && $3 != "loopback" && $1 != "tmpfs") {
+				print $1 
+			}
+	}
+	}'
+	echo "boot-ufs"
+	for fuse in wdfs sshfs curlftpfs ntfs-3g
+	do
+		command -v ${fuse} >${DEVICES}/null 
+		if [ "$?" != "127" ] ; then
+			case "${fuse}" in
+				sshfs) echo ssh ;;
+				ntfs-3g) echo ntfs ;;
+				curlftpfs) echo ftp ;;
+				wdfs) 
+					echo http
+					echo https
+				;;
+			esac
+		fi
+	done
+}
+
 # The main command parsing portion.
 # It's static, and could be shared, but isn't for other reasons.
 
@@ -509,29 +589,11 @@ mounter_command () {
 		# mounter list ufs /media will mount all ufs partitions into 
 		# /media named after their geom name. ie, /media/da0s1a, etc.
 			case "${2}" in
-				[Ff][sS])
-					lsvfs | awk '{ 
-						if (NR > 2) 
-						{
-							if ($3 != "synthetic" && $3 != "loopback" && $1 != "tmpfs") {
-								print $1 
-							}
-						}
-					}'
-					echo "boot-ufs"
-					for fuse in wdfs sshfs curlftpfs ntfs-3g
-					do
-						command -v ${fuse} >${DEVICES}/null 
-						if [ "$?" != "127" ] ; then
-							case "${fuse}" in
-								sshfs) echo ssh ;;
-								ntfs-3g) echo ntfs ;;
-								curlftpfs) echo ftp ;;
-								wdfs) echo webdav ;;
-							esac
-						fi
-					done
-					
+				[pP][rR][oO][tT][oO])
+					list_proto					
+				;;
+				[fF][sS]])
+					list_proto					
 				;;
 
 				*)
