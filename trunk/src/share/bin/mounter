@@ -371,6 +371,16 @@ new_mounter () {
 # Only two MPTYPEs: NET and DEV
 
 mount_proto () {
+	# XXX helio Protocols in need of special handling:
+	# XXX helio procfs
+	# XXX helio devfs
+	# XXX helio nfs4
+	# XXX helio nfs
+	# XXX helio nullfs
+	# XXX helio smbfs
+	# XXX helio zfs
+	# XXX helio portalfs
+
 	case "${M_PROTO}" in
 		http*)
 			if list_proto | grep http >/dev/null ; then
@@ -381,7 +391,7 @@ mount_proto () {
 				mexit 4
 			fi
 		;;
-		ftp)
+		ftp*)
 			if list_proto | grep http >/dev/null ; then
 				M_PTYPE="NET"
 				prep_transport
@@ -504,18 +514,18 @@ webdav_mount () {
 			local WDFS_OPTIONS="${WDFS_OPTIONS} -o accept_sslcert "
 		fi
 		if [ "${M_USERNAME}" != "" ]; then
-			WDFS_OPTIONS="${WDFS_OPTIONS} -o username=${M_USERNAME}"
+			local WDFS_OPTIONS="${WDFS_OPTIONS} -o username=${M_USERNAME}"
 			if [ "${M_PASSWORD}" != "" ]; then
-				WDFS_OPTIONS="${WDFS_OPTIONS} -o password=${M_PASSWORD}"
+				local WDFS_OPTIONS="${WDFS_OPTIONS} -o password=${M_PASSWORD}"
 			fi
 		fi
 		if [ "${M_HOST}" != "" ] ; then
-			HOST=${M_HOST}
+			local HOST=${M_HOST}
 			if [ "${M_PORT}" != "" ] ; then
-				HOST="${HOST}:${M_PORT}"
+				local HOST="${HOST}:${M_PORT}"
 			fi
 			if [ "${M_FILE}" != "" ] ; then
-				HOST="${HOST}${M_FILE}"
+				local HOST="${HOST}${M_FILE}"
 			fi
 			wdfs ${WDFS_OPTIONS} ${M_PROTO}://${HOST} ${M_DESTINATION}
 		else
@@ -527,10 +537,38 @@ webdav_mount () {
 }
 
 
-# FTP filesystem wrapper; supports ftp only.
-# XXX helio needs filling out.
+# FTP filesystem wrapper; supports ftp and ftps.
 
 ftp_mount () {
+	if [ "${M_STYPE}" = "URI" ] ; then
+		local FTPFS_OPTIONS="-o transform_symlinks"
+		if [ "${M_PROTO}" = "ftps" ] ; then
+			local FTPFS_OPTIONS="${FTPFS_OPTIONS} -o ssl -o no_verify_hostname -o no_verify_peer"
+		else
+			local FTPFS_OPTIONS="${FTPFS_OPTIONS} -o ssl_try"
+		fi
+		if [ "${M_USERNAME}" != "" ]; then
+			local USER=${M_USERNAME}
+			if [ "${M_PASSWORD}" != "" ]; then
+				local USER=${USER}:${M_PASSWORD}
+			fi
+			local FTPFS_OPTIONS="${FTPFS_OPTIONS} -o user=${USER}"
+		fi
+		if [ "${M_HOST}" != "" ] ; then
+			HOST=${M_HOST}
+			if [ "${M_PORT}" != "" ] ; then
+				HOST="${HOST}:${M_PORT}"
+			fi
+			if [ "${M_FILE}" != "" ] ; then
+				HOST="${HOST}${M_FILE}"
+			fi
+			curlftpfs ${FTPFS_OPTIONS} ${M_PROTO}://${HOST} ${M_DESTINATION}
+		else
+			mexit 7
+		fi
+	else
+		mexit 8
+	fi
 }
 
 
@@ -581,7 +619,7 @@ list_proto () {
 	lsvfs | awk '{ 
 		if (NR > 2) 
 		{
-			if ($3 != "synthetic" && $3 != "loopback" && $1 != "tmpfs") {
+			if ($1 != "tmpfs" && $1 != "fusefs") {
 				print $1 
 			}
 	}
@@ -594,7 +632,10 @@ list_proto () {
 			case "${fuse}" in
 				sshfs) echo ssh ;;
 				ntfs-3g) echo ntfs ;;
-				curlftpfs) echo ftp ;;
+				curlftpfs) 
+					echo ftp 
+					echo ftps
+				;;
 				wdfs) 
 					echo http
 					echo https
@@ -627,7 +668,7 @@ mounter_command () {
 				[pP][rR][oO][tT][oO])
 					list_proto					
 				;;
-				[fF][sS]])
+				[fF][sS])
 					list_proto					
 				;;
 
