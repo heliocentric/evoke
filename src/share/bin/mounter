@@ -75,6 +75,16 @@ mexit () {
 			echo "External command terminated abnormally"
 			exit 255
 		;;
+		7)
+			# Host is empty, but required. abort
+			echo "No route to host"
+			exit 65
+		;;
+		8)
+			#
+			echo "Operation not supported"
+			exit 45
+		;;
 		*)
 			echo "General Error" >&2
 			exit 255
@@ -486,9 +496,34 @@ nativefs_mount () {
 
 
 # WebDAV filesystem wrapper; supports both http and https
-# XXX helio needs filling out.
 
 webdav_mount () {
+	if [ "${M_STYPE}" = "URI" ] ; then
+		local WDFS_OPTIONS="-o locking"
+		if [ "${M_PROTO}" = "https" ] ; then
+			local WDFS_OPTIONS="${WDFS_OPTIONS} -o accept_sslcert "
+		fi
+		if [ "${M_USERNAME}" != "" ]; then
+			WDFS_OPTIONS="${WDFS_OPTIONS} -o username=${M_USERNAME}"
+			if [ "${M_PASSWORD}" != "" ]; then
+				WDFS_OPTIONS="${WDFS_OPTIONS} -o password=${M_PASSWORD}"
+			fi
+		fi
+		if [ "${M_HOST}" != "" ] ; then
+			HOST=${M_HOST}
+			if [ "${M_PORT}" != "" ] ; then
+				HOST="${HOST}:${M_PORT}"
+			fi
+			if [ "${M_FILE}" != "" ] ; then
+				HOST="${HOST}${M_FILE}"
+			fi
+			wdfs ${WDFS_OPTIONS} ${M_PROTO}://${HOST} ${M_DESTINATION}
+		else
+			mexit 7
+		fi
+	else
+		mexit 8
+	fi
 }
 
 
