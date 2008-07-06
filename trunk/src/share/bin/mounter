@@ -29,7 +29,6 @@
 # We pass options via environment variables, as it makes parsing things
 # simpler. Plus, spaces can be used explicitly.
 #
-# Also, force noatime mounting, it's unnecessary.
 
 if [ ! -c "${DEVICES}/null" ] ; then
 	if [ -c "/dev/null" ] ; then
@@ -40,10 +39,18 @@ if [ ! -c "${DEVICES}/null" ] ; then
 	fi
 fi
 
+# Also, force noatime mounting, it's unnecessary.
+
+
+# XXX helio Protocols in need of implementation, we put them in MASKFS so mounter will throw an error on attempted use.
+
+MASKFS="procfs devfs nfs4 nfs nullfs smbfs zfs portalfs tmpfs"
+
 
 # mexit is our wrapper for exit. prints a standard error message.
 
 mexit () {
+	echo_config
 	case "${1}" in
 		1)
 			# Use if ${M_HOST} is empty or unusable.
@@ -81,15 +88,21 @@ mexit () {
 			exit 65
 		;;
 		8)
-			#
+			# We can't use a proto with this type
 			echo "Operation not supported"
 			exit 45
+		;;
+		9)
+			# The device node doesn't exist, or isn't usable
+			echo "Device not configured"
+			exit 6
 		;;
 		*)
 			echo "General Error" >&2
 			exit 255
 		;;
 	esac
+	# XXX helio an ISTRANSPORT check is needed here, and mdconfig/ggatec destruction should be implemented.
 }
 
 
@@ -107,6 +120,7 @@ echo_config () {
 		echo "port=${M_PORT}"
 		echo "file=${M_FILE}"
 		echo "mountpoint=${M_DESTINATION}"
+		echo "istransport=${ISTRANSPORT}"
 	fi
 }
 
@@ -265,17 +279,6 @@ new_mounter () {
 				M_PROTO="$(echo "${M_PROTO}" | cut -d + -f 1)"
 			fi
 
-			# Bail out if there is no mountpoint specified.
-			# XXX helio swap and dump are 'special', may need to move it into the actual 'mount' routines
-			if [ "${*}" != "" ] ; then
-				if [ -d "${*}" ] ; then
-					M_DESTINATION="${*}"
-				else
-					mexit 3
-				fi
-			else
-				mexit 3
-			fi
 
 			# We handle four specifications:
 			# 	proto://URI
@@ -371,53 +374,65 @@ new_mounter () {
 # Only two MPTYPEs: NET and DEV
 
 mount_proto () {
-	# XXX helio Protocols in need of special handling:
-	# XXX helio procfs
-	# XXX helio devfs
-	# XXX helio nfs4
-	# XXX helio nfs
-	# XXX helio nullfs
-	# XXX helio smbfs
-	# XXX helio zfs
-	# XXX helio portalfs
+
+	# if it's not in list_proto, abort.
+	if [ "$(list_proto | grep ${M_PROTO})" = "" ] ; then
+		mexit 4
+	fi
+
+	# We check to see if it's either swap or dump, these two do not need a check for M_DESTINATION
 
 	case "${M_PROTO}" in
-		http*)
-			if list_proto | grep http >/dev/null ; then
-				M_PTYPE="NET"
-				prep_transport
-				webdav_mount
-			else
-				mexit 4
-			fi
+		swap)
+			M_PTYPE="DEV"
+			prep_transport
+			mexit 2
 		;;
-		ftp*)
-			if list_proto | grep http >/dev/null ; then
-				M_PTYPE="NET"
-				prep_transport
-				ftp_mount
-			else
-				mexit 4
-			fi
-		;;
-		ssh)
-			if list_proto | grep http >/dev/null ; then
-				M_PTYPE="NET"
-				prep_transport
-				ssh_mount
-			else
-				mexit 4
-			fi
+		dump)
+			M_PTYPE="DEV"
+			prep_transport
 		;;
 		*)
-			if [ "$(mounter_command list fs | grep "^${M_PROTO}")" != "" ] ; then
-				M_PTYPE="DEV"
-				prep_transport
-				nativefs_mount
+			# Bail out if there is no mountpoint specified.
+			if [ "${*}" != "" ] ; then
+				if [ -d "${*}" ] ; then
+					M_DESTINATION="${*}"
+				else
+					mexit 3	
+				fi
 			else
-				mexit 4
+				mexit 3
 			fi
-		;;
+	
+			case "${M_PROTO}" in
+				cryptofs)
+					M_PTYPE="REMOUNT"
+					prep_transport
+					cryptofs_mount
+				;;
+				http*)
+					M_PTYPE="NET"
+					prep_transport
+					webdav_mount
+				;;
+				ftp*)
+					M_PTYPE="NET"
+					prep_transport
+					ftp_mount
+				;;
+				ssh)
+					M_PTYPE="NET"
+					prep_transport
+					ssh_mount
+				;;
+				*)
+					M_PTYPE="DEV"
+					prep_transport
+					nativefs_mount
+					mexit 4
+			;;
+		esac
+	;;
 	esac
 }
 
@@ -432,6 +447,8 @@ prep_transport () {
 		DEV)
 			case "${M_STYPE}" in
 				URI)
+					# we set ISTRANSPORT so that mexit can clean up device nodes if there is a failure.
+					ISTRANSPORT="yes"
 					case "${M_TRANSPORT}" in
 						[gG][gG][aA][tT][eE])
 							ggate_handler
@@ -442,6 +459,7 @@ prep_transport () {
 					esac
 				;;
 				FILE)
+					ISTRANSPORT="yes"
 					mdconfig_handler
 				;;
 			esac
@@ -500,7 +518,31 @@ nativefs_mount () {
 	if [ "${M_STYPE}" = "GEOM" ] ; then
 		if [ -c "${DEVICES}/${M_FILE}" ] ; then
 			mount -t ${M_PROTO} ${DEVICES}/${M_FILE} ${M_DESTINATION}
+		else
+			mexit 9
 		fi
+	else
+		mexit 8
+	fi
+}
+
+# Psuedofilesystem mounter, note that if a psuedofilesystem is passed a directory, we attempt to mimic the structure.
+# XXX helio structure mapping only works for devfs. We mask out the others because of semantic issues.
+
+psuedofs_mount () {
+	mount -t ${M_PROTO} ${M_PROTO} ${M_DESTINATION}
+	if [ "${M_STYPE}" = "Directory" -a "${M_PROTO}" = "devfs" ] ; then
+		
+	fi
+}
+# cryptofs wrapper.
+
+cryptofs_mount () {
+	echo_config
+	if [ "${M_STYPE}" = "DIRECTORY" ] ; then
+		cryptofs -r "${M_FILE}" ${M_DESTINATION}
+	else
+		mexit 8
 	fi
 }
 
@@ -508,6 +550,7 @@ nativefs_mount () {
 # WebDAV filesystem wrapper; supports both http and https
 
 webdav_mount () {
+	echo_config
 	if [ "${M_STYPE}" = "URI" ] ; then
 		local WDFS_OPTIONS="-o locking"
 		if [ "${M_PROTO}" = "https" ] ; then
@@ -540,6 +583,7 @@ webdav_mount () {
 # FTP filesystem wrapper; supports ftp and ftps.
 
 ftp_mount () {
+	echo_config
 	if [ "${M_STYPE}" = "URI" ] ; then
 		local FTPFS_OPTIONS="-o transform_symlinks"
 		if [ "${M_PROTO}" = "ftps" ] ; then
@@ -573,9 +617,9 @@ ftp_mount () {
 
 
 # SFTP filesystem support. 
-# XXX helio needs filling out.
 
 ssh_mount () {
+	echo_config
 	if [ "${M_STYPE}" = "URI" ] ; then
 		local SSHFS_OPTIONS="-o workaround=all -o idmap=user -o transform_symlinks"
 		local SSHFS_OPTIONS="${SSHFS_OPTIONS} -o follow_symlinks -o compression=yes"
@@ -637,16 +681,24 @@ unmount_handler () {
 # List available protocols to stdout in newline deliminated form.
 
 list_proto () {
-	lsvfs | awk '{ 
+	lsvfs | awk -v MASKFS="${MASKFS}" '{ 
+		count = split(MASKFS, filesystems, " ");
 		if (NR > 2) 
 		{
-			if ($1 != "tmpfs" && $1 != "fusefs") {
-				print $1 
+			if ($1 != "fusefs" && $1 != "ntfs") {
+				for(i=0; i <= count; i++) {
+					if (filesystems[i] == $1) {
+						next;
+					}
+				}
+				print $1;
 			}
-	}
+		}
 	}'
 	echo "boot-ufs"
-	for fuse in wdfs sshfs curlftpfs ntfs-3g
+	echo "swap"
+	echo "dump"
+	for fuse in wdfs sshfs curlftpfs ntfs-3g cryptofs
 	do
 		command -v ${fuse} >${DEVICES}/null 
 		if [ "$?" != "127" ] ; then
@@ -657,6 +709,7 @@ list_proto () {
 					echo ftp 
 					echo ftps
 				;;
+				cryptofs) echo cryptofs ;;
 				wdfs) 
 					echo http
 					echo https
