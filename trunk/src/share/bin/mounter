@@ -44,7 +44,7 @@ fi
 
 # XXX helio Protocols in need of implementation, we put them in MASKFS so mounter will throw an error on attempted use.
 
-MASKFS="procfs devfs nfs4 nfs nullfs smbfs zfs portalfs tmpfs"
+MASKFS="nfs4 nfs nullfs smbfs zfs portalfs unionfs"
 
 
 # mexit is our wrapper for exit. prints a standard error message.
@@ -124,144 +124,7 @@ echo_config () {
 	fi
 }
 
-old_mounter () {
-	if [ "${MOPTIONS}" != "" ] ; then
-		MOPTIONS="-o noatime,${MOPTIONS}"
-	else
-		MOPTIONS="-o noatime"
-	fi
-
-	case "${1}" in
-		[fF][tT][pP])
-			if [ "${2}" != "" ] ; then
-				if [ -d "${3}" ] ; then
-					curlftpfs ${MOPTIONS} ${2} ${3}
-				fi
-			fi
-		;;
-		[sS][sS][hH])
-			if [ "${2}" != "" ] ; then
-				if [ -d "${3}" ] ; then
-					sshfs ${MOPTIONS} -C ${2} ${3}
-				fi
-			fi
-		;;
-		[wW][eE][bB][dD][aA][vV])
-			if [ "${2}" != "" ] ; then
-				if [ -d "${3}" ] ; then
-					wdfs ${MOPTIONS} -o accept_sslcert -o svn_mode ${2} ${3}
-				fi
-			fi
-		;;
-		[nN][tT][fF][sS])
-			if [ -c "${DEVICES}/${2}" ] ; then
-				if [ -d "${3}" ] ; then
-					ntfs-3g ${MOPTIONS} ${DEVICES}/${2} ${3}
-				fi
-			fi
-		;;
-	
-		[sS][wW][aA][pP])
-			if [ "${2}" != "" ] ; then
-				if [ "${3}" = "enc" ] ; then
-					geom eli onetime -d ${DEVICES}/${2}
-					swapon ${DEVICES}/${2}.eli
-				else 
-					swapon ${DEVICES}/${2}
-				fi
-			fi
-		;;
-	
-		[dD][uU][mM][pP])
-			if [ "${2}" != "" ] ; then
-				dumpon ${DEVICES}/${2}
-			fi
-		;;
-	
-		[eE][nN][tT][rR][oO][pP][yY])
-			if [ "${2}" != "" ] ; then
-				if [ "${3}" = "save" ] ; then
-					dd if=${DEVICES}/random of=${DEVICES}/${2} bs=2048 count=1 2>${DEVICES}/null
-				else 
-					dd of=${DEVICES}/random if=${DEVICES}/${2} bs=2048 count=1 2>${DEVICES}/null
-				fi
-			fi
-		;;
-		[uU][nN][mM][oO][uU][nN][tT])
-			mount | awk -v MOUNTPOINT=$2 '{
-				mount=$3
-				devicenode=$1
-				if (mount == MOUNTPOINT) {
-					if (devicenode ~ /fuse/) {
-						system("umount " devicenode);
-						close("umount " devicenode);
-					} else {
-						system("umount " mount);
-						close ("umount " mount);
-					}
-				}
-			}'
-		;;
-	  	[lL][iI][sS][tT])
-	
-		# We silently drop if someone types 'mounter list', however, 
-		# if the third argument is a directory, we assume the user 
-		# wants to automount volumes into that directory. For example, 
-		# mounter list ufs /media will mount all ufs partitions into 
-		# /media named after their geom name. ie, /media/da0s1a, etc.
-			case "${2}" in
-				[Ff][sS])
-					lsvfs | awk '{ 
-						if (NR > 2) 
-						{
-							if ($3 != "synthetic" && $3 != "loopback" && $1 != "tmpfs") {
-								print $1 
-							}
-						}
-					}'
-					echo "boot-ufs"
-					for fuse in wdfs sshfs curlftpfs ntfs-3g
-					do
-						command -v ${fuse} >${DEVICES}/null 
-						if [ "$?" != "127" ] ; then
-							case "${fuse}" in
-								sshfs) echo ssh ;;
-								ntfs-3g) echo ntfs ;;
-								curlftpfs) echo ftp ;;
-								wdfs) echo webdav ;;
-							esac
-						fi
-					done
-					
-				;;
-
-				*)
-					if [ "${2}" != "" ] ; then
-						for i in $(lsvol | grep ^${2}:)
-						do
-							DEVNODE=$(echo ${i} | cut -d : -f 2)
-							if [ -d "${3}" ] ; then
-								mkdir -p ${3}/${i}
-								mounter ${2} ${DEVNODE} ${3}/${DEVNODE}
-							else
-								echo ${DEVNODE}
-							fi
-						done
-					fi
-				;;
-			esac
-		;;
-		*)
-			if [ -c ${DEVICES}/"${2}" ] ; then
-				if [ -d "${3}" ] ; then
-					mount -t ${1} ${MOPTIONS} ${DEVICES}/${2} ${3}
-				fi
-			fi
-		;;
-	esac
-}
-
-new_mounter () {
+mounter_main () {
 	if [ "${1}" != "" ] ; then
 		# if a : is in the first argument, we treat it as a proto:source, rather then a command
 		if [ "$( echo ${1} | grep :)" != "" ] ; then
@@ -269,8 +132,6 @@ new_mounter () {
 			M_PROTO="$(echo "${1}" | cut -d : -f 1)"
 			M_SOURCE="$(echo "${1}" | cut -d : -f 2-60)"
 
-			# shift it so that it is easier to deal with spaces in a destination directory.
-			shift
 
 			# If it's in the form proto+transport, set M_TRANSPORT first, then M_PROTO to the 'real' protocol.
 			
@@ -359,7 +220,10 @@ new_mounter () {
 					M_FILE="${M_SOURCE}"
 				;;
 			esac
-			mount_proto
+			# shift it so that it is easier to deal with spaces in a destination directory.
+			shift
+
+			mount_proto "${*}"
 		else
 			mounter_command $*
 		fi 
@@ -386,11 +250,41 @@ mount_proto () {
 		swap)
 			M_PTYPE="DEV"
 			prep_transport
-			mexit 2
+			if [ "${M_STYPE}" = "GEOM" ] ; then
+				if [ "${M_FILE}" != "" ] ; then
+					geom eli onetime -d "${DEVICES}/${M_FILE}" && swapon ${DEVICES}/${M_FILE}.eli
+				else
+					mexit 2
+				fi
+			else
+				mexit 8
+			fi
 		;;
 		dump)
 			M_PTYPE="DEV"
 			prep_transport
+			if [ "${M_STYPE}" = "GEOM" ] ; then
+				if [ "${M_FILE}" != "" ] ; then
+					dumpon ${DEVICES}/${M_FILE}
+				else
+					mexit 2
+				fi
+			else
+				mexit 8
+			fi
+		;;
+	
+		entropy)
+			if [ "${M_STYPE}" = "GEOM" ] ; then
+				if [ "${M_FILE}" != "" ] ; then
+					dd of=${DEVICES}/random if=${DEVICES}/${M_FILE} bs=2048 count=1 2>${DEVICES}/null
+				else
+					mexit 2
+				fi
+			else
+				mexit 8
+			fi
+		
 		;;
 		*)
 			# Bail out if there is no mountpoint specified.
@@ -410,12 +304,12 @@ mount_proto () {
 					prep_transport
 					cryptofs_mount
 				;;
-				http*)
+				http?)
 					M_PTYPE="NET"
 					prep_transport
 					webdav_mount
 				;;
-				ftp*)
+				ftp?)
 					M_PTYPE="NET"
 					prep_transport
 					ftp_mount
@@ -425,14 +319,23 @@ mount_proto () {
 					prep_transport
 					ssh_mount
 				;;
+				nvram)
+					M_PTYPE="DEV"
+					prep_transport
+					nvram_mount
+				;;
+				procfs|tmpfs|linsysfs|linprocfs|devfs)
+					M_PTYPE="PSUEDO"
+					prep_transport
+					psuedofs_mount
+				;;
 				*)
 					M_PTYPE="DEV"
 					prep_transport
 					nativefs_mount
-					mexit 4
-			;;
-		esac
-	;;
+				;;
+			esac
+		;;
 	esac
 }
 
@@ -535,6 +438,7 @@ psuedofs_mount () {
 		
 	fi
 }
+
 # cryptofs wrapper.
 
 cryptofs_mount () {
@@ -644,6 +548,14 @@ ssh_mount () {
 }
 
 
+
+# nvram basic wrapper.
+
+nvram_mount () {
+
+}
+
+
 unmount_handler () {
 	mount | awk -v MOUNTPOINT=$1 -v DEVICES=${DEVICES} '
 	function unmount(spec) {
@@ -658,7 +570,7 @@ unmount_handler () {
 			if (devicenode ~ /fuse/) {
 				unmount(devicenode);
 			} else {
-				umount(mount);
+				unmount(mount);
 				if (devicenode ~ /md/) {
 					# This strips ${DEVICES} and md from the node name, so mdconfig -d -u # will work
 					sub(DEVICES"/md","",devicenode)
@@ -751,12 +663,7 @@ mounter_command () {
 						for i in $(lsvol | grep ^${2}:)
 						do
 							DEVNODE=$(echo ${i} | cut -d : -f 2)
-#							if [ -d "${3}" ] ; then
-#								mkdir -p ${3}/${i}
-#								mounter ${2} ${DEVNODE} ${3}/${DEVNODE}
-#							else
-								echo ${DEVNODE}
-#							fi
+							echo ${DEVNODE}
 						done
 					fi
 				;;
@@ -767,6 +674,6 @@ mounter_command () {
 		;;
 	esac
 }
-new_mounter $*
+mounter_main $*
 
 

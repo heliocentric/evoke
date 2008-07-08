@@ -4,8 +4,13 @@ B:ntfs-3g:sysutils/fusefs-ntfs:
 B:mount_fusefs:sysutils/fusefs-kmod:
 B:wdfs:sysutils/fusefs-wdfs:
 B:sshfs:sysutils/fusefs-sshfs:
+B:cryptofs:sysutils/fusefs-sshfs:
 B:pv:sysutils/pv:
 B:nano:editors/nano:
 B:nload:net/nload:
 B:makefs:sysutils/makefs:
-#B:vac:devel/plan9port:
+B:venti/venti:devel/plan9port:
+B:vbackup:devel/plan9port:
+B:vac:devel/plan9port:
+B:vcat:devel/plan9port:
+B:unvac:devel/plan9port:

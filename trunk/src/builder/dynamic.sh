@@ -123,7 +123,6 @@ mkdir -p ${DESTDIR}/mnt/bin
 
 # Dear lord this is ugly. Still, it simplifies other things. That's my story, and I'm sticking to it.
 mount_nullfs -o union ${DESTDIR}/usr/local/plan9/bin ${DESTDIR}/mnt/bin
-mount_nullfs -o union ${DESTDIR}/usr/local/plan9/bin/venti ${DESTDIR}/mnt/bin
 mount_nullfs -o union ${DESTDIR}/bin ${DESTDIR}/mnt/bin
 mount_nullfs -o union ${DESTDIR}/sbin ${DESTDIR}/mnt/bin
 mount_nullfs -o union ${DESTDIR}/usr/bin ${DESTDIR}/mnt/bin
@@ -183,7 +182,6 @@ ${CROSSTOOLSPATH}/strip --remove-section=.note --remove-section=.comment --strip
 umount ${DESTDIR}/mnt/lib
 umount ${DESTDIR}/mnt/lib
 umount ${DESTDIR}/mnt/lib
-umount ${DESTDIR}/mnt/bin
 umount ${DESTDIR}/mnt/bin
 umount ${DESTDIR}/mnt/bin
 umount ${DESTDIR}/mnt/bin
