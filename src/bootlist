@@ -30,7 +30,7 @@
 /usr/src/sys/boot/ia64/Makefile.inc
 /usr/src/sys/boot/ia64/efi/Makefile
 /usr/src/sys/boot/pc98/Makefile.inc
-/usr/src/sys/boot/pc98/boot2/boot.c
+/usr/src/sys/boot/pc98/boot2/boot2.c
 /usr/src/sys/boot/pc98/cdboot/cdboot.s
 /usr/src/sys/boot/pc98/loader/Makefile
 /usr/src/sys/boot/powerpc/loader/Makefile

@@ -288,7 +288,6 @@ EOF
 
 echo "					[DONE]"
 
-mkdir -p ${RELEASEDIR}${BOOTPREFIX}
 
 echo -n " * share = Making cmdlist and modlist image"
 
@@ -326,6 +325,7 @@ mdconfig -d -u $(echo ${DEVICE} | cut -b 3-7)
 echo "					[DONE]"
 
 echo -n " * share = Creating RELEASEDIR"
+mkdir -p ${RELEASEDIR}${BOOTPREFIX}
 cd ${BOOTDIR}${BOOTPREFIX}
 tar -cf - * | tar -xf - -C ${RELEASEDIR}${BOOTPREFIX}/
 rm ${RELEASEDIR}/dsbsd/${RVERSION}

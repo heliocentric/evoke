@@ -94,7 +94,7 @@ bsd_chooser() {
 		clear
 		ROOTFS=$(menu "Choose Root Filesystem" "mounter list boot-ufs")
 	fi
-	mounter ufs ${ROOTFS} ${DESTDIR}
+	mounter ufs:${ROOTFS} ${DESTDIR}
 }
 
 # Disk partitioning function
@@ -136,7 +136,7 @@ freebsd_installer() {
 			ftp-archive.freebsd.org/pub/FreeBSD-Archive/old-releases"
 	while [ "${BREAKOUT}" != "yes" ]
 	do
-		SRCFS=$(menu "Choose Source" "mounter list fs | sort ; echo Select Path")
+		SRCFS=$(menu "Choose Source" "mounter list proto | sort ; echo Select Path")
 		SRCLOC=$(menu "Choose Location" "(mounter list ${SRCFS} ; echo Enter Location)")
 		RSRCDIR=${SOURCEDIR}
 		if [ "${SRCLOC}" = "Enter Location" ] ; then
@@ -148,10 +148,10 @@ freebsd_installer() {
 				echo "Please type the device node or URL you wish to use."
 				echo "ex. ad0s1a, or ftp.freebsd.org/pub/FreeBSD/"
 				read -p ": " SRCLOC
-				mounter ${SRCFS} ${SRCLOC} ${SOURCEDIR}
+				mounter ${SRCFS}:${SRCLOC} ${SOURCEDIR}
 			fi
 		else
-			mounter ${SRCFS} ${SRCLOC} ${SOURCEDIR}
+			mounter ${SRCFS}:${SRCLOC} ${SOURCEDIR}
 
 		fi
 		RELEASES="$(ls -p ${SOURCEDIR} | grep /$ | cut -d / -f 1 | egrep '^[0-9.]+-[a-zA-Z0-9]')" >/dev/null
