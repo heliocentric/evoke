@@ -609,6 +609,8 @@ list_proto () {
 	}'
 	echo "boot-ufs"
 	echo "swap"
+	echo "entropy"
+	echo "nvram"
 	echo "dump"
 	for fuse in wdfs sshfs curlftpfs ntfs-3g cryptofs
 	do
