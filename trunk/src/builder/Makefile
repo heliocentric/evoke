@@ -149,10 +149,7 @@ ${ISO}: ${RELEASECOOKIE} ${PER_RELEASE_DIR}
 # real-releasedir will be ran.
 # fuck. it will always be run. Even when it doesn't need to be.
 
-${RELEASECOOKIE}: real-releasedir
-${PER_RELEASE_DIR}: real-releasedir
-
-real-releasedir: ${BOOTDIRCOOKIE}
+${RELEASECOOKIE}: ${BOOTDIRCOOKIE}
 	@echo "share = Installing BOOTDIR to release directory"
 	@mkdir -p ${PER_RELEASE_DIR}
 	@cd ${BOOTDIR}${BOOTPREFIX} && tar -cf - * | tar -xpf - -C ${PER_RELEASE_DIR}
@@ -162,6 +159,18 @@ real-releasedir: ${BOOTDIRCOOKIE}
 .endif
 	@mkdir -p ${COOKIEDIR}
 	@touch ${RELEASECOOKIE}
+
+${PER_RELEASE_DIR}: ${BOOTDIRCOOKIE}
+	@echo "share = Installing BOOTDIR to release directory"
+	@mkdir -p ${PER_RELEASE_DIR}
+	@cd ${BOOTDIR}${BOOTPREFIX} && tar -cf - * | tar -xpf - -C ${PER_RELEASE_DIR}
+.if ${REALV} == HEAD
+	@-rm ${RELEASEDIR}${BSDIR}/${REALV}
+	@cd ${RELEASEDIR}${BSDIR} && ln -s ${VERSION} ${REALV}
+.endif
+	@mkdir -p ${COOKIEDIR}
+	@touch ${RELEASECOOKIE}
+
 
 
 # Main BOOTDIR compilation routine.
