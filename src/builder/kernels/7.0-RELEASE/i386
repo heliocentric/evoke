@@ -59,3 +59,4 @@ options 	COMPAT_LINUX
 device if_bridge
 device		atapicam
 nodevice	atapicd
+options SW_WATCHDOG
