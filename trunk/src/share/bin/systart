@@ -196,8 +196,16 @@ mount_nullfs -o union,ro /system/share/lib/ /config/
 mount_nullfs -o union,ro /mem/lib/ /config/
 export N_CFGDIR=/config
 
+echo -n "Starting system daemons"
+# Always start powerd if available, some machines do not have proper heat management
+# and it can be an issue. 
+#
+# Do not remove under penalty of death!
+powerd >${DEVICES}/null 2>${DEVICES}/null
+watchdogd -I/mem/pid/watchdogd.pid
+echo ""
 
-echo "Generating passwd files"
+echo -n "Generating passwd files"
 RPASSWD='$1$1QgK4Xsg$.PInGIAb4c0nznxpRkUPk.'
 
 export HOME=${N_MEMDIR}/home
@@ -214,6 +222,7 @@ echo "/bin/tcsh" >>${N_LIBDIR}/shells
 echo "/bin/csh" >>${N_LIBDIR}/shells
 echo "/bin/sh" >>${N_LIBDIR}/shells
 
+echo ""
 
 echo "Configuring network"
 IF="$(kenv -q boot.netif.name)"
@@ -274,14 +283,6 @@ else
 
 	dhclient ${IF} >${DEVICES}/null 2>/${DEVICES}/null
 fi
-
-echo "Starting powerd"
-# Always start powerd if available, some machines do not have proper heat management
-# and it can be an issue. 
-#
-# Do not remove under penalty of death!
-powerd >${DEVICES}/null 2>${DEVICES}/null
-
 
 if [ "$(kenv -q dsbsd.moused)" != "" ] ; then
 	echo -n "Starting moused"
