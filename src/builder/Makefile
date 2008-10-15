@@ -85,7 +85,7 @@ REALV = HEAD
 MODULES ?= ${DMODULES}
 PROGS ?= $({DPROGS}
 BUILDDIR = ${ROOTDIR}/builder
-BSDIR ?= /dsbsd
+BSDIR ?= /evoke
 BOOTPREFIX = ${BSDIR}/${VERSION}
 PRODUCTDIR = ${BOOTPREFIX}/product
 COOKIEDIR = ${OBJDIR}/cookies
@@ -97,7 +97,7 @@ ERRFILE != echo ${ROOTDIR}/logs/$(date +%Y%m%d%H%M%S).log
 
 # make iso variables.
 ACTIVE_ABI != echo ${i386_ACTIVE} | cut -d . -f 1 
-ISO ?= ${RELEASEDIR}/ISO-IMAGES/${VERSION}/dsbsd.iso
+ISO ?= ${RELEASEDIR}/ISO-IMAGES/${VERSION}/evoke.iso
 ISODIR != dirname ${ISO}
 ISTMPDIR ?= ${TMPDIR}${ROOTDIR}/iso-gen/
 
@@ -114,7 +114,7 @@ BOOTDIRCOOKIE = ${COOKIEDIR}/BOOTDIR
 BOOTDIR = ${OBJDIR}/bdir
 
 # make rootfs variables.
-ROOTFS = ${PRODUCTDIR}/dsbsd.fs.gz
+ROOTFS = ${PRODUCTDIR}/evoke.fs.gz
 
 # make fsdir variables.
 FSDIRCOOKIE = ${COOKIEDIR}/FSDIR
@@ -182,9 +182,9 @@ ${BOOTDIRCOOKIE}: ${BOOTDIR}${ROOTFS}
 # generate a root fs image if FSDIR has been modified.
 ${BOOTDIR}${ROOTFS}: ${FSDIRCOOKIE} 
 	@mkdir -p ${BOOTDIR}${PRODUCTDIR}
-	@makefs ${BOOTDIR}${PRODUCTDIR}/dsbsd.fs ${FSDIR}
+	@makefs ${BOOTDIR}${PRODUCTDIR}/evoke.fs ${FSDIR}
 	@-rm ${BOOTDIR}${ROOTFS} 1>&2
-	@gzip -9 ${BOOTDIR}${PRODUCTDIR}/dsbsd.fs
+	@gzip -9 ${BOOTDIR}${PRODUCTDIR}/evoke.fs
 
 # Main FSDIR compilation routine.
 

@@ -117,7 +117,7 @@ export PATH=/bin
 # at this point.
 
 echo "Verifying root filesystem"
-ROOTFINGERPRINT=$(kenv -q dsbsd.fingerprint)
+ROOTFINGERPRINT=$(kenv -q evoke.fingerprint)
 ROOTDEV=${DEVICES}/$(mount | awk '{ if ($3 == "/") { print $1 } }')
 if [ "${ROOTFINGERPRINT}" != "" ] ; then
 	if [ "${ROOTFINGERPRINT}" != "$(sha256 -q ${ROOTDEV})" ] ; then
@@ -284,7 +284,7 @@ else
 	dhclient ${IF} >${DEVICES}/null 2>/${DEVICES}/null
 fi
 
-if [ "$(kenv -q dsbsd.moused)" != "" ] ; then
+if [ "$(kenv -q evoke.moused)" != "" ] ; then
 	echo -n "Starting moused"
 	cd ${DEVICES}
 	# Auto configure moused (note, it is disabled by default as it does slow 

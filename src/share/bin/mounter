@@ -304,12 +304,12 @@ mount_proto () {
 					prep_transport
 					cryptofs_mount
 				;;
-				http?)
+				http|https)
 					M_PTYPE="NET"
 					prep_transport
 					webdav_mount
 				;;
-				ftp?)
+				ftp|ftps)
 					M_PTYPE="NET"
 					prep_transport
 					ftp_mount
