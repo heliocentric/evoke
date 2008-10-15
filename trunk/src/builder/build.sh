@@ -347,6 +347,6 @@ fi
 cd ${RELEASEDIR}/ISO-IMAGES/${VERSION}
 
 # DO NOT TOUCH UNDER PENALTY OF DEATH.
-mkisofs -b cdboot/i386 -no-emul-boot -r -J -V DSBSD-${VERSION} -p "${ENGINEER}" -publisher "http://www.damnsmallbsd.org" -o evoke.iso ${BOOTDIR} 1>&2
+mkisofs -b cdboot/i386 -no-emul-boot -r -J -V EVOKE-${VERSION} -p "${ENGINEER}" -publisher "http://evoke.googlecode.com" -o evoke.iso ${BOOTDIR} 1>&2
 echo "					[DONE]"
 

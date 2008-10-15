@@ -33,7 +33,7 @@
 TARGETS ?= 7.0-RELEASE/i386 7.0-RELEASE/amd64
 i386_ACTIVE ?= 7.0-RELEASE/i386
 
-# DamnSmallBSD Version
+# Evoke Version
 VERSION ?= HEAD
 RREVISION != cd ${ROOTDIR} && svnversion
 
@@ -143,7 +143,7 @@ ${ISO}: ${RELEASECOOKIE} ${PER_RELEASE_DIR}
 	@mkdir -p ${ISTMPDIR}/cdboot
 	@cd ${RELEASEDIR} && tar -cf - .${BOOTPREFIX} | tar -xpf - -C ${ISTMPDIR}
 	@cp ${ISTMPDIR}${BOOTPREFIX}/freebsd${ACTIVE_ABI}/i386/cdboot ${ISTMPDIR}/cdboot/i386
-	@mkisofs -b cdboot/i386 -no-emul-boot -r -J -V DSBSD-${VERSION} -p "${ENGINEER}" -publisher "http://www.damnsmallbsd.org" -o ${RELEASEDIR}/ISO-IMAGES/${VERSION}${BSDIR}.iso ${ISTMPDIR} 1>&2
+	@mkisofs -b cdboot/i386 -no-emul-boot -r -J -V EVOKE-${VERSION} -p "${ENGINEER}" -publisher "http://evoke.googlecode.com" -o ${RELEASEDIR}/ISO-IMAGES/${VERSION}${BSDIR}.iso ${ISTMPDIR} 1>&2
 
 # Note, we have two targets, the cookie and the directory; if either are too old
 # real-releasedir will be ran.
