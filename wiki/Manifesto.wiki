@@ -3,10 +3,28 @@
 
 = Target Environment =
 
+This is a description of the target environment of evoke. While we may not be able to implement it, we should not 
+do anything to prevent it's implementation.
 
-= Details =
 
-Add your content here.  Format your content with:
-  * Text in *bold* or _italic_
-  * Headings, paragraphs, and lists
-  * Automatic links to other wiki pages
+== Boot Server ==
+
+Runs a dhcp and tftp server, and provides pxe boot functionality, or it's equivalent in other architectures. Key 
+features are:
+
+* It boots off of the same drive that tftp then serves out for pxe functionality.
+* All configuration is kept in a seperate nvram partition/drive/etc.
+* The version of evoke the boot server boots is determined by it's boot.config. 
+* The version of evoke the clients boot is determined by the dhcp configuration, so the version can be host or network specific.
+
+In this way there is one namespace for the evoke binaries, which can then be safely replicated.
+
+== Installing New Hosts ==
+
+Installing a new host should be as simple as enabling DHCP boot services, and uploading the boot server's public 
+key into the firmware. This step is necessary to ensure that the boot code recieved by the dhcp server is signed 
+and verified as being legitimate.
+
+Once evoke has booted, it contacts the boot server to recieve it's configuration options, and changes the nvram 
+partition (or creates one if it does not exist) to reflect any changes from the boot server.
+
