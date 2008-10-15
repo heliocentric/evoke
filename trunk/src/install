@@ -39,12 +39,12 @@ read -p "Enter Choice: " CHOICE
 echo -n "Fetching DamnSmallBSD							"
 case "${CHOICE}" in
 	[1])
-		DEST=dsbsd-01p1
+		DEST=evoke-01p1
 		svn checkout svn://devnulled.ath.cx/damnsmallbsd/branches/releases/0.1P1/src ${DEST} 2>/dev/null >/dev/null
 		TARGETS=$(cat ${DEST}/build.sh | grep TARGETS= | cut -d \" -f 2)
 	;;
 	[dD])
-		DEST=dsbsd-head
+		DEST=evoke-head
 		svn checkout svn://devnulled.ath.cx/damnsmallbsd/trunk/src ${DEST} 2>/dev/null >/dev/null
 		TARGETS=$(cat ${DEST}/build.sh | grep TARGETS= | cut -d \" -f 2)
 	;;

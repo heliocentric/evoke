@@ -29,10 +29,10 @@ if [ "${VERSION}" = "HEAD" ] ; then
 	fi
 fi
 # The prefix for this version, for BOOTDIR, so we can avoid collisions with FreeBSD.
-export BOOTPREFIX=/dsbsd/${VERSION}
+export BOOTPREFIX=/evoke/${VERSION}
 
 # PRODUCTDIR is where the filesystem images are stored.
-export PRODUCTDIR=/dsbsd/${VERSION}/product
+export PRODUCTDIR=/evoke/${VERSION}/product
 
 for target in ${TARGETS}
 do
@@ -254,16 +254,16 @@ echo "					[DONE]"
 
 
 echo -n " * share = Creating root.fs"
-# Make dsbsd.fs, the main product filesystem.
+# Make evoke.fs, the main product filesystem.
 mkdir -p ${BOOTDIR}${PRODUCTDIR}
 cd ${BOOTDIR}${PRODUCTDIR}
-makefs dsbsd.fs ${FSDIR} 1>&2
-MDDEVICE=$(priv mdconfig -af dsbsd.fs)
+makefs evoke.fs ${FSDIR} 1>&2
+MDDEVICE=$(priv mdconfig -af evoke.fs)
 
 # Trust me, this is necessary; sha256 the file returns a different hash then the device node
 FINGERPRINT=$(sha256 -q /dev/${MDDEVICE})
 priv mdconfig -d -u $(echo ${MDDEVICE} | cut -c 3-100)
-gzip -9 dsbsd.fs	1>&2
+gzip -9 evoke.fs	1>&2
 
 # Add all MODULES and port modules to loader.conf
 for module in ${MODULES} $(grep ^M ${BUILDDIR}/portlist | cut -d : -f 2)
@@ -276,11 +276,11 @@ kernel="${KERNCONF}"
 kernel_options="-r"
 mfsroot_load="YES"
 mfsroot_type="mfs_root"
-mfsroot_name="${PRODUCTDIR}/dsbsd.fs"
+mfsroot_name="${PRODUCTDIR}/evoke.fs"
 trackfile_load="YES"
 trackfile_type="mfs_root"
 trackfile_name="${BOOTPREFIX}/trackfile"
-dsbsd.fingerprint="${FINGERPRINT}" 
+evoke.fingerprint="${FINGERPRINT}" 
 boot_multicons="YES"
 hw.firewire.dcons_crom.force_console=1
 kern.hz=100
@@ -328,8 +328,8 @@ echo -n " * share = Creating RELEASEDIR"
 mkdir -p ${RELEASEDIR}${BOOTPREFIX}
 cd ${BOOTDIR}${BOOTPREFIX}
 tar -cf - * | tar -xf - -C ${RELEASEDIR}${BOOTPREFIX}/
-rm ${RELEASEDIR}/dsbsd/${RVERSION}
-ln -s ${VERSION} ${RELEASEDIR}/dsbsd/${RVERSION}
+rm ${RELEASEDIR}/evoke/${RVERSION}
+ln -s ${VERSION} ${RELEASEDIR}/evoke/${RVERSION}
 echo ""
 
 echo -n " * share = Making ISO image"
@@ -337,7 +337,7 @@ echo -n " * share = Making ISO image"
 # Don't ask; cdboot is the main reason why bootloader versioning was turned off for so damned long.
 
 mkdir -p ${BOOTDIR}/cdboot
-cp ${BOOTDIR}/dsbsd/${VERSION}/freebsd$(echo ${i386_ACTIVE} | cut -d "." -f 1)/$(echo ${i386_ACTIVE} | cut -d "/" -f 2)/cdboot ${BOOTDIR}/cdboot/i386
+cp ${BOOTDIR}/evoke/${VERSION}/freebsd$(echo ${i386_ACTIVE} | cut -d "." -f 1)/$(echo ${i386_ACTIVE} | cut -d "/" -f 2)/cdboot ${BOOTDIR}/cdboot/i386
 mkdir -p ${RELEASEDIR}/ISO-IMAGES/${VERSION}
 if [ -d "${BOOTOVERLAY}" ] ; then
 	cd ${BOOTOVERLAY}
@@ -347,6 +347,6 @@ fi
 cd ${RELEASEDIR}/ISO-IMAGES/${VERSION}
 
 # DO NOT TOUCH UNDER PENALTY OF DEATH.
-mkisofs -b cdboot/i386 -no-emul-boot -r -J -V DSBSD-${VERSION} -p "${ENGINEER}" -publisher "http://www.damnsmallbsd.org" -o dsbsd.iso ${BOOTDIR} 1>&2
+mkisofs -b cdboot/i386 -no-emul-boot -r -J -V DSBSD-${VERSION} -p "${ENGINEER}" -publisher "http://www.damnsmallbsd.org" -o evoke.iso ${BOOTDIR} 1>&2
 echo "					[DONE]"
 

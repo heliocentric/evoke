@@ -66,7 +66,7 @@ main_installer () {
 		case "${CHOICE}" in
 			2)
 				bsd_chooser
-				dsbsd_installer
+				evoke_installer
 			;;
 			1)
 				bsd_chooser
@@ -156,7 +156,7 @@ freebsd_installer() {
 		fi
 		RELEASES="$(ls -p ${SOURCEDIR} | grep /$ | cut -d / -f 1 | egrep '^[0-9.]+-[a-zA-Z0-9]')" >/dev/null
 		if [ "${RELEASES}" = "" ] ; then
-			ARCH=$(menu "Choose Architecture" "ls -p ${SOURCEDIR} | grep /$ | cut -d / -f 1 | grep -v dsbsd | grep -v boot | grep -v cdboot")
+			ARCH=$(menu "Choose Architecture" "ls -p ${SOURCEDIR} | grep /$ | cut -d / -f 1 | grep -v evoke | grep -v boot | grep -v cdboot")
 			RELEASES="$(ls -p ${SOURCEDIR}/${ARCH} |  grep /$ | cut -d / -f 1 | egrep '^[0-9.]+-[a-zA-Z0-9]')" >/dev/null
 			if [ "${RELEASES}" = "" ] ; then
 				echo "Error, unable to find a suitable release"
@@ -186,7 +186,7 @@ cat >>${DESTDIR}/etc/fstab << EOF
 EOF
 }
 
-dsbsd_installer() {
+evoke_installer() {
 }
 
 # Main program. Note, we use random sha256 hashes, so that installer 
