@@ -1,7 +1,7 @@
 #summary Description of goals, plans, and guidelines for the project
 #labels Phase-Requirements,Featured
 
-= Target Environment
+= Target Environment =
 
 
 = Details =
