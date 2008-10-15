@@ -1,4 +1,4 @@
-#summary Description of goals, plans, and guidelines for the project
+#summary An idealized target environment
 #labels Phase-Requirements,Featured
 
 = Target Environment =
