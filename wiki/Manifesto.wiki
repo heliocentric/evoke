@@ -12,10 +12,10 @@ do anything to prevent it's implementation.
 Runs a dhcp and tftp server, and provides pxe boot functionality, or it's equivalent in other architectures. Key 
 features are:
 
-* It boots off of the same drive that tftp then serves out for pxe functionality.
-* All configuration is kept in a seperate nvram partition/drive/etc.
-* The version of evoke the boot server boots is determined by it's boot.config. 
-* The version of evoke the clients boot is determined by the dhcp configuration, so the version can be host or network specific.
+  * It boots off of the same drive that tftp then serves out for pxe functionality.
+  * All configuration is kept in a seperate nvram partition/drive/etc.
+  * The version of evoke the boot server boots is determined by it's boot.config. 
+  * The version of evoke the clients boot is determined by the dhcp configuration, so the version can be host or network specific.
 
 In this way there is one namespace for the evoke binaries, which can then be safely replicated.
 
