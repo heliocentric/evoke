@@ -28,3 +28,8 @@ and verified as being legitimate.
 Once evoke has booted, it contacts the boot server to recieve it's configuration options, and changes the nvram 
 partition (or creates one if it does not exist) to reflect any changes from the boot server.
 
+== Upgrading/Updating ==
+
+New versions of evoke are merely copied to the boot server. When a machine needs to be upgraded/updated, the dhcp 
+config is changed to point to a more recent version, or boot.config for hard drive installs. 'Upgrades' do not 
+exist in the classical sense. You merely activate the version to be used at boot. 
