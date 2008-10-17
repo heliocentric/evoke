@@ -12,6 +12,7 @@ B:makefs:sysutils/makefs:
 B:venti/venti:devel/plan9port:
 B:vbackup:devel/plan9port:
 B:vac:devel/plan9port:
+B:vacfs:devel/plan9port:
 B:vcat:devel/plan9port:
 B:unvac:devel/plan9port:
 #B:Xorg:x11/xorg:
