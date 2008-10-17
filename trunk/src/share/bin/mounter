@@ -324,6 +324,11 @@ mount_proto () {
 					prep_transport
 					nvram_mount
 				;;
+				vac)
+					M_PTYPE="NET"
+					prep_transport
+					vac_mount
+				;;
 				procfs|tmpfs|linsysfs|linprocfs|devfs)
 					M_PTYPE="PSUEDO"
 					prep_transport
@@ -547,6 +552,23 @@ ssh_mount () {
 	fi
 }
 
+# Vac filesystem wrapper; mount is always read-only
+
+vac_mount () {
+	echo_config
+	if [ "${M_STYPE}" = "URI" ] ; then
+		local SCORE=$(echo ${M_FILE} | cut -d / -f 2)
+		VACFILE="/mem/scratch/$(dd if=/dev/random bs=4m count=1 | md5 -q).vac"
+		echo "vac:${SCORE}" >${VACFILE}
+		if [ "${M_HOST}" = "" ] ; then
+			vacfs -m ${M_DEST} -h ${M_HOST} ${VACFILE}
+		else
+			vacfs -m ${M_DEST} ${VACFILE}
+		fi
+	else
+		mexit 8
+	fi
+}
 
 
 # nvram basic wrapper.
@@ -612,7 +634,7 @@ list_proto () {
 	echo "entropy"
 	echo "nvram"
 	echo "dump"
-	for fuse in wdfs sshfs curlftpfs ntfs-3g cryptofs
+	for fuse in wdfs sshfs curlftpfs ntfs-3g cryptofs vacfs
 	do
 		command -v ${fuse} >${DEVICES}/null 
 		if [ "$?" != "127" ] ; then
@@ -627,6 +649,9 @@ list_proto () {
 				wdfs) 
 					echo http
 					echo https
+				;;
+				vacfs)
+					echo vac
 				;;
 			esac
 		fi

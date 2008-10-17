@@ -6,3 +6,7 @@
 Currently, FreeBSD 8-CURRENT kernel running on amd64 is required to build evoke. In the future, we will move to a more generic build environment with proper bootstrapping. However, economy dictates this for the near future.
 
 == Installed Ports ==
+
+  * cdrtools-2.01_7
+  * makefs-20040704
+  * subversion-1.5.2
