@@ -33,3 +33,7 @@ partition (or creates one if it does not exist) to reflect any changes from the 
 New versions of evoke are merely copied to the boot server. When a machine needs to be upgraded/updated, the dhcp 
 config is changed to point to a more recent version, or boot.config for hard drive installs. 'Upgrades' do not 
 exist in the classical sense. You merely activate the version to be used at boot. 
+
+== Switching architectures and kernels ==
+
+Switching to an architecture, or a new kernel abi (Ie, from FreeBSD 6.3 i386 to Linux 2.6 amd64) is the same as upgrading, you just activate the abi and architecture for the next boot. Each release supports multiple targets.
