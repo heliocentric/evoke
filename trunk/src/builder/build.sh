@@ -34,18 +34,18 @@ export BOOTPREFIX=/evoke/${VERSION}
 # PRODUCTDIR is where the filesystem images are stored.
 export PRODUCTDIR=/evoke/${VERSION}/product
 
-for target in ${TARGETS}
+for target in $(cat ${BUILDDIR}/targetlist | grep -v ^$ | grep -v ^#)
 do
 	# The TARGET and TARGET_ARCH are used by buildworld, and also internally
 	# except for PC98, they are the same.
-	export TARGET=$(echo ${target} | cut -d "/" -f 2)
+	export TARGET=$(echo ${target} | cut -d ":" -f 3)
 	export TARGET_ARCH="${TARGET}"
 
 	# Release (eg, 6.3-RELEASE)
-	export RELEASE=$(echo ${target} | cut -d "/" -f 1)
+	export RELEASE=$(echo ${target} | cut -d ":" -f 4)-RELEASE
 
 	# Kernel ABI (eg, 7 for 7.0-RELEASE or 7.1-RELEASE)
-	export ABI=$(echo ${target} | cut -d "/" -f 1 | cut -d "." -f 1)
+	export ABI=$(echo ${target} | cut -d ":" -f 2)
 
 	# Kernel config definition; since boot loader versioning works now,
 	# no need to use anything other then kernel
@@ -84,7 +84,11 @@ do
 	export CROSS_BUILD_TESTING=yes
 
 	# Extract source distfiles into ${DESTDIR}
-	SRCDIR="${NDISTDIR}/${RELEASE}" DISTS="src" ${ROOTDIR}/share/bin/distextract 1>&2
+#	SRCDIR="${NDISTDIR}/${RELEASE}" DISTS="src" ${ROOTDIR}/share/bin/distextract 1>&2
+	export URL=$(echo ${target} | cut -d ":" -f 5)
+	export URLREV=$(echo ${target} | cut -d ":" -f 6)
+	mkdir -p ${DESTDIR}/usr
+	svn co http://svn.freebsd.org/base/${URL}@${URLREV} ${DESTDIR}/usr/src
 	ERROR="$?"
 	if [ "${ERROR}" != "0" ] ; then
 		# Wooo, real error message now.
