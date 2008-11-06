@@ -34,7 +34,4 @@
 # Field 7:	The platform (ie, pc98)
 
 FreeBSD:7:i386:7.0:releng/7.0:184012
-FreeBSD:7:amd64:7.0:releng/7.0:184012
-FreeBSD:7:i386:7.1:stable/7:184012
-FreeBSD:6:i386:6.3:releng/6.3:184012
-FreeBSD:6:i386:6.4:releng/6.4:184012
+

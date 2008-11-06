@@ -107,8 +107,8 @@ mkdir -p ${DESTDIR}/usr/local/libexec
 mkdir -p ${DESTDIR}/usr/local/plan9/bin
 mkdir -p ${DESTDIR}/usr/local/plan9/bin/venti
 
-if [ -d "${NDISTDIR}/${target}/packages" ] ; then
-	cd ${NDISTDIR}/${target}/packages
+if [ -d "${NDISTDIR}/${TARGET_HASH}/packages" ] ; then
+	cd ${NDISTDIR}/${TARGET_HASH}/packages
 	for file in *
 	do
 		tar -xf ${file} --exclude '+*' -C ${DESTDIR}/usr/local/

@@ -38,6 +38,7 @@ for target in $(cat ${BUILDDIR}/targetlist | grep -v ^$ | grep -v ^#)
 do
 	# The TARGET and TARGET_ARCH are used by buildworld, and also internally
 	# except for PC98, they are the same.
+	export TARGET_ROOT=$(echo ${target} | md5 -q)
 	export TARGET=$(echo ${target} | cut -d ":" -f 3)
 	export TARGET_ARCH="${TARGET}"
 
@@ -53,7 +54,7 @@ do
 
 	# for installkernel/installworld and places in the script
 	# that need to know where installworld is putting things
-	export DESTDIR=${OBJDIR}/${target}
+	export DESTDIR=${OBJDIR}/${TARGET_HASH}
 	mkdir -p ${DESTDIR}
 
 	# erm, why is this here? might be removable, older version probably treated 
@@ -88,6 +89,7 @@ do
 	export URL=$(echo ${target} | cut -d ":" -f 5)
 	export URLREV=$(echo ${target} | cut -d ":" -f 6)
 	mkdir -p ${DESTDIR}/usr
+	echo svn co http://svn.freebsd.org/base/${URL}@${URLREV} ${DESTDIR}/usr/src
 	svn co http://svn.freebsd.org/base/${URL}@${URLREV} ${DESTDIR}/usr/src
 	ERROR="$?"
 	if [ "${ERROR}" != "0" ] ; then
@@ -130,9 +132,9 @@ do
 	for file in $(cat ${ROOTDIR}/bootlist)
 	do
 	    # This works for most.
-	    sed -i .bak "s@/boot@${BOOTPATH}@g" ${WORKDIR}${file} 1>&2
+	    sed -i .bak "s@/boot/@${BOOTPATH}/@g" ${WORKDIR}${file} 1>&2
 	    # This is for cdboot. Case specific
-	    sed -i .bak "s@/BOOT@$(echo ${BOOTPATH} | tr a-z A-Z)@g" ${WORKDIR}${file} 1>&2
+	    sed -i .bak "s@/BOOT/@$(echo ${BOOTPATH} | tr a-z A-Z)/@g" ${WORKDIR}${file} 1>&2
 	done
 
 	# Get rid of this latency addition in pxeboot (fixed in 7.0, but necessary on 6.x)
@@ -148,7 +150,7 @@ do
 	echo ""
 
 	# We use TMPDIR so that it can be different then the OBJDIR, as TMPDIR is write heavy.
-	export MAKEOBJDIRPREFIX=${TMPDIR}/${target}
+	export MAKEOBJDIRPREFIX=${TMPDIR}/${TARGET_HASH}
 
 	echo -n " * ${target} = Cleaning up"
 	if [ "${NO_CLEAN}" = "" ] ; then
