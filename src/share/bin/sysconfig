@@ -34,5 +34,18 @@ if [ ! -c "${DEVICES}/null" ] ; then
 		exit 1
 	fi
 fi
+usage () {
+}
 
-mounter list nvram
+case "${1}" in
+	[eE][xX][tT][rR][aA][cC][tT])
+		DEVICE="${2}"
+		EXTRACTPOINT="${3}"
+	;;
+	[lL][iI][sS][tT])
+		mounter list nvram
+	;;
+	*)
+	usage
+	;;
+esac
