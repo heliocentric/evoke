@@ -205,6 +205,7 @@ mounter_main () {
 						Character*)
 						# XXX helio this needs to be filled out, we change the M_STYPE but not the M_FILE
 							M_STYPE="GEOM"
+							M_FILE=$(echo ${M_SOURCE} | sed "s@${DEVICES}/@@g")
 						;;
 						*)
 							M_STYPE="FILE"
@@ -579,7 +580,7 @@ nvram_mount () {
 
 
 unmount_handler () {
-	mount | awk -v MOUNTPOINT=$1 -v DEVICES=${DEVICES} '
+	mount | awk -v MOUNTSPEC=$1 -v DEVICES=${DEVICES} '
 	function unmount(spec) {
 		system("umount " spec);
 		close("umount " spec);			
@@ -588,7 +589,7 @@ unmount_handler () {
 	{
 		mount=$3
 		devicenode=$1
-		if (mount == MOUNTPOINT) {
+		if (mount == MOUNTSPEC) {
 			if (devicenode ~ /fuse/) {
 				unmount(devicenode);
 			} else {
