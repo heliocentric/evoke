@@ -288,7 +288,7 @@ trackfile_type="mfs_root"
 trackfile_name="${BOOTPREFIX}/trackfile"
 evoke.fingerprint="${FINGERPRINT}" 
 boot_multicons="YES"
-hw.firewire.dcons_crom.force_console=1
+console="comconsole"
 kern.hz=100
 EOF
 

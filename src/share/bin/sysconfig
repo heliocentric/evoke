@@ -36,16 +36,32 @@ if [ ! -c "${DEVICES}/null" ] ; then
 fi
 usage () {
 }
+checknvram () {
+	TYPE=$(stat -f "%HT" "${1}")
+	case "${TYPE}" in
+		Character*)
+			echo "test"
+		;;
+	esac
+}
 
 case "${1}" in
 	[eE][xX][tT][rR][aA][cC][tT])
-		DEVICE="${2}"
 		EXTRACTPOINT="${3}"
+		checknvram "${2}"
 	;;
 	[lL][iI][sS][tT])
 		mounter list nvram
 	;;
+	[cC][lL][eE][aA][rR])
+		checknvram "${2}"
+		#dd if=/dev/zero bs=512 of=${DEVICES}/${2} count=1
+		#dd if=/dev/urandom bs=512 seek=512 of=${DEVICES}/${2}
+	;;
+	[cC][rR][eE][aA][tT][eE])
+		
+	;;
 	*)
-	usage
+		usage
 	;;
 esac
