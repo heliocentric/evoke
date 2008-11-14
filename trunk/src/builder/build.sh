@@ -41,6 +41,7 @@ do
 	export TARGET_ROOT=$(echo ${target} | md5 -q)
 	export TARGET=$(echo ${target} | cut -d ":" -f 3)
 	export TARGET_ARCH="${TARGET}"
+	export TARGET_HASH=$(echo ${target} | md5 -q)
 
 	# Release (eg, 6.3-RELEASE)
 	export RELEASE=$(echo ${target} | cut -d ":" -f 4)-RELEASE
