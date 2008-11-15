@@ -38,10 +38,9 @@ for target in $(cat ${BUILDDIR}/targetlist | grep -v ^$ | grep -v ^#)
 do
 	# The TARGET and TARGET_ARCH are used by buildworld, and also internally
 	# except for PC98, they are the same.
-	export TARGET_ROOT=$(echo ${target} | md5 -q)
+	export TARGET_HASH=$(echo ${target} | md5 -q)
 	export TARGET=$(echo ${target} | cut -d ":" -f 3)
 	export TARGET_ARCH="${TARGET}"
-	export TARGET_HASH=$(echo ${target} | md5 -q)
 
 	# Release (eg, 6.3-RELEASE)
 	export RELEASE=$(echo ${target} | cut -d ":" -f 4)-RELEASE
@@ -89,9 +88,17 @@ do
 #	SRCDIR="${NDISTDIR}/${RELEASE}" DISTS="src" ${ROOTDIR}/share/bin/distextract 1>&2
 	export URL=$(echo ${target} | cut -d ":" -f 5)
 	export URLREV=$(echo ${target} | cut -d ":" -f 6)
-	mkdir -p ${DESTDIR}/usr
-	echo svn co http://svn.freebsd.org/base/${URL}@${URLREV} ${DESTDIR}/usr/src
-	svn co http://svn.freebsd.org/base/${URL}@${URLREV} ${DESTDIR}/usr/src
+	export SRCDIR=${NDISTDIR}/${URL}/src
+	mkdir -p ${SRCDIR}
+	if [ -d ${SRCDIR}/.svn ] ; then
+		cd ${SRCDIR}
+		svn up -r ${URLREV} ${SRCDIR}
+	else
+		svn co http://svn.freebsd.org/base/${URL}@${URLREV} ${SRCDIR}
+	fi
+	cd ${SRCDIR} 
+	mkdir -p ${DESTDIR}/usr/src
+	tar -cpf - * | tar -xvpf - -C ${DESTDIR}/usr/src/
 	ERROR="$?"
 	if [ "${ERROR}" != "0" ] ; then
 		# Wooo, real error message now.
