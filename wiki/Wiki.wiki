@@ -1,4 +1,4 @@
-#summary Wiki Tab
+#summary Welcome to the Evoke Wiki
 #labels Tab
 
 
