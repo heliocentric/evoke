@@ -335,6 +335,11 @@ mount_proto () {
 					prep_transport
 					psuedofs_mount
 				;;
+				ntfs)
+					M_PTYPE="DEV"
+					prep_transport
+					ntfs_mount
+				;;
 				*)
 					M_PTYPE="DEV"
 					prep_transport
@@ -419,7 +424,6 @@ ggate_handler () {
 	M_FILE="${GATEDEV}"
 }
 
-
 # Native filesystem mounter. For filesystems that can be used via nmount.
 
 nativefs_mount () {
@@ -434,6 +438,7 @@ nativefs_mount () {
 		mexit 8
 	fi
 }
+
 
 # Psuedofilesystem mounter, note that if a psuedofilesystem is passed a directory, we attempt to mimic the structure.
 # XXX helio structure mapping only works for devfs. We mask out the others because of semantic issues.
@@ -571,6 +576,26 @@ vac_mount () {
 	fi
 }
 
+# NTFS filesystem mounter. If ntfs-3g is available, use it.
+
+ntfs_mount () {
+	echo_config
+	if [ "${M_STYPE}" = "GEOM" ] ; then
+		if [ -c "${DEVICES}/${M_FILE}" ] ; then
+			command -v ntfs-3g >${DEVICES}/null 
+			if [ "$?" != "127" ] ; then
+				ntfs-3g ${DEVICES}/${M_FILE} ${M_DESTINATION}
+			else
+				mount -t ${M_PROTO} ${DEVICES}/${M_FILE} ${M_DESTINATION}
+			fi
+		else
+			mexit 9
+		fi
+	else
+		mexit 8
+	fi
+}
+
 
 # nvram basic wrapper.
 
@@ -688,10 +713,11 @@ mounter_command () {
 
 				*)
 					if [ "${2}" != "" ] ; then
-						for i in $(lsvol | grep ^${2}:)
+						for i in $( lsvol && echo ${URLS} )
 						do
-							DEVNODE=$(echo ${i} | cut -d : -f 2)
-							echo ${DEVNODE}
+							if [ "${2}" = $(echo "${i}" | cut -d : -f 1) ] ; then
+								echo "${i}"
+							fi
 						done
 					fi
 				;;
