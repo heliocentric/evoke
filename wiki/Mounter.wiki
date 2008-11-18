@@ -2,11 +2,17 @@
 #labels Commands
 
 `mounter unmount directory`
+
 `mounter list [ proto | fs | <fsname> ]`
+
 `mounter proto://username:password@hostname:port/directory directory`
+
 `mounter proto://username:password@1.2.3.4:port/directory directory`
+
 `mounter proto://username:password@[08fe::24e5:2319:1]:port/directory directory`
+
 `mounter proto:/directory/file directory`
+
 `mounter proto:geom directory`
 
 == Description ==
