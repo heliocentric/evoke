@@ -1,7 +1,7 @@
 #summary Command template
 #labels Commands
 
- command [optional arguments] [one optional | another optional] [...]
+`command [optional arguments] [one optional | another optional] [...]`
 
 
 == Description ==
