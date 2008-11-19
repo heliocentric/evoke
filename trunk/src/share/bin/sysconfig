@@ -119,6 +119,7 @@ case "${1}" in
 		printf "\nlog=${CONFIGLOG}\nuuid=${UUID}\ndescription=${LONGDESC}\n" | dd bs=${HEADERSIZE} count=1 of=${SCRATCHDIR}/header conv=sync 2>/dev/null
 		sha256 -q ${SCRATCHDIR}/header | dd bs=64 count=1 of=${SCRATCHDIR}/hash fillchar=" " conv=sync 2>/dev/null
 		cat ${SCRATCHDIR}/hash ${SCRATCHDIR}/header >${SCRATCHDIR}/headsect
+		cat ${SCRATCHDIR}/headsect | dd of=${DEVICES}/${2} bs=${SC_SECTORSIZE} count=1
 	;;
 	*)
 		usage

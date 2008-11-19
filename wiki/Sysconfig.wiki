@@ -13,6 +13,7 @@ sha256 for consistancy, and the most recent dated entry in the array is used.
 == Feature List ==
 
  * create - Intializes the first sector, adding a uuid, the number of entries in the array, and a long description
+ * verify - Verify the header, set the exit code to 0 if passed, exit code 3 if failed
 
 == Required Files ==
 
