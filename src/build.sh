@@ -47,7 +47,7 @@ ee expr fdisk fsck_ffs fsck_msdosfs ftp ftpd fwcontrol geom getty grep
 groups gunzip gzcat gzip halt head id ifconfig jail jexec jls kenv kill 
 kldconfig kldload kldstat kldunload less link ln login ls md5 mdconfig 
 mdmfs mkdir more mount moused mv nc newfs pciconf ping powerd ps pwd 
-pwd_mkdb reboot rm route sed sh sha1 sha256 ssh ssh-keygen sshd stty 
+printf pwd_mkdb reboot rm route sed sh sha1 sha256 ssh ssh-keygen sshd stty 
 swapon swapoff swapinfo syslogd tail tar tcsh tftp tftpd top umount 
 uniq unlink usbdevs vidcontrol whoami zcat sort pfctl du makefs 
 mount_msdosfs getextattr setextattr devinfo newfs_msdos stat dirname lsvfs
