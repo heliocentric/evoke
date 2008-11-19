@@ -1,22 +1,23 @@
-#summary Command template
+#summary System Configuration Utility
 #labels Commands
 
-`command [optional arguments] [one optional | another optional] [...]`
+`sysconfig command GEOM [options]`
 
 
 == Description ==
 
-A one paragraph short description of the command.
+The system configuration utility stores all the configuration information in a round robin fixed length array of 
+compressed tarballs, with a single sector header. Before the config information is used, it is verified using 
+sha256 for consistancy, and the most recent dated entry in the array is used.
 
 == Feature List ==
 
- * Feature A
- * Feature B
+ * create - Intializes the first sector, adding a uuid, the number of entries in the array, and a long description
 
 == Required Files ==
 
- * Path where the file is - port it is in and/or base
-    Long Description
+ * /usr/local/bin/uuid - misc/ossp-uuid
+    Necessary due to the usage of version 4 UUIDs, which uuidgen cannot generate
 
 == Implementation ==
 
