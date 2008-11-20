@@ -6,9 +6,7 @@
 
 == Description ==
 
-The system configuration utility stores all the configuration information in a round robin fixed length array of 
-compressed tarballs, with a single sector header. Before the config information is used, it is verified using 
-sha256 for consistancy, and the most recent dated entry in the array is used.
+The system configuration utility creates and modifies the system configuration partition, which is typically stored on a thumb drive, carried by the user. For example, the user's private rsa key, username info, etc.
 
 == Feature List ==
 
@@ -38,4 +36,3 @@ sha256 for consistancy, and the most recent dated entry in the array is used.
 	  * First 64 bytes contain a sha256 hash of all of the data from what remains of this sector, to the end of the record.
 	  * The next 10 bytes contain a UNIX UTC timestamp of the date of commit, if the date on the running system is lower then the date of the most recent record in the log, we store the date of that record + 1. In this way sysconfig can always choose the most recent dated record.
 	  * From this point on, the contents are a tar.gz file. 
-
