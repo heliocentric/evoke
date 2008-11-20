@@ -119,7 +119,7 @@ case "${1}" in
 	;;
 	[cC][lL][eE][aA][rR])
 		prepsysconfig "${2}"
-		dd if=${DEVICES}/zero of=${DEVICES}/${2} 2>/dev/null
+		dd if=${DEVICES}/zero of=${DEVICES}/${2} bs=${SC_SECTORSIZE} count=$((${SC_SECTORCOUNT} + 1)) 2>/dev/null
 	;;
 	[cC][rR][eE][aA][tT][eE])
 		prepsysconfig "${2}"
