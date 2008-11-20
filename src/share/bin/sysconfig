@@ -39,7 +39,7 @@ if [ ! -d "${TMPDIR}" ] ; then
 	TMPDIR=/tmp
 fi
 
-SCRATCHDIR="${TMPDIR}/sctemp/$(dd if=${DEVICES}/random bs=4m count=1 2>${DEVICES}/null | md5 -q )"	
+export SCRATCHDIR="${TMPDIR}/sctemp/$(dd if=${DEVICES}/random bs=4m count=1 2>${DEVICES}/null | md5 -q )"	
 mkdir -p "${SCRATCHDIR}"
 
 if [ ! -d "${N_SYSCFG}" ] ; then
@@ -50,16 +50,36 @@ fi
 usage () {
 }
 
-prepnvram () {
+prepsysconfig () {
 	TYPE=$(stat -f "%HT" "${DEVICES}/${1}")
 	case "${TYPE}" in
 		Character*)
 			SC_GEOM=$(sysctl -b kern.geom.conftxt | grep -a ${1})
 			SC_SECTORSIZE=$(echo ${SC_GEOM} | cut -d " " -f 5)
-			dd if=${DEVICES}/${1} of=${SCRATCHDIR}/headsect bs=${SC_SECTORSIZE} count=1 conv=sync fillchar=" " 2>/dev/null
+
+			# Since conftxt only reports the size in bytes of the geom, we have to divide it by the sector size and then remove a sector that is always used by the header.
+			SC_SECTORCOUNT=$(($(echo ${SC_GEOM} | cut -d " " -f 4) / ${SC_SECTORSIZE} - 1))
+
+			# For ata/scsi this doesn't matter, but only reading in the partition once really helps USB thumb drives
+			dd if=${DEVICES}/${1} of=${SCRATCHDIR}/partition 2>/dev/null
+			dd if=${SCRATCHDIR}/partition of=${SCRATCHDIR}/headsect bs=${SC_SECTORSIZE} count=1 conv=sync fillchar=" " 2>/dev/null
 			dd if=${SCRATCHDIR}/headsect of=${SCRATCHDIR}/hash bs=64 count=1 conv=sync fillchar=" " 2>/dev/null
 			dd if=${SCRATCHDIR}/headsect of=${SCRATCHDIR}/header bs=64 skip=1 conv=sync fillchar=" " 2>/dev/null
-			HEADERSIZE="$(stat -f '%z' ${SCRATCHDIR}/header)"
+
+			# size of the header, in bytes
+			SC_HEADERSIZE="$(stat -f '%z' ${SCRATCHDIR}/header)"
+
+			if [ "$(verify_header)" = "passed" ] ; then
+
+				SC_UUID=$(grep -a ^uuid= ${SCRATCHDIR}/header | cut -d = -f 2)
+				SC_DESCRIPTION=$(grep -a ^description= ${SCRATCHDIR}/header | cut -d = -f 2)
+				SC_ENTRYSIZE=$(grep -a ^entrysize= ${SCRATCHDIR}/header | cut -d = -f 2)
+				SC_PADSIZE=$(grep -a ^pad= ${SCRATCHDIR}/header | cut -d = -f 2)
+
+				# the number of entries in the config log
+				SC_LOGSIZE=$(grep -a ^log= ${SCRATCHDIR}/header | cut -d = -f 2)
+				SC_ARRAYOFFSET=$((${SC_PADSIZE} + 1))
+			fi
 		;;
 		*)
 			echo "Not a character device"
@@ -68,32 +88,41 @@ prepnvram () {
 	esac
 }
 
+verify_header () {
+	RHASH=$(sha256 -q ${SCRATCHDIR}/header)
+	HASH=$(cat ${SCRATCHDIR}/hash)
+	if [ "${RHASH}" != "${HASH}" ] ; then
+		echo "failed"
+	else
+		echo "passed"
+	fi
+}
+
 case "${1}" in
 	[vV][eE][rR][iI][fF][yY])
-		prepnvram "${2}"
-		RHASH=$(sha256 -q ${SCRATCHDIR}/header)
-		HASH=$(cat ${SCRATCHDIR}/hash)
-		if [ "${RHASH}" != "${HASH}" ] ; then
-			echo "failed"
+		prepsysconfig "${2}"
+		RESULT=$(verify_header)
+		echo ${RESULT}
+		if [ "${RESULT}" = "failed" ] ; then
 			exit 3
-		else
-			echo "passed"
-			exit 0
 		fi
 	;;
 	[eE][xX][tT][rR][aA][cC][tT])
 		EXTRACTPOINT="${3}"
-		prepnvram "${2}"
-		set | grep ^SC
+		prepsysconfig "${2}"
 	;;
 	[lL][iI][sS][tT])
-		mounter list nvram
+		mounter list sysconfig
+	;;
+	[cC][oO][mM][iI][tT])
+		prepsysconfig "${2}"
 	;;
 	[cC][lL][eE][aA][rR])
-		prepnvram "${2}"
+		prepsysconfig "${2}"
+		dd if=${DEVICES}/zero of=${DEVICES}/${2} 2>/dev/null
 	;;
 	[cC][rR][eE][aA][tT][eE])
-		prepnvram "${2}"
+		prepsysconfig "${2}"
 		unset break
 		until [ "${break}" = "yes" ]
 		do
@@ -116,14 +145,24 @@ case "${1}" in
 			fi
 		done
 		UUID=$(uuid -v 4)
-		printf "\nlog=${CONFIGLOG}\nuuid=${UUID}\ndescription=${LONGDESC}\n" | dd bs=${HEADERSIZE} count=1 of=${SCRATCHDIR}/header conv=sync 2>/dev/null
+
+		# the size of each entry in the log, in sectors
+		SC_ENTRYSIZE=$((${SC_SECTORCOUNT} / ${CONFIGLOG}))
+
+		# the size of the padding sectors, that are between the header sector, and the 
+		# start of the array. If we don't add a pad, we'd have to have the nvram match the 
+		# arraysize * array entries + header sector exactly.
+		SC_PADSIZE=$((${SC_SECTORCOUNT} % ${CONFIGLOG}))
+
+		printf "\nversion=1.0\nentrysize=${SC_ENTRYSIZE}\npad=${SC_PADSIZE}\nlog=${CONFIGLOG}\nuuid=${UUID}\ndescription=${LONGDESC}\n" | dd bs=${SC_HEADERSIZE} count=1 of=${SCRATCHDIR}/header conv=sync 2>/dev/null
 		sha256 -q ${SCRATCHDIR}/header | dd bs=64 count=1 of=${SCRATCHDIR}/hash fillchar=" " conv=sync 2>/dev/null
 		cat ${SCRATCHDIR}/hash ${SCRATCHDIR}/header >${SCRATCHDIR}/headsect
-		cat ${SCRATCHDIR}/headsect | dd of=${DEVICES}/${2} bs=${SC_SECTORSIZE} count=1
+		cat ${SCRATCHDIR}/headsect | dd of=${DEVICES}/${2} bs=${SC_SECTORSIZE} count=1 2>/dev/null
 	;;
 	*)
 		usage
 	;;
 esac
 
-#rm -r ${SCRATCHDIR}
+set | grep ^SC
+rm -r ${SCRATCHDIR}
