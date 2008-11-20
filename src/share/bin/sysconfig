@@ -48,6 +48,18 @@ if [ ! -d "${N_SYSCFG}" ] ; then
 fi
 
 usage () {
+	cat << EOF
+usage: sysconfig command GEOM [options]
+
+Commands:
+  create	-- Write the header to the sysconfig partition.
+  commit	-- Commit a new record to sysconfig.
+  extract	-- Extract the most recent, consistant record.
+  verify	-- Check the consistancy of the header sector. All commands do this internally.
+  clear		-- Fill the sysconfig partition with nulls.
+
+EOF
+
 }
 
 prepsysconfig () {
@@ -159,14 +171,18 @@ case "${1}" in
 	[eE][xX][tT][rR][aA][cC][tT])
 		EXTRACTPOINT="${3}"
 		prepsysconfig "${2}"
+		RESULT=$(verify_header)
+		if [ "${RESULT}" = "failed" ] ; then
+			exit 3
+		fi
 		if [ "${SC_CURRECORD}" -eq "-1" ] ; then
 			echo "Error: No config data"
 			exit 6
 		else
 			if [ ! -d "${EXTRACTPOINT}" ] ; then
-				tar -xvpf ${SCRATCHDIR}/record${SC_CURRECORD}/tarball.tgz -C ${N_SYSCFG}/
+				tar -xpf ${SCRATCHDIR}/record${SC_CURRECORD}/tarball.tgz -C ${N_SYSCFG}/
 			else
-				tar -xvpf ${SCRATCHDIR}/record${SC_CURRECORD}/tarball.tgz -C ${EXTRACTPOINT}/
+				tar -xpf ${SCRATCHDIR}/record${SC_CURRECORD}/tarball.tgz -C ${EXTRACTPOINT}/
 			fi
 		fi
 	;;
@@ -175,6 +191,10 @@ case "${1}" in
 	;;
 	[cC][oO][mM][mM][iI][tT])
 		prepsysconfig "${2}"
+		RESULT=$(verify_header)
+		if [ "${RESULT}" = "failed" ] ; then
+			exit 3
+		fi
 		if [ ! -d "${3}" ] ; then
 			echo "Source is not a directory"
 			exit 4
@@ -186,12 +206,12 @@ case "${1}" in
 			exit 5
 		fi
 		cp ${SCRATCHDIR}/newrecord.tgz ${SCRATCHDIR}/newrecord
-		dd if=/dev/zero of=${SCRATCHDIR}/newrecord seek=${SC_TARBALLSIZE} count=0 bs=1
+		dd if=/dev/zero of=${SCRATCHDIR}/newrecord seek=${SC_TARBALLSIZE} count=0 bs=1 2>${DEVICES}/null
 		date +%s | dd of=${SCRATCHDIR}/newdate bs=10 count=1 conv=sync 2>${DEVICES}/null
-		cat ${SCRATCHDIR}/newdate ${SCRATCHDIR}/newrecord | sha256 -q | dd of=${SCRATCHDIR}/newhash bs=64 count=1 conv=sync 2>${DEVICES}/null		
+		cat ${SCRATCHDIR}/newdate ${SCRATCHDIR}/newrecord | sha256 -q | dd of=${SCRATCHDIR}/newhash bs=64 count=1 conv=sync 2>${DEVICES}/null	
 		SC_NEXTRECORDSEEK="$((${SC_NEXTRECORD_OFFSET}))"
 		echo "${SC_NEXTRECORDSEEK}"
-		cat ${SCRATCHDIR}/newhash ${SCRATCHDIR}/newdate ${SCRATCHDIR}/newrecord | dd of=${DEVICES}/${2} bs=512 count=${SC_ENTRYSIZE} seek="${SC_NEXTRECORDSEEK}" conv=sync
+		cat ${SCRATCHDIR}/newhash ${SCRATCHDIR}/newdate ${SCRATCHDIR}/newrecord | dd of=${DEVICES}/${2} bs=512 count=${SC_ENTRYSIZE} seek="${SC_NEXTRECORDSEEK}" conv=sync 2>${DEVICES}/null
 	;;
 	[cC][lL][eE][aA][rR])
 		prepsysconfig "${2}"
