@@ -163,7 +163,11 @@ case "${1}" in
 			echo "Error: No config data"
 			exit 6
 		else
-			tar -xvpf ${SCRATCHDIR}/record${SC_CURRECORD}/tarball.tgz -C ${N_SYSCFG}/
+			if [ ! -d "${EXTRACTPOINT}" ] ; then
+				tar -xvpf ${SCRATCHDIR}/record${SC_CURRECORD}/tarball.tgz -C ${N_SYSCFG}/
+			else
+				tar -xvpf ${SCRATCHDIR}/record${SC_CURRECORD}/tarball.tgz -C ${EXTRACTPOINT}/
+			fi
 		fi
 	;;
 	[lL][iI][sS][tT])
