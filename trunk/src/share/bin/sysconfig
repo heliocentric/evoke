@@ -80,40 +80,53 @@ prepsysconfig () {
 				export SC_ARRAYOFFSET="$((${SC_PADSIZE} + 1))"
 				export SC_TARBALLSIZE="$(( (${SC_ENTRYSIZE} * 512) - 74))"
 
-				export RECORDNUM=1
+				export RECORDNUM=0
 				export TEMPOFFSET="${SC_ARRAYOFFSET}"
+
+				# Note, that the TEMPOFFSET is actually the last sector in the pad.
+				# This is because we use dd, which specifies it as /skipping/ those number of sectors.
+				# ie, if the pad is 7 sectors, the offset will be 8 sectors, so the first record 
+				# would start at sector 9, because we are /skipping/ 8 sectors, not starting at 
+				# sector 8.
+
+				# All OFFSET's use this arithmetic, therefore, when writing, you must increment by one before using dd's seek.
 
 				# anyone who's ever used a functional language will hate this, but it does what is intended.
 				# since bourne shell's looping facilities leave a lot to be desired, this saves us quite 
 				# a lot of time by doing the loop once.
 
-				export SC_CONSISTENT=$(until [ "${RECORDNUM}" -gt "${SC_LOGSIZE}" ]
-				do
-					mkdir -p ${SCRATCHDIR}/record${RECORDNUM}
-					dd if=${SCRATCHDIR}/partition of=${SCRATCHDIR}/record${RECORDNUM}/record bs=${SC_SECTORSIZE} count=${SC_ENTRYSIZE} skip=${TEMPOFFSET} conv=sync fillchar=" " 2>${DEVICES}/null
-					dd if=${SCRATCHDIR}/record${RECORDNUM}/record bs=1 count=64 conv=sync fillchar=" " of=${SCRATCHDIR}/record${RECORDNUM}/hash 2>${DEVICES}/null
-					dd if=${SCRATCHDIR}/record${RECORDNUM}/record bs=1 skip=64 count=10 conv=sync fillchar=" " of=${SCRATCHDIR}/record${RECORDNUM}/timestamp 2>${DEVICES}/null
-					dd if=${SCRATCHDIR}/record${RECORDNUM}/record bs=1 skip=74 conv=sync fillchar=" " of=${SCRATCHDIR}/record${RECORDNUM}/tarball.tgz 2>${DEVICES}/null
-					RHASH="$(cat ${SCRATCHDIR}/record${RECORDNUM}/timestamp ${SCRATCHDIR}/record${RECORDNUM}/tarball.tgz | sha256 -q)"
-					if [ "$(cat ${SCRATCHDIR}/record${RECORDNUM}/hash)" != "${RHASH}" ] ; then
-						touch ${SCRATCHDIR}/record${RECORDNUM}/failed
-					else
-						echo "$(${SCRATCHDIR}/record${RECORDNUM}/timestamp) ${RECORDNUM}"
-						touch ${SCRATCHDIR}/record${RECORDNUM}/passed
-					fi
-					rm ${SCRATCHDIR}/record${RECORDNUM}/record
-					TEMPOFFSET=$((${TEMPOFFSET} + ${SC_ENTRYSIZE}))
-					RECORDNUM=$((${RECORDNUM} + 1))
-				done | sort)
+				export SC_CONSISTENT="$(until [ "${RECORDNUM}" -eq "${SC_LOGSIZE}" ]
+					do
+#						echo "${RECORDNUM} ${TEMPOFFSET}" 1>&2
+						mkdir -p ${SCRATCHDIR}/record${RECORDNUM}
+						dd if=${SCRATCHDIR}/partition of=${SCRATCHDIR}/record${RECORDNUM}/record bs=${SC_SECTORSIZE} count=${SC_ENTRYSIZE} skip=${TEMPOFFSET} conv=sync fillchar=" " 2>${DEVICES}/null
+						dd if=${SCRATCHDIR}/record${RECORDNUM}/record bs=1 count=64 conv=sync of=${SCRATCHDIR}/record${RECORDNUM}/hash 2>${DEVICES}/null
+						dd if=${SCRATCHDIR}/record${RECORDNUM}/record bs=1 skip=64 count=10 conv=sync of=${SCRATCHDIR}/record${RECORDNUM}/timestamp 2>${DEVICES}/null
+						dd if=${SCRATCHDIR}/record${RECORDNUM}/record bs=1 skip=74 conv=sync of=${SCRATCHDIR}/record${RECORDNUM}/tarball.tgz 2>${DEVICES}/null
+						RHASH="$(cat ${SCRATCHDIR}/record${RECORDNUM}/timestamp ${SCRATCHDIR}/record${RECORDNUM}/tarball.tgz | sha256 -q)"
+#						echo ${RHASH} 1>&2
+#						echo $(cat ${SCRATCHDIR}/record${RECORDNUM}/hash) 1>&2
+						if [ "$(cat ${SCRATCHDIR}/record${RECORDNUM}/hash)" != "${RHASH}" ] ; then
+							touch ${SCRATCHDIR}/record${RECORDNUM}/failed
+						else
+							echo "$(cat ${SCRATCHDIR}/record${RECORDNUM}/timestamp) ${RECORDNUM}"
+							touch ${SCRATCHDIR}/record${RECORDNUM}/passed
+						fi
+						rm ${SCRATCHDIR}/record${RECORDNUM}/record
+						TEMPOFFSET=$((${TEMPOFFSET} + ${SC_ENTRYSIZE}))
+						RECORDNUM=$((${RECORDNUM} + 1))
+					done | sort -rg)"
 				if [ "${SC_CONSISTENT}" = "" ] ; then
-					SC_CURRECORD="0"
+					SC_CURRECORD="-1"
 				else
 					SC_CURRECORD="$(echo ${SC_CONSISTENT} | head -n 1 | cut -d " " -f 2)"
 				fi
-				SC_NEXTRECORD="$((${SC_CURRECORD} + 1))"
-				if [ "${SC_NEXTRECORD}" -gt "${SC_LOGSIZE}" ] ; then
-					SC_NEXTRECORD="1"
+				export SC_NEXTRECORD="$((${SC_CURRECORD} + 1))"
+				if [ "${SC_NEXTRECORD}" -eq "${SC_LOGSIZE}" ] ; then
+					SC_NEXTRECORD="0"
 				fi
+				export SC_CURRECORD_OFFSET="$((${SC_CURRECORD} * ${SC_ENTRYSIZE} + ${SC_PADSIZE} +1))"
+				export SC_NEXTRECORD_OFFSET="$((${SC_NEXTRECORD} * ${SC_ENTRYSIZE} + ${SC_PADSIZE} +1))"
 				rm ${SCRATCHDIR}/partition
 			fi
 		;;
@@ -146,6 +159,12 @@ case "${1}" in
 	[eE][xX][tT][rR][aA][cC][tT])
 		EXTRACTPOINT="${3}"
 		prepsysconfig "${2}"
+		if [ "${SC_CURRECORD}" -eq "-1" ] ; then
+			echo "Error: No config data"
+			exit 6
+		else
+			tar -xvpf ${SCRATCHDIR}/record${SC_CURRECORD}/tarball.tgz -C ${N_SYSCFG}/
+		fi
 	;;
 	[lL][iI][sS][tT])
 		mounter list sysconfig
@@ -157,15 +176,18 @@ case "${1}" in
 			exit 4
 		fi
 		cd "${3}"
-		tar -cpf - * | gzip -9 >newrecord.tgz
+		tar -cpf - * | gzip -9 >${SCRATCHDIR}/newrecord.tgz
 		if [ "$(stat -f '%z' ${SCRATCHDIR}/newrecord.tgz)" -gt "${SC_TARBALLSIZE}" ] ; then
 			echo "Error, config to large for partition"
 			exit 5
 		fi
-		dd if=${SCRATCHDIR}/newrecord.tgz of=${SCRATCHDIR}/newrecord bs=1 count=${SC_TARBALLSIZE} conv=sync 2>${DEVICES}/null
+		cp ${SCRATCHDIR}/newrecord.tgz ${SCRATCHDIR}/newrecord
+		dd if=/dev/zero of=${SCRATCHDIR}/newrecord seek=${SC_TARBALLSIZE} count=0 bs=1
 		date +%s | dd of=${SCRATCHDIR}/newdate bs=10 count=1 conv=sync 2>${DEVICES}/null
-		cat ${SCRATCHDIR}/newdate ${SCRATCHDIR}/newrecord | sha256 -q | dd of=${SCRATCHDIR}/newhash bs=64 count=1 conv=sync 2>${DEVICES}/null
-		cat ${SCRATCHDIR}/newhash ${SCRATCHDIR}/newdate ${SCRATCHDIR}/newrecord
+		cat ${SCRATCHDIR}/newdate ${SCRATCHDIR}/newrecord | sha256 -q | dd of=${SCRATCHDIR}/newhash bs=64 count=1 conv=sync 2>${DEVICES}/null		
+		SC_NEXTRECORDSEEK="$((${SC_NEXTRECORD_OFFSET}))"
+		echo "${SC_NEXTRECORDSEEK}"
+		cat ${SCRATCHDIR}/newhash ${SCRATCHDIR}/newdate ${SCRATCHDIR}/newrecord | dd of=${DEVICES}/${2} bs=512 count=${SC_ENTRYSIZE} seek="${SC_NEXTRECORDSEEK}" conv=sync
 	;;
 	[cC][lL][eE][aA][rR])
 		prepsysconfig "${2}"
@@ -214,5 +236,4 @@ case "${1}" in
 	;;
 esac
 
-set | grep ^SC
 rm -r ${SCRATCHDIR}
