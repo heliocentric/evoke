@@ -22,4 +22,20 @@ sha256 for consistancy, and the most recent dated entry in the array is used.
 
 == Implementation ==
 
-Implementation Notes
+
+=== Version 1.0 ===
+
+ * Header sector
+	  * First 64 bytes contain a sha256 hash of the data in the rest of the sector.
+	  * The rest is the actual header data, formated as a newline delimited list of name=value pairs in normal UTF-8 form.
+		   * version = the version number of the on disk format.
+		   * padsize = the number of sectors between the header sector, and the start of the array of records.
+		   * entrysize = size of each record in sectors.
+		   * log = number of records.
+		   * description = a long description, used for display purposes when multiple sysconfig partitions are found.
+		   * uuid = the uuid for this sysconfig partition.
+ * Record Format
+	  * First 64 bytes contain a sha256 hash of all of the data from what remains of this sector, to the end of the record.
+	  * The next 10 bytes contain a UNIX UTC timestamp of the date of commit, if the date on the running system is lower then the date of the most recent record in the log, we store the date of that record + 1. In this way sysconfig can always choose the most recent dated record.
+	  * From this point on, the contents are a tar.gz file. 
+
