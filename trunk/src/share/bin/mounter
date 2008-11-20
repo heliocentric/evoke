@@ -320,10 +320,10 @@ mount_proto () {
 					prep_transport
 					ssh_mount
 				;;
-				nvram)
+				sysconfig)
 					M_PTYPE="DEV"
 					prep_transport
-					nvram_mount
+					sysconfig_mount
 				;;
 				vac)
 					M_PTYPE="NET"
@@ -597,9 +597,9 @@ ntfs_mount () {
 }
 
 
-# nvram basic wrapper.
+# sysconfig basic wrapper.
 
-nvram_mount () {
+sysconfig_mount () {
 
 }
 
@@ -658,7 +658,7 @@ list_proto () {
 	echo "boot-ufs"
 	echo "swap"
 	echo "entropy"
-	echo "nvram"
+	echo "sysconfig"
 	echo "dump"
 	for fuse in wdfs sshfs curlftpfs ntfs-3g cryptofs vacfs
 	do
