@@ -9,7 +9,6 @@
 
 == Design Notes ==
  * [GUIDList Reserved UUID list]
- * [NVRAM NVRAM format]
 
 == Command List ==
  * [Mounter mounter]
