@@ -207,10 +207,16 @@ case "${1}" in
 		fi
 		cp ${SCRATCHDIR}/newrecord.tgz ${SCRATCHDIR}/newrecord
 		dd if=/dev/zero of=${SCRATCHDIR}/newrecord seek=${SC_TARBALLSIZE} count=0 bs=1 2>${DEVICES}/null
-		date +%s | dd of=${SCRATCHDIR}/newdate bs=10 count=1 conv=sync 2>${DEVICES}/null
+		NDATE=$(date -u +%s)
+		if [ ! "${SC_CURRECORD}" = "-1" ] ; then
+			ODATE=$(cat ${SCRATCHDIR}/record${SC_CURRECORD}/timestamp)
+			if [ "${ODATE}" -ge "${NDATE}" ] ; then
+				NDATE=$((${ODATE} + 1))
+			fi
+		fi
+		echo "${NDATE}" | dd of=${SCRATCHDIR}/newdate bs=10 count=1 conv=sync 2>${DEVICES}/null
 		cat ${SCRATCHDIR}/newdate ${SCRATCHDIR}/newrecord | sha256 -q | dd of=${SCRATCHDIR}/newhash bs=64 count=1 conv=sync 2>${DEVICES}/null	
 		SC_NEXTRECORDSEEK="$((${SC_NEXTRECORD_OFFSET}))"
-		echo "${SC_NEXTRECORDSEEK}"
 		cat ${SCRATCHDIR}/newhash ${SCRATCHDIR}/newdate ${SCRATCHDIR}/newrecord | dd of=${DEVICES}/${2} bs=512 count=${SC_ENTRYSIZE} seek="${SC_NEXTRECORDSEEK}" conv=sync 2>${DEVICES}/null
 	;;
 	[cC][lL][eE][aA][rR])

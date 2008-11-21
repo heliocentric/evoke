@@ -100,6 +100,9 @@ awk '{
 		if ($11 == "27") {
 			print "zfs:"$3;
 		}
+		if ($11 == "28") {
+			print "sysconfig:"$3;
+		}
 	}
 	else if ($2 == "MBR") {
 		if ($11 == "4") {
