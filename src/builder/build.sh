@@ -296,7 +296,6 @@ trackfile_type="mfs_root"
 trackfile_name="${BOOTPREFIX}/trackfile"
 evoke.fingerprint="${FINGERPRINT}" 
 boot_multicons="YES"
-console="comconsole"
 kern.hz=100
 EOF
 
