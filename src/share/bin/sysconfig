@@ -69,13 +69,13 @@ prepsysconfig () {
 			export SC_SECTORSIZE="$(echo ${SC_GEOM} | cut -d " " -f 5)"
 			export SC_UUID="$(dd if=${DEVICES}/${scpartition} bs="${SC_SECTORSIZE}" count=1 2>${DEVICES}/null | grep -a '^uuid=' | cut -d = -f 2)"
 			if [ "${SC_UUID}" = "${1}" ] ; then
-				export SYSCONFIG_DEVICE=$(echo ${SC_GEOM} | cut -d " " -f 3)
+				export SC_DEVICE=$(echo ${SC_GEOM} | cut -d " " -f 3)
 			fi
 		done
 	else
 		export SC_DEVICE=${1}
 	fi
-	TYPE=$(stat -f "%HT" "${DEVICES}/${SC_DEVICE}")
+	TYPE=$(stat -f "%HT" "${DEVICES}/${SC_DEVICE}" 2>${DEVICES}/null)
 	case "${TYPE}" in
 		Character*)
 			export SC_GEOM="$(sysctl -b kern.geom.conftxt | grep -a ${SC_DEVICE})"
