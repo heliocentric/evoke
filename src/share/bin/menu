@@ -35,6 +35,6 @@ menu () {
 	eval $2 | awk -v CHOICE=${CHOICE} '{ if (NR == CHOICE) { print $0 } }'
 }
 
-if [ ! "${0}" = "menu" ] ; then
+if [ "${0}" = "menu" ] ; then
 	menu $*
 fi
