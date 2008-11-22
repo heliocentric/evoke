@@ -61,24 +61,38 @@ EOF
 }
 
 prepsysconfig () {
-	TYPE=$(stat -f "%HT" "${DEVICES}/${1}")
+	if [ "$(is_uuid ${1})" = "yes" ] ; then
+		for scpartition in $(mounter list sysconfig)
+		do
+
+			export SC_GEOM="$(sysctl -b kern.geom.conftxt | grep -a ${scpartition})"
+			export SC_SECTORSIZE="$(echo ${SC_GEOM} | cut -d " " -f 5)"
+			export SC_UUID="$(dd if=${DEVICES}/${scpartition} bs="${SC_SECTORSIZE}" count=1 2>${DEVICES}/null | grep -a '^uuid=' | cut -d = -f 2)"
+			if [ "${SC_UUID}" = "${1}" ] ; then
+				export SYSCONFIG_DEVICE=$(echo ${SC_GEOM} | cut -d " " -f 3)
+			fi
+		done
+	else
+		export SC_DEVICE=${1}
+	fi
+	TYPE=$(stat -f "%HT" "${DEVICES}/${SC_DEVICE}")
 	case "${TYPE}" in
 		Character*)
-			export SC_GEOM="$(sysctl -b kern.geom.conftxt | grep -a ${1})"
+			export SC_GEOM="$(sysctl -b kern.geom.conftxt | grep -a ${SC_DEVICE})"
 			export SC_SECTORSIZE="$(echo ${SC_GEOM} | cut -d " " -f 5)"
 
 			# Since conftxt only reports the size in bytes of the geom, we have to divide it by the sector size and then remove a sector that is always used by the header.
 			export SC_SECTORCOUNT="$(($(echo ${SC_GEOM} | cut -d " " -f 4) / ${SC_SECTORSIZE} - 1))"
 
 			# For ata/scsi this doesn't matter, but only reading in the partition once really helps USB thumb drives
-			dd if=${DEVICES}/${1} of=${SCRATCHDIR}/partition 2>${DEVICES}/null
+			dd if=${DEVICES}/${SC_DEVICE} of=${SCRATCHDIR}/partition 2>${DEVICES}/null
 			dd if=${SCRATCHDIR}/partition of=${SCRATCHDIR}/headsect bs=${SC_SECTORSIZE} count=1 conv=sync fillchar=" " 2>${DEVICES}/null
 			dd if=${SCRATCHDIR}/headsect of=${SCRATCHDIR}/hash bs=64 count=1 conv=sync fillchar=" " 2>${DEVICES}/null
 			dd if=${SCRATCHDIR}/headsect of=${SCRATCHDIR}/header bs=64 skip=1 conv=sync fillchar=" " 2>${DEVICES}/null
-
+	
 			# size of the header, in bytes
 			export SC_HEADERSIZE="$(stat -f '%z' ${SCRATCHDIR}/header)"
-
+	
 			if [ "$(verify_header)" = "passed" ] ; then
 				export SC_UUID="$(grep -a ^uuid= ${SCRATCHDIR}/header | cut -d = -f 2)"
 				export SC_DESCRIPTION="$(grep -a ^description= ${SCRATCHDIR}/header | cut -d = -f 2)"
@@ -89,7 +103,7 @@ prepsysconfig () {
 				export SC_LOGSIZE="$(grep -a ^log= ${SCRATCHDIR}/header | cut -d = -f 2)"
 				export SC_ARRAYOFFSET="$((${SC_PADSIZE} + 1))"
 				export SC_TARBALLSIZE="$(( (${SC_ENTRYSIZE} * 512) - 74))"
-
+	
 				export RECORDNUM=0
 				export TEMPOFFSET="${SC_ARRAYOFFSET}"
 
@@ -156,7 +170,16 @@ verify_header () {
 		echo "passed"
 	fi
 }
-
+is_uuid () {
+	case "${1}" in
+		[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]-[0-9a-f][0-9a-f][0-9a-f][0-9a-f]-[0-9a-f][0-9a-f][0-9a-f][0-9a-f]-[0-9a-f][0-9a-f][0-9a-f][0-9a-f]-[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f])
+			echo "yes"
+		;;
+		*)
+			echo "no"
+		;;
+	esac
+}
 sysconfig_main () {
 	export SCRATCHDIR="${TMPDIR}/sctemp/$(dd if=${DEVICES}/random bs=4m count=1 2>${DEVICES}/null | sha256 -q )"	
 	mkdir -p "${SCRATCHDIR}"
@@ -189,23 +212,25 @@ sysconfig_main () {
 		;;
 		[lL][iI][sS][tT])
 			PARTLIST=$(mounter list sysconfig)
-			for i in "${PARTLIST}"
-			do
-				TYPE=$(stat -f "%HT" "${DEVICES}/${i}")
-				case "${TYPE}" in
-					Character*)
-						export SC_GEOM="$(sysctl -b kern.geom.conftxt | grep -a ${i})"
-						export SC_SECTORSIZE="$(echo ${SC_GEOM} | cut -d " " -f 5)"
-						UUID=$(dd if=${DEVICES}/${i} bs=${SC_SECTORSIZE} count=1 2>/dev/null | grep -a uuid | cut -d = -f 2)
-						DESC=$(dd if=${DEVICES}/${i} bs=${SC_SECTORSIZE} count=1 2>/dev/null | grep -a description | cut -d = -f 2)
-						echo "${UUID} - ${DESC}"
-					;;
-					*)
-						echo "Not a character device"
-						exit 2
-					;;
-				esac
-			done
+			if [ ! "${PARTLIST}" = "" ] ; then
+				for i in "${PARTLIST}"
+				do
+					TYPE=$(stat -f "%HT" "${DEVICES}/${i}")
+					case "${TYPE}" in
+						Character*)
+							export SC_GEOM="$(sysctl -b kern.geom.conftxt | grep -a ${i})"
+							export SC_SECTORSIZE="$(echo ${SC_GEOM} | cut -d " " -f 5)"
+							UUID=$(dd if=${DEVICES}/${i} bs=${SC_SECTORSIZE} count=1 2>/dev/null | grep -a uuid | cut -d = -f 2)
+							DESC=$(dd if=${DEVICES}/${i} bs=${SC_SECTORSIZE} count=1 2>/dev/null | grep -a description | cut -d = -f 2)
+							echo "${UUID} - ${DESC}"
+						;;
+						*)
+							echo "Not a character device"
+							exit 2
+						;;
+					esac
+				done
+			fi
 		;;
 		[cC][oO][mM][mM][iI][tT])
 			prepsysconfig "${2}"
@@ -235,11 +260,11 @@ sysconfig_main () {
 			echo "${NDATE}" | dd of=${SCRATCHDIR}/newdate bs=10 count=1 conv=sync 2>${DEVICES}/null
 			cat ${SCRATCHDIR}/newdate ${SCRATCHDIR}/newrecord | sha256 -q | dd of=${SCRATCHDIR}/newhash bs=64 count=1 conv=sync 2>${DEVICES}/null	
 			SC_NEXTRECORDSEEK="$((${SC_NEXTRECORD_OFFSET}))"
-			cat ${SCRATCHDIR}/newhash ${SCRATCHDIR}/newdate ${SCRATCHDIR}/newrecord | dd of=${DEVICES}/${2} bs=512 count=${SC_ENTRYSIZE} seek="${SC_NEXTRECORDSEEK}" conv=sync 2>${DEVICES}/null
+			cat ${SCRATCHDIR}/newhash ${SCRATCHDIR}/newdate ${SCRATCHDIR}/newrecord | dd of=${DEVICES}/${SC_DEVICE} bs=512 count=${SC_ENTRYSIZE} seek="${SC_NEXTRECORDSEEK}" conv=sync 2>${DEVICES}/null
 		;;
 		[cC][lL][eE][aA][rR])
 			prepsysconfig "${2}"
-			dd if=${DEVICES}/zero of=${DEVICES}/${2} bs=${SC_SECTORSIZE} count=$((${SC_SECTORCOUNT} + 1)) 2>${DEVICES}/null
+			dd if=${DEVICES}/zero of=${DEVICES}/${SC_DEVICE} bs=${SC_SECTORSIZE} count=$((${SC_SECTORCOUNT} + 1)) 2>${DEVICES}/null
 		;;
 		[cC][rR][eE][aA][tT][eE])
 			prepsysconfig "${2}"
@@ -277,22 +302,17 @@ sysconfig_main () {
 			printf "\nversion=1.0\nentrysize=${SC_ENTRYSIZE}\npad=${SC_PADSIZE}\nlog=${CONFIGLOG}\nuuid=${UUID}\ndescription=${LONGDESC}\n" | dd bs=${SC_HEADERSIZE} count=1 of=${SCRATCHDIR}/header conv=sync 2>${DEVICES}/null
 			sha256 -q ${SCRATCHDIR}/header | dd bs=64 count=1 of=${SCRATCHDIR}/hash fillchar=" " conv=sync 2>${DEVICES}/null
 			cat ${SCRATCHDIR}/hash ${SCRATCHDIR}/header >${SCRATCHDIR}/headsect
-			cat ${SCRATCHDIR}/headsect | dd of=${DEVICES}/${2} bs=${SC_SECTORSIZE} count=1 2>${DEVICES}/null
+			cat ${SCRATCHDIR}/headsect | dd of=${DEVICES}/${SC_DEVICE} bs=${SC_SECTORSIZE} count=1 2>${DEVICES}/null
 		;;
 		[mM][eE][nN][uU])
 			CONFIGLIST=$(mounter list sysconfig)
 			. $(command -v menu)
-			CHOICE=$(menu "Available Configurations" "sysconfig list ; echo New ; echo None")
-			case "${CHOICE}" in
-				*-*-*-*)
-					echo ${CHOICE}
-				;;
-				New)
-					echo ${CHOICE}
-				;;
-				*)
-				;;
-			esac
+			CHOICE=$(menu "Available Configurations" "sysconfig list ; echo None")
+			if [ "$(is_uuid ${CHOICE})" = "yes" ] ; then
+				UUID="$(echo "${CHOICE}" | awk '{ print $1 }')"
+				DESCRIPTION="$(echo "${CHOICE}" | cut -d "-" -f 6 | cut -b 2-4096)"
+				prepsysconfig ${UUID}
+			fi
 		;;
 		*)
 			usage
