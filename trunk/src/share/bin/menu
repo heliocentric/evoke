@@ -1,3 +1,4 @@
+#!/bin/sh
 # Copyright 2007-2008 Dylan Cochran
 # All rights reserved
 #
@@ -22,16 +23,18 @@
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+
 # $Id$
 
-# For FreeBSD:
-# Field 1:	OS
-# Field 2:	ABI
-# Field 3:	CPU Architecture
-# Field 4:	Release Version
-# Field 5:	The subversion url with http://svn.freebsd.org/base/ prepended to it
-# Field 6:	The subversion revision number
-# Field 7:	The platform (ie, pc98)
+menu () {
+	echo "${1}:" 1>&2
+	echo "" 1>&2
+	eval $2 | awk '{ print " " NR ") " $0 }' 1>&2
+	echo "" 1>&2
+	read -p "Choice: " CHOICE
+	eval $2 | awk -v CHOICE=${CHOICE} '{ if (NR == CHOICE) { print $0 } }'
+}
 
-#FreeBSD:7:i386:7.1:stable/7:185162
-FreeBSD:8:i386:8.0:head:185162
+if [ ! "${0}" = "menu" ] ; then
+	menu $*
+fi

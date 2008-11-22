@@ -199,6 +199,11 @@ export N_CFGDIR=/config
 export N_SYSCFG=/mem/sysconfig
 mkdir -p ${N_SYSCFG}
 
+
+
+echo -n "Setting up sysconfig"
+echo ""
+
 echo -n "Starting system daemons"
 # Always start powerd if available, some machines do not have proper heat management
 # and it can be an issue. 

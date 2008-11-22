@@ -716,7 +716,7 @@ mounter_command () {
 						for i in $( lsvol && echo ${URLS} )
 						do
 							if [ "${2}" = $(echo "${i}" | cut -d : -f 1) ] ; then
-								echo "${i}"
+								echo "${i}" | cut -d : -f 2
 							fi
 						done
 					fi

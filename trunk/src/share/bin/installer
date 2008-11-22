@@ -120,16 +120,6 @@ partdisk() {
 	esac
 }
 
-# Quick menu function, works for choosing single objects.
-menu() {
-	echo "${1}:" 1>&2
-	echo "" 1>&2
-	eval $2 | awk '{ print " " NR ") " $0 }' 1>&2
-	echo "" 1>&2
-	read -p "Choice: " CHOICE
-	eval $2 | awk -v CHOICE=${CHOICE} '{ if (NR == CHOICE) { print $0 } }'
-}
-
 freebsd_installer() {
 	unset BREAKOUT
 	export FTPURLS="ftp.freebsd.org/pub/FreeBSD/releases

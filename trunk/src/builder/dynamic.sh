@@ -38,6 +38,9 @@ cp ${BUILDDIR}/kernels/${RELEASE}/${TARGET} ${WORKDIR}/usr/src/sys/${TARGET}/con
 # Patch in the binary path into the kernel directly, so that loader.conf doesn't need to.
 echo "options INIT_PATH=${N_BIN}/init:/sbin/init:/stand/sysinstall" >> ${WORKDIR}/usr/src/sys/${TARGET}/conf/${KERNCONF}
 
+if [ "${ABI}" = "7" ] ; then
+	svn co --force http://svn.freebsd.org/base/head/sys/contrib/dev/ath ${WORKDIR}/usr/src/sys/contrib/dev/ath
+fi
 cd ${WORKDIR}/usr/src/
 if [ "${NO_BUILD_WORLD}" = "" ] ; then
 	echo -n " * ${target} = Building World "
