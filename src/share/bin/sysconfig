@@ -39,8 +39,6 @@ if [ ! -d "${TMPDIR}" ] ; then
 	TMPDIR=/tmp
 fi
 
-export SCRATCHDIR="${TMPDIR}/sctemp/$(dd if=${DEVICES}/random bs=4m count=1 2>${DEVICES}/null | sha256 -q )"	
-mkdir -p "${SCRATCHDIR}"
 
 if [ ! -d "${N_SYSCFG}" ] ; then
 	N_SYSCFG="/tmp/sysconfig"
@@ -159,111 +157,150 @@ verify_header () {
 	fi
 }
 
-case "${1}" in
-	[vV][eE][rR][iI][fF][yY])
-		prepsysconfig "${2}"
-		RESULT=$(verify_header)
-		echo ${RESULT}
-		if [ "${RESULT}" = "failed" ] ; then
-			exit 3
-		fi
-	;;
-	[eE][xX][tT][rR][aA][cC][tT])
-		EXTRACTPOINT="${3}"
-		prepsysconfig "${2}"
-		RESULT=$(verify_header)
-		if [ "${RESULT}" = "failed" ] ; then
-			exit 3
-		fi
-		if [ "${SC_CURRECORD}" -eq "-1" ] ; then
-			echo "Error: No config data"
-			exit 6
-		else
-			if [ ! -d "${EXTRACTPOINT}" ] ; then
-				tar -xpf ${SCRATCHDIR}/record${SC_CURRECORD}/tarball.tgz -C ${N_SYSCFG}/
+sysconfig_main () {
+	export SCRATCHDIR="${TMPDIR}/sctemp/$(dd if=${DEVICES}/random bs=4m count=1 2>${DEVICES}/null | sha256 -q )"	
+	mkdir -p "${SCRATCHDIR}"
+	case "${1}" in
+		[vV][eE][rR][iI][fF][yY])
+			prepsysconfig "${2}"
+			RESULT=$(verify_header)
+			echo ${RESULT}
+			if [ "${RESULT}" = "failed" ] ; then
+				exit 3
+			fi
+		;;
+		[eE][xX][tT][rR][aA][cC][tT])
+			EXTRACTPOINT="${3}"
+			prepsysconfig "${2}"
+			RESULT=$(verify_header)
+			if [ "${RESULT}" = "failed" ] ; then
+				exit 3
+			fi
+			if [ "${SC_CURRECORD}" -eq "-1" ] ; then
+				echo "Error: No config data"
+				exit 6
 			else
-				tar -xpf ${SCRATCHDIR}/record${SC_CURRECORD}/tarball.tgz -C ${EXTRACTPOINT}/
+				if [ ! -d "${EXTRACTPOINT}" ] ; then
+					tar -xpf ${SCRATCHDIR}/record${SC_CURRECORD}/tarball.tgz -C ${N_SYSCFG}/
+				else
+					tar -xpf ${SCRATCHDIR}/record${SC_CURRECORD}/tarball.tgz -C ${EXTRACTPOINT}/
+				fi
 			fi
-		fi
-	;;
-	[lL][iI][sS][tT])
-		mounter list sysconfig
-	;;
-	[cC][oO][mM][mM][iI][tT])
-		prepsysconfig "${2}"
-		RESULT=$(verify_header)
-		if [ "${RESULT}" = "failed" ] ; then
-			exit 3
-		fi
-		if [ ! -d "${3}" ] ; then
-			echo "Source is not a directory"
-			exit 4
-		fi
-		cd "${3}"
-		tar -cpf - * | gzip -9 >${SCRATCHDIR}/newrecord.tgz
-		if [ "$(stat -f '%z' ${SCRATCHDIR}/newrecord.tgz)" -gt "${SC_TARBALLSIZE}" ] ; then
-			echo "Error, config to large for partition"
-			exit 5
-		fi
-		cp ${SCRATCHDIR}/newrecord.tgz ${SCRATCHDIR}/newrecord
-		dd if=/dev/zero of=${SCRATCHDIR}/newrecord seek=${SC_TARBALLSIZE} count=0 bs=1 2>${DEVICES}/null
-		NDATE=$(date -u +%s)
-		if [ ! "${SC_CURRECORD}" = "-1" ] ; then
-			ODATE=$(cat ${SCRATCHDIR}/record${SC_CURRECORD}/timestamp)
-			if [ "${ODATE}" -ge "${NDATE}" ] ; then
-				NDATE=$((${ODATE} + 1))
+		;;
+		[lL][iI][sS][tT])
+			PARTLIST=$(mounter list sysconfig)
+			for i in "${PARTLIST}"
+			do
+				TYPE=$(stat -f "%HT" "${DEVICES}/${i}")
+				case "${TYPE}" in
+					Character*)
+						export SC_GEOM="$(sysctl -b kern.geom.conftxt | grep -a ${i})"
+						export SC_SECTORSIZE="$(echo ${SC_GEOM} | cut -d " " -f 5)"
+						UUID=$(dd if=${DEVICES}/${i} bs=${SC_SECTORSIZE} count=1 2>/dev/null | grep -a uuid | cut -d = -f 2)
+						DESC=$(dd if=${DEVICES}/${i} bs=${SC_SECTORSIZE} count=1 2>/dev/null | grep -a description | cut -d = -f 2)
+						echo "${UUID} - ${DESC}"
+					;;
+					*)
+						echo "Not a character device"
+						exit 2
+					;;
+				esac
+			done
+		;;
+		[cC][oO][mM][mM][iI][tT])
+			prepsysconfig "${2}"
+			RESULT=$(verify_header)
+			if [ "${RESULT}" = "failed" ] ; then
+				exit 3
 			fi
-		fi
-		echo "${NDATE}" | dd of=${SCRATCHDIR}/newdate bs=10 count=1 conv=sync 2>${DEVICES}/null
-		cat ${SCRATCHDIR}/newdate ${SCRATCHDIR}/newrecord | sha256 -q | dd of=${SCRATCHDIR}/newhash bs=64 count=1 conv=sync 2>${DEVICES}/null	
-		SC_NEXTRECORDSEEK="$((${SC_NEXTRECORD_OFFSET}))"
-		cat ${SCRATCHDIR}/newhash ${SCRATCHDIR}/newdate ${SCRATCHDIR}/newrecord | dd of=${DEVICES}/${2} bs=512 count=${SC_ENTRYSIZE} seek="${SC_NEXTRECORDSEEK}" conv=sync 2>${DEVICES}/null
-	;;
-	[cC][lL][eE][aA][rR])
-		prepsysconfig "${2}"
-		dd if=${DEVICES}/zero of=${DEVICES}/${2} bs=${SC_SECTORSIZE} count=$((${SC_SECTORCOUNT} + 1)) 2>${DEVICES}/null
-	;;
-	[cC][rR][eE][aA][tT][eE])
-		prepsysconfig "${2}"
-		unset break
-		until [ "${break}" = "yes" ]
-		do
-			read -p "Description: " LONGDESC
-			if [ "${LONGDESC}" != "" ] ; then
-				break="yes"
-			else
-				echo "Please input a long description"
+			if [ ! -d "${3}" ] ; then
+				echo "Source is not a directory"
+				exit 4
 			fi
-		done
-		unset break
-		until [ "${break}" = "yes" ]
-		do
-			read -p "Length of the config log: " CONFIGLOG
-			if [ "${CONFIGLOG}" != "" ] ; then
-				break="yes"
-			else
-				CONFIGLOG=8
-				break="yes"
+			cd "${3}"
+			tar -cpf - * | gzip -9 >${SCRATCHDIR}/newrecord.tgz
+			if [ "$(stat -f '%z' ${SCRATCHDIR}/newrecord.tgz)" -gt "${SC_TARBALLSIZE}" ] ; then
+				echo "Error, config to large for partition"
+				exit 5
 			fi
-		done
-		UUID=$(uuid -v 4)
+			cp ${SCRATCHDIR}/newrecord.tgz ${SCRATCHDIR}/newrecord
+			dd if=/dev/zero of=${SCRATCHDIR}/newrecord seek=${SC_TARBALLSIZE} count=0 bs=1 2>${DEVICES}/null
+			NDATE=$(date -u +%s)
+			if [ ! "${SC_CURRECORD}" = "-1" ] ; then
+				ODATE=$(cat ${SCRATCHDIR}/record${SC_CURRECORD}/timestamp)
+				if [ "${ODATE}" -ge "${NDATE}" ] ; then
+					NDATE=$((${ODATE} + 1))
+				fi
+			fi
+			echo "${NDATE}" | dd of=${SCRATCHDIR}/newdate bs=10 count=1 conv=sync 2>${DEVICES}/null
+			cat ${SCRATCHDIR}/newdate ${SCRATCHDIR}/newrecord | sha256 -q | dd of=${SCRATCHDIR}/newhash bs=64 count=1 conv=sync 2>${DEVICES}/null	
+			SC_NEXTRECORDSEEK="$((${SC_NEXTRECORD_OFFSET}))"
+			cat ${SCRATCHDIR}/newhash ${SCRATCHDIR}/newdate ${SCRATCHDIR}/newrecord | dd of=${DEVICES}/${2} bs=512 count=${SC_ENTRYSIZE} seek="${SC_NEXTRECORDSEEK}" conv=sync 2>${DEVICES}/null
+		;;
+		[cC][lL][eE][aA][rR])
+			prepsysconfig "${2}"
+			dd if=${DEVICES}/zero of=${DEVICES}/${2} bs=${SC_SECTORSIZE} count=$((${SC_SECTORCOUNT} + 1)) 2>${DEVICES}/null
+		;;
+		[cC][rR][eE][aA][tT][eE])
+			prepsysconfig "${2}"
+			unset break
+			until [ "${break}" = "yes" ]
+			do
+				read -p "Description: " LONGDESC
+				if [ "${LONGDESC}" != "" ] ; then
+					break="yes"
+				else
+					echo "Please input a long description"
+				fi
+			done
+			unset break
+			until [ "${break}" = "yes" ]
+			do
+				read -p "Length of the config log: " CONFIGLOG
+				if [ "${CONFIGLOG}" != "" ] ; then
+					break="yes"
+				else
+					CONFIGLOG=8
+					break="yes"
+				fi
+			done
+			UUID=$(uuid -v 4)
+	
+			# the size of each entry in the log, in sectors
+			SC_ENTRYSIZE=$((${SC_SECTORCOUNT} / ${CONFIGLOG}))
+	
+			# the size of the padding sectors, that are between the header sector, and the 
+			# start of the array. If we don't add a pad, we'd have to have the nvram match the 
+			# arraysize * array entries + header sector exactly.
+			SC_PADSIZE=$((${SC_SECTORCOUNT} % ${CONFIGLOG}))
+	
+			printf "\nversion=1.0\nentrysize=${SC_ENTRYSIZE}\npad=${SC_PADSIZE}\nlog=${CONFIGLOG}\nuuid=${UUID}\ndescription=${LONGDESC}\n" | dd bs=${SC_HEADERSIZE} count=1 of=${SCRATCHDIR}/header conv=sync 2>${DEVICES}/null
+			sha256 -q ${SCRATCHDIR}/header | dd bs=64 count=1 of=${SCRATCHDIR}/hash fillchar=" " conv=sync 2>${DEVICES}/null
+			cat ${SCRATCHDIR}/hash ${SCRATCHDIR}/header >${SCRATCHDIR}/headsect
+			cat ${SCRATCHDIR}/headsect | dd of=${DEVICES}/${2} bs=${SC_SECTORSIZE} count=1 2>${DEVICES}/null
+		;;
+		[mM][eE][nN][uU])
+			CONFIGLIST=$(mounter list sysconfig)
+			. $(command -v menu)
+			CHOICE=$(menu "Available Configurations" "sysconfig list ; echo New ; echo None")
+			case "${CHOICE}" in
+				*-*-*-*)
+					echo ${CHOICE}
+				;;
+				New)
+					echo ${CHOICE}
+				;;
+				*)
+				;;
+			esac
+		;;
+		*)
+			usage
+		;;
+	esac
 
-		# the size of each entry in the log, in sectors
-		SC_ENTRYSIZE=$((${SC_SECTORCOUNT} / ${CONFIGLOG}))
+	rm -r ${SCRATCHDIR}
+}
 
-		# the size of the padding sectors, that are between the header sector, and the 
-		# start of the array. If we don't add a pad, we'd have to have the nvram match the 
-		# arraysize * array entries + header sector exactly.
-		SC_PADSIZE=$((${SC_SECTORCOUNT} % ${CONFIGLOG}))
+sysconfig_main $*
 
-		printf "\nversion=1.0\nentrysize=${SC_ENTRYSIZE}\npad=${SC_PADSIZE}\nlog=${CONFIGLOG}\nuuid=${UUID}\ndescription=${LONGDESC}\n" | dd bs=${SC_HEADERSIZE} count=1 of=${SCRATCHDIR}/header conv=sync 2>${DEVICES}/null
-		sha256 -q ${SCRATCHDIR}/header | dd bs=64 count=1 of=${SCRATCHDIR}/hash fillchar=" " conv=sync 2>${DEVICES}/null
-		cat ${SCRATCHDIR}/hash ${SCRATCHDIR}/header >${SCRATCHDIR}/headsect
-		cat ${SCRATCHDIR}/headsect | dd of=${DEVICES}/${2} bs=${SC_SECTORSIZE} count=1 2>${DEVICES}/null
-	;;
-	*)
-		usage
-	;;
-esac
-
-rm -r ${SCRATCHDIR}
