@@ -27,7 +27,7 @@
 
 # Our build targets for the root.fs image.
 export TARGETS="7.0-RELEASE/i386"
-export i386_ACTIVE="7.0-RELEASE/i386"
+export i386_ACTIVE="8.0-RELEASE/i386"
 
 # DamnSmallBSD Version
 export VERSION="HEAD"

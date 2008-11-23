@@ -180,8 +180,8 @@ is_uuid () {
 		;;
 	esac
 }
-sysconfig_main () {
-	export SCRATCHDIR="${TMPDIR}/sctemp/$(dd if=${DEVICES}/random bs=4m count=1 2>${DEVICES}/null | sha256 -q )"	
+sysconfig () {
+	local SCRATCHDIR="${TMPDIR}/sctemp/$(dd if=${DEVICES}/random bs=4m count=1 2>${DEVICES}/null | sha256 -q )"	
 	mkdir -p "${SCRATCHDIR}"
 	case "${1}" in
 		[vV][eE][rR][iI][fF][yY])
@@ -220,8 +220,8 @@ sysconfig_main () {
 						Character*)
 							export SC_GEOM="$(sysctl -b kern.geom.conftxt | grep -a ${i})"
 							export SC_SECTORSIZE="$(echo ${SC_GEOM} | cut -d " " -f 5)"
-							UUID=$(dd if=${DEVICES}/${i} bs=${SC_SECTORSIZE} count=1 2>/dev/null | grep -a uuid | cut -d = -f 2)
-							DESC=$(dd if=${DEVICES}/${i} bs=${SC_SECTORSIZE} count=1 2>/dev/null | grep -a description | cut -d = -f 2)
+							UUID=$(dd if=${DEVICES}/${i} bs=${SC_SECTORSIZE} count=1 2>/dev/null | grep -a ^uuid= | cut -d = -f 2)
+							DESC=$(dd if=${DEVICES}/${i} bs=${SC_SECTORSIZE} count=1 2>/dev/null | grep -a ^description= | cut -d = -f 2)
 							echo "${UUID} - ${DESC}"
 						;;
 						*)
@@ -311,7 +311,7 @@ sysconfig_main () {
 			if [ "$(is_uuid ${CHOICE})" = "yes" ] ; then
 				UUID="$(echo "${CHOICE}" | awk '{ print $1 }')"
 				DESCRIPTION="$(echo "${CHOICE}" | cut -d "-" -f 6 | cut -b 2-4096)"
-				prepsysconfig ${UUID}
+				echo ${UUID}
 			fi
 		;;
 		*)
@@ -322,5 +322,5 @@ sysconfig_main () {
 	rm -r ${SCRATCHDIR}
 }
 
-sysconfig_main $*
+sysconfig $*
 
