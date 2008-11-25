@@ -340,6 +340,11 @@ mount_proto () {
 					prep_transport
 					ntfs_mount
 				;;
+				buildenv)
+					M_PTYPE="DEV"
+					prep_transport
+					buildenv_mount
+				;;
 				*)
 					M_PTYPE="DEV"
 					prep_transport
@@ -595,6 +600,21 @@ ntfs_mount () {
 		mexit 8
 	fi
 }
+# NTFS filesystem mounter. If ntfs-3g is available, use it.
+
+buildenv_mount () {
+	echo_config
+	if [ "${M_STYPE}" = "GEOM" ] ; then
+		if [ -c "${DEVICES}/${M_FILE}" ] ; then
+			newfs ${DEVICES}/${M_FILE} >/dev/null
+			mount -o acls,noatime ${DEVICES}/${M_FILE} ${M_DESTINATION}
+		else
+			mexit 9
+		fi
+	else
+		mexit 8
+	fi
+}
 
 
 # sysconfig basic wrapper.
@@ -660,6 +680,7 @@ list_proto () {
 	echo "entropy"
 	echo "sysconfig"
 	echo "dump"
+	echo "buildenv"
 	for fuse in wdfs sshfs curlftpfs ntfs-3g cryptofs vacfs
 	do
 		command -v ${fuse} >${DEVICES}/null 
