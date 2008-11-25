@@ -26,8 +26,7 @@
 # $Id$
 
 # Our build targets for the root.fs image.
-export TARGETS="7.0-RELEASE/i386"
-export i386_ACTIVE="8.0-RELEASE/i386"
+export i386_ACTIVE="7.1-RELEASE/i386"
 
 # DamnSmallBSD Version
 export VERSION="HEAD"
@@ -76,14 +75,23 @@ if [ "${RELEASEDIR}" = "" ] ; then
 	export RELEASEDIR="/releases"
 fi
 
+export PATH="${PATH}:${ROOTDIR}/share/bin"
+
 unset WRKDIRPREFIX
 export ERRFILE=${ROOTDIR}/logs/$(date +%Y%m%d%H%M%S).log
 
 echo -n " * share = Cleaning up"
 
-chflags -R noschg ${OBJDIR} 2>>${ERRFILE}
-rm -r ${OBJDIR} 2>>${ERRFILE}
-mkdir -p ${OBJDIR} 2>>${ERRFILE}
+
+BDENV="$(mounter list buildenv 2>${DEVICES}/null)"
+
+if [ "${BDENV}" != "" ] ; then 
+	mounter "buildenv:$(echo ${BDENV} | head -n 1)" ${OBJDIR} 2>>${ERRFILE}
+else
+	chflags -R noschg ${OBJDIR} 2>>${ERRFILE}
+	rm -r ${OBJDIR} 2>>${ERRFILE}
+	mkdir -p ${OBJDIR} 2>>${ERRFILE}
+fi
 
 export BUILDDIR=${ROOTDIR}/builder
 echo "						[DONE]"
