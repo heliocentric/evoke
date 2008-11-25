@@ -97,3 +97,6 @@ export BUILDDIR=${ROOTDIR}/builder
 echo "						[DONE]"
 
 ${BUILDDIR}/build.sh 2>>${ERRFILE}
+if [ "${BDENV}" != "" ] ; then 
+	mounter umount ${OBJDIR} 2>>${ERRFILE}
+fi
