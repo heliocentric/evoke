@@ -1,2 +1,2 @@
 <wiki:gadget url="http://www.ohloh.net/projects/evoke/widgets/project_users.xml" height="100" border="0" />
-<wiki:gadget url="http://www.ohloh.net/projects/26988/widgets/project_basic_stats.xml" height="220"  border="1" />
+<wiki:gadget url="http://www.ohloh.net/projects/26988/widgets/project_thin_badge.xml" height="36"  border="0" />
