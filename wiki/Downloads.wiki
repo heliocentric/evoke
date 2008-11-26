@@ -1,5 +1,3 @@
-#summary Download tab.
-
 == Download ==
 
 The easiest way to obtain Damn Small BSD is by using one of the mirrors below. Just click on one to get started!
