@@ -1,7 +1,4 @@
-#summary Welcome to the Evoke Wiki
 #labels Tab
-
-
 == Usage ==
  * [BuildEnvironment Requirements for a build environment]
  * [SystemRequirements Requirements for a running evoke system]
