@@ -4,6 +4,6 @@ The easiest way to obtain Damn Small BSD is by using one of the mirrors below. J
 
 == Mirrors ==
 
- * [http://www.damnsmallbsd.org/pub]
+ * [http://www.damnsmallbsd.org/pub/]
 
 Want to help us out by donating some file mirroring?
