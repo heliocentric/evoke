@@ -131,10 +131,10 @@ prepsysconfig () {
 #						echo ${RHASH} 1>&2
 #						echo $(cat ${SCRATCHDIR}/record${RECORDNUM}/hash) 1>&2
 						if [ "$(cat ${SCRATCHDIR}/record${RECORDNUM}/hash)" != "${RHASH}" ] ; then
-							touch ${SCRATCHDIR}/record${RECORDNUM}/failed
+							echo "" >${SCRATCHDIR}/record${RECORDNUM}/failed
 						else
 							echo "$(cat ${SCRATCHDIR}/record${RECORDNUM}/timestamp) ${RECORDNUM}"
-							touch ${SCRATCHDIR}/record${RECORDNUM}/passed
+							echo "" >${SCRATCHDIR}/record${RECORDNUM}/passed
 						fi
 						rm ${SCRATCHDIR}/record${RECORDNUM}/record
 						TEMPOFFSET=$((${TEMPOFFSET} + ${SC_ENTRYSIZE}))

@@ -94,7 +94,7 @@ case "${OS}" in
 	;;
 esac
 
-echo "Merging directories"
+echo -n "Merging directories"
 
 sh /system/share/bin/merger /system/ /
 
@@ -106,6 +106,7 @@ sh /system/share/bin/merger /system/ /
 
 mount_nullfs -o union,ro /system/share/bin/ /bin/
 export PATH=/bin
+echo ""
 
 # The fastest root filesystem consistancy check in history.
 # Since the probability that random corruption will cause changes to
@@ -116,7 +117,7 @@ export PATH=/bin
 # If not, we reboot forever, as there is nothing else we can really do
 # at this point.
 
-echo "Verifying root filesystem"
+echo -n "Verifying root filesystem"
 ROOTFINGERPRINT=$(kenv -q evoke.fingerprint)
 ROOTDEV=${DEVICES}/$(mount | awk '{ if ($3 == "/") { print $1 } }')
 if [ "${ROOTFINGERPRINT}" != "" ] ; then
@@ -125,26 +126,29 @@ if [ "${ROOTFINGERPRINT}" != "" ] ; then
 		reboot
 	fi
 fi
-mount -o update,rw,async ${ROOTDEV} /
+mount -o update,async ${ROOTDEV} /
 
-echo "Adding swap, dump,  and entropy"
+echo ""
+
+echo -n "Adding swap, dump,  and entropy"
 
 for swap in $(mounter list swap)
 do
-#	mounter swap:${swap} enc
+	mounter swap:${swap} enc
 done
 
 for entropy in $(mounter list entropy)
 do
-#	mounter entropy:${entropy}
+	mounter entropy:${entropy}
 done
 
 DUMPDEV=$(mounter list dump | awk '{ print $1 }')
 
 mounter dump:${DUMPDEV}
 
+echo ""
 
-echo "Creating /mem"
+echo -n "Creating /mem"
 
 
 # Memory store
@@ -201,13 +205,11 @@ mkdir -p ${N_SYSCFG}
 
 
 
-echo -n "Setting up sysconfig"
-
 SC_PART=$(sysconfig menu)
 if [ "${SC_PART}" != "" ] ; then
 	sysconfig extract ${SC_PART}
 fi
-echo ""
+
 
 echo -n "Starting system daemons"
 # Always start powerd if available, some machines do not have proper heat management
@@ -237,7 +239,7 @@ echo "/bin/sh" >>${N_LIBDIR}/shells
 
 echo ""
 
-echo "Configuring network"
+echo -n "Configuring network"
 IF="$(kenv -q boot.netif.name)"
 if [ "${IF}" = "" ] ; then
 	IF="$(list_if | head -n 1)"
@@ -260,7 +262,8 @@ GATEWAY="$(kenv -q boot.netif.gateway)"
 # I should request it.
 
 DNS="$(kenv -q boot.netif.dns)"
-sysctl net.inet6.ip6.accept_rtadv=1
+sysctl net.inet6.ip6.accept_rtadv=1 >/${DEVICES}/null
+
 INTERFACES=$(list_if)
 #for network in ${INTERFACES}
 #do
@@ -278,7 +281,7 @@ INTERFACES=$(list_if)
 #	fi
 #	rtsol ${network}
 #done
-sysctl net.inet6.ip6.accept_rtadv=0
+sysctl net.inet6.ip6.accept_rtadv=0 >${DEVICES}/null
 
 if [ "${IP}" != "" -a "${NETMASK}" != "" -a "${GATEWAY}" != "" ] ; then
 	ifconfig ${IF} inet ${IP} netmask ${NETMASK}
@@ -314,7 +317,7 @@ fi
 
 # syslogd is currently unnecessary, may uncomment later
 
-#echo -n "Starting syslogd						"
+#echo -n "Starting syslogd"
 #echo "syslog		514/udp" >> ${N_LIBDIR}/services
 #echo "" >${N_DBDIR}/log
 #cat >${N_LIBDIR}/syslogd.conf << EOF

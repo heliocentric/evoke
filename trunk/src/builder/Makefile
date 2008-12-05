@@ -30,8 +30,8 @@
 .endif
 
 # Our build targets for the root.fs image.
-TARGETS ?= 7.0-RELEASE/i386 7.0-RELEASE/amd64
-i386_ACTIVE ?= 8.0-RELEASE/i386
+TARGETS ?= 7.1-RELEASE/i386 8-RELEASE/i386
+i386_ACTIVE ?= 8-RELEASE/i386
 
 # Evoke Version
 VERSION ?= HEAD
