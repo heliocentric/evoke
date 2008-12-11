@@ -305,6 +305,16 @@ mount_proto () {
 					prep_transport
 					cryptofs_mount
 				;;
+				ipod)
+					M_PTYPE="REMOUNT"
+					prep_transport
+					ipod_mount
+				;;
+				encfs)
+					M_PTYPE="REMOUNT"
+					prep_transport
+					encfs_mount
+				;;
 				http|https)
 					M_PTYPE="NET"
 					prep_transport
@@ -455,12 +465,37 @@ psuedofs_mount () {
 	fi
 }
 
+# ipod wrapper.
+
+ipod_mount () {
+	echo_config
+	if [ "${M_STYPE}" = "DIRECTORY" ] ; then
+		IPOD_DIR="${M_FILE}" fusepod ${M_DESTINATION}
+	else
+		mexit 8
+	fi
+}
+
 # cryptofs wrapper.
 
 cryptofs_mount () {
 	echo_config
 	if [ "${M_STYPE}" = "DIRECTORY" ] ; then
 		cryptofs -r "${M_FILE}" ${M_DESTINATION}
+	else
+		mexit 8
+	fi
+}
+
+# encfs wrapper
+encfs_mount () {
+	echo_config
+	if [ "${M_STYPE}" = "DIRECTORY" ] ; then
+		if [ "${M_PASSWORD}" = "" ] ; then
+			encfs "${M_FILE}" "${M_DESTINATION}"
+		else
+			echo ${M_PASSWORD} | encfs -S "${M_FILE}" "${M_DESTINATION}"
+		fi
 	else
 		mexit 8
 	fi
@@ -681,13 +716,14 @@ list_proto () {
 	echo "sysconfig"
 	echo "dump"
 	echo "buildenv"
-	for fuse in wdfs sshfs curlftpfs ntfs-3g cryptofs vacfs
+	for fuse in wdfs sshfs curlftpfs ntfs-3g encfs cryptofs vacfs fusepod
 	do
 		command -v ${fuse} >${DEVICES}/null 
 		if [ "$?" != "127" ] ; then
 			case "${fuse}" in
 				sshfs) echo ssh ;;
 				ntfs-3g) echo ntfs ;;
+				fusepod) echo ipod ;;
 				curlftpfs) 
 					echo ftp 
 					echo ftps
@@ -696,6 +732,9 @@ list_proto () {
 				wdfs) 
 					echo http
 					echo https
+				;;
+				encfs) 
+					echo encfs
 				;;
 				vacfs)
 					echo vac
