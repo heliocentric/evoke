@@ -773,7 +773,7 @@ mounter_command () {
 
 				*)
 					if [ "${2}" != "" ] ; then
-						for i in $( lsvol && echo ${URLS} )
+						for i in $( lsvol )
 						do
 							if [ "${2}" = $(echo "${i}" | cut -d : -f 1) ] ; then
 								echo "${i}" | cut -d : -f 2

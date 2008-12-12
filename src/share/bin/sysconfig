@@ -47,7 +47,7 @@ fi
 
 usage () {
 	cat << EOF
-usage: sysconfig command GEOM [options]
+usage: sysconfig command GEOM|UUID [options]
 
 Commands:
   create	-- Write the header to the sysconfig partition.
