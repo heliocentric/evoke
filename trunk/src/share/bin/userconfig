@@ -45,12 +45,80 @@ if [ ! -d "${N_SYSCFG}" ] ; then
 	mkdir -p "${N_SYSCFG}"
 fi
 
-usage () {
+if [ ! -d "${N_CURUSER}" ] ; then
+	N_CURUSER="/tmp/currentuser"
+	mkdir -p "${N_CURUSER}"
+fi
 
+usage () {
+	cat << EOF
+usage: userconfig command [UUID] [options]
+
+Commands:
+  create	-- Create a directory for a user, and set a password.
+
+EOF
+
+}
+
+create () {
+	. $(command -v menu)
+	read -p "Username: " LOGIN
+	read -p "Display Name: " DISPNAME
+	read -p "Do you already have an Evoke user id? [y/N]: " ANSWER
+	case "${ANSWER}" in
+		[yY])
+			ESCAPE="no"
+			until [ "${ESCAPE}" = "yes" ]
+			do
+				read -p "Enter UUID: " UUID
+				if [ "$(is_uuid ${UUID})" = "yes" ] ; then
+					if [ -d "${N_SYSCFG}/${UUID}" ] ; then
+						echo "Error: user already exists."
+					else
+						ESCAPE="yes"
+					fi
+				fi
+			done
+			unset ESCAPE
+		;;
+		*)
+			ESCAPE="no"
+			until [ "${ESCAPE}" = "yes" ]
+			do
+				UUID="$(uuid -v 4)"
+				if [ ! -d "${N_SYSCFG}/${UUID}" ] ; then
+					ESCAPE="yes"
+				fi
+			fi
+			done
+			unset ESCAPE
+		;;
+	esac
+#	ENCTYPE=$(menu "Encryption Method" "mounter list fs | grep encfs; mounter list fs | grep cryptofs; echo none")
+#	case "${ENCTYPE}" in
+#		encfs)
+#		;;
+#		cryptofs)
+#			<< EOF
+#[CryptoFS]
+#cipher=AES256
+#md=MD5
+#blocksize=2048
+#salts=256
+#EOF
+#
+#		;;
+#		*)
+#		;;
+#	esac
 }
 
 userconfig () {
 	case "${1}" in
+		[cC][rR][eE][aA][tT][eE])
+			create
+		;;
 		*)
 			usage
 		;;

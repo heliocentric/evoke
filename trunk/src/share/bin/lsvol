@@ -132,9 +132,6 @@ awk '{
 		} 
 	}
 }'
-if [ "${FTPURLS}" != "" ] ; then
-	for url in ${FTPURLS}
-	do
-		echo ftp:${url}
-	done
+if [ "${URLS}" != "" ] ; then
+	echo "${URLS}"
 fi
