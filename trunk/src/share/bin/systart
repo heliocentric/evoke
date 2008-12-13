@@ -203,6 +203,9 @@ export N_CFGDIR=/config
 export N_SYSCFG=/mem/sysconfig
 mkdir -p ${N_SYSCFG}
 
+export N_CURUSER=/mem/curuser
+mkdir -p ${N_CURUSER}
+
 
 
 SC_PART=$(kenv -q evoke.sysconfig)
@@ -216,6 +219,16 @@ if [ "${SC_PART}" != "" ] ; then
 	sysconfig extract ${SC_PART}
 fi
 
+DEFUSER=$(kenv -q evoke.userconfig)
+
+if [ $(is_uuid "${DEFUSER}") = "no" ] ; then
+	DEFUSER=$(userconfig menu)
+	kenv evoke.userconfig=$(DEFUSER} >/dev/null
+fi
+
+if [ "${DEFUSER}" != "" ] ; then
+	userconfig login ${DEFUSER}
+fi
 
 echo -n "Starting system daemons"
 # Always start powerd if available, some machines do not have proper heat management

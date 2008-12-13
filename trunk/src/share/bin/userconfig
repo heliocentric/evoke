@@ -119,13 +119,16 @@ EOF
 	esac
 	echo ${DISPNAME} >${N_CURUSER}/display
 	echo ${LOGIN} >${N_CURUSER}/login
-	echo "${UUID}:${LOGIN}:${DISPNAME}:" >>${N_SYSCFG}/userlist
+	echo "${UUID}:${LOGIN}:${DISPNAME}" >>${N_SYSCFG}/userlist
 }
 
 userconfig () {
 	case "${1}" in
 		[cC][rR][eE][aA][tT][eE])
 			create
+		;;
+		[lL][oO][gG][iI][nN])
+			usage
 		;;
 		*)
 			usage
