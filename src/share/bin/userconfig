@@ -56,6 +56,9 @@ usage: userconfig command [UUID] [options]
 
 Commands:
   create	-- Create a directory for a user, and set a password.
+  login		-- Login as the user specified.
+  list		-- List the users in the sysconfig directory.
+  menu		-- Display a pretty menu for choosing the user.
 
 EOF
 
@@ -75,6 +78,7 @@ create () {
 				if [ "$(is_uuid ${UUID})" = "yes" ] ; then
 					if [ -d "${N_SYSCFG}/${UUID}" ] ; then
 						echo "Error: user already exists."
+						exit 3
 					else
 						ESCAPE="yes"
 					fi
@@ -101,7 +105,7 @@ create () {
 	echo ${ENCTYPE}
 	case "${ENCTYPE}" in
 		encfs)
-			mounter encfs:${N_SYSCFG}/${UUID} ${N_CURUSER}
+			mounter encfs:${N_SYSCFG}/${UUID} ${N_CURUSER} 1>&2
 		;;
 		cryptofs)
 			cat >${N_SYSCFG}/${UUID}/.cryptofs << EOF
@@ -111,15 +115,38 @@ md=MD5
 blocksize=2048
 salts=256
 EOF
-			mounter cryptofs:${N_SYSCFG}/${UUID} ${N_CURUSER}
+			mounter cryptofs:${N_SYSCFG}/${UUID} ${N_CURUSER} 1>&2
 		;;
 		*)
-			mounter nullfs:${N_SYSCFG}/${UUID} ${N_CURUSER}
+			mounter nullfs:${N_SYSCFG}/${UUID} ${N_CURUSER} 1>&2
 		;;
 	esac
 	echo ${DISPNAME} >${N_CURUSER}/display
 	echo ${LOGIN} >${N_CURUSER}/login
 	echo "${UUID}:${LOGIN}:${DISPNAME}" >>${N_SYSCFG}/userlist
+	echo $UUID
+}
+
+login () {
+	if [ "$(is_uuid ${1})" = "no" ] ; then
+		echo "Error: Not UUID"
+		exit 4
+	fi
+	DIRECTORY="${N_SYSCFG}/${1}"
+	if [ ! -d "${DIRECTORY}" ] ; then
+		echo "Error: User not found"
+		exit 5
+	fi
+	if [ -f "${DIRECTORY}/.cryptofs" ] ; then
+		PROTO=cryptofs
+	else 
+		if [ -f "${DIRECTORY}/.encfs6.xml" ] ; then
+			PROTO=encfs
+		else
+			PROTO=nullfs
+		fi
+	fi
+	mounter ${PROTO}:${N_SYSCFG}/${1} ${N_CURUSER}
 }
 
 userconfig () {
@@ -128,7 +155,19 @@ userconfig () {
 			create
 		;;
 		[lL][oO][gG][iI][nN])
-			usage
+			login ${2}
+		;;
+		[lL][iI][sS][tT])
+			cat ${N_SYSCFG}/userlist | awk -F ":" '{ print $1 " - " $3; }'
+		;;
+
+		[mM][eE][nN][uU])
+			. $(command -v menu)
+			CHOICE=$(menu "Available Users" "userconfig list")
+			if [ "$(is_uuid ${CHOICE})" = "yes" ] ; then
+				UUID="$(echo "${CHOICE}" | awk '{ print $1 }')"
+				echo ${UUID}
+			fi
 		;;
 		*)
 			usage
