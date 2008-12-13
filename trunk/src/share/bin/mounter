@@ -44,7 +44,7 @@ fi
 
 # XXX helio Protocols in need of implementation, we put them in MASKFS so mounter will throw an error on attempted use.
 
-MASKFS="nfs4 nfs nullfs smbfs zfs portalfs unionfs"
+MASKFS="nfs4 nfs smbfs zfs portalfs unionfs"
 
 
 # mexit is our wrapper for exit. prints a standard error message.
@@ -305,6 +305,11 @@ mount_proto () {
 					prep_transport
 					cryptofs_mount
 				;;
+				nullfs)
+					M_PTYPE="REMOUNT"
+					prep_transport
+					nullfs_mount
+				;;
 				ipod)
 					M_PTYPE="REMOUNT"
 					prep_transport
@@ -471,6 +476,17 @@ ipod_mount () {
 	echo_config
 	if [ "${M_STYPE}" = "DIRECTORY" ] ; then
 		IPOD_DIR="${M_FILE}" fusepod ${M_DESTINATION}
+	else
+		mexit 8
+	fi
+}
+
+# nullfs wrapper.
+
+nullfs_mount () {
+	echo_config
+	if [ "${M_STYPE}" = "DIRECTORY" ] ; then
+		mount -t nullfs "${M_FILE}" ${M_DESTINATION}
 	else
 		mexit 8
 	fi
