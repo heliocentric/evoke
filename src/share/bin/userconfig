@@ -90,28 +90,36 @@ create () {
 				if [ ! -d "${N_SYSCFG}/${UUID}" ] ; then
 					ESCAPE="yes"
 				fi
-			fi
 			done
 			unset ESCAPE
 		;;
 	esac
-#	ENCTYPE=$(menu "Encryption Method" "mounter list fs | grep encfs; mounter list fs | grep cryptofs; echo none")
-#	case "${ENCTYPE}" in
-#		encfs)
-#		;;
-#		cryptofs)
-#			<< EOF
-#[CryptoFS]
-#cipher=AES256
-#md=MD5
-#blocksize=2048
-#salts=256
-#EOF
-#
-#		;;
-#		*)
-#		;;
-#	esac
+
+	mkdir -p "${N_SYSCFG}/${UUID}"
+
+	ENCTYPE=$(menu "Encryption Method" "mounter list fs | grep encfs; mounter list fs | grep cryptofs; echo none")
+	echo ${ENCTYPE}
+	case "${ENCTYPE}" in
+		encfs)
+			mounter encfs:${N_SYSCFG}/${UUID} ${N_CURUSER}
+		;;
+		cryptofs)
+			cat >${N_SYSCFG}/${UUID}/.cryptofs << EOF
+[CryptoFS]
+cipher=AES256
+md=MD5
+blocksize=2048
+salts=256
+EOF
+			mounter cryptofs:${N_SYSCFG}/${UUID} ${N_CURUSER}
+		;;
+		*)
+			mounter nullfs:${N_SYSCFG}/${UUID} ${N_CURUSER}
+		;;
+	esac
+	echo ${DISPNAME} >${N_CURUSER}/display
+	echo ${LOGIN} >${N_CURUSER}/login
+	echo "${UUID}:${LOGIN}:${DISPNAME}:" >>${N_SYSCFG}/userlist
 }
 
 userconfig () {

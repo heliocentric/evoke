@@ -205,7 +205,13 @@ mkdir -p ${N_SYSCFG}
 
 
 
-SC_PART=$(sysconfig menu)
+SC_PART=$(kenv -q evoke.sysconfig)
+
+if [ $(is_uuid "${SC_PART}") = "no" ] ; then
+	SC_PART=$(sysconfig menu)
+	kenv evoke.sysconfig=$(SC_PART} >/dev/null
+fi
+
 if [ "${SC_PART}" != "" ] ; then
 	sysconfig extract ${SC_PART}
 fi
