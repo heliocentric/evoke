@@ -7,6 +7,10 @@
 == Design Notes ==
  * [GUIDList Reserved UUID list]
 
+== Projects ==
+ * [ProgramSupport Increasing program support]
+ * [ConvertBuild Convert the build from bourne to make]
+
 == Command List ==
  * [Mounter mounter]
  * [Sysconfig sysconfig]
