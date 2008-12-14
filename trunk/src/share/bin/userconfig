@@ -124,7 +124,17 @@ EOF
 	echo ${DISPNAME} >${N_CURUSER}/display
 	echo ${LOGIN} >${N_CURUSER}/login
 	echo "${UUID}:${LOGIN}:${DISPNAME}" >>${N_SYSCFG}/userlist
+	read -p "Would you like to commit the new system configuration? [Y/n]: " ANSWER
+	case "${ANSWER}" in
+		[nN])
+			
+		;;
+		*)
+			sysconfig commit CURRENT ${N_SYSCFG}
+		;;
+	esac
 	echo $UUID
+
 }
 
 login () {
@@ -137,16 +147,7 @@ login () {
 		echo "Error: User not found"
 		exit 5
 	fi
-	if [ -f "${DIRECTORY}/.cryptofs" ] ; then
-		PROTO=cryptofs
-	else 
-		if [ -f "${DIRECTORY}/.encfs6.xml" ] ; then
-			PROTO=encfs
-		else
-			PROTO=nullfs
-		fi
-	fi
-	mounter ${PROTO}:${N_SYSCFG}/${1} ${N_CURUSER}
+	mounter remount:${N_SYSCFG}/${1} ${N_CURUSER}
 }
 
 userconfig () {

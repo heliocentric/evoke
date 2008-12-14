@@ -47,7 +47,7 @@ fi
 
 usage () {
 	cat << EOF
-usage: sysconfig command GEOM|UUID [options]
+usage: sysconfig command GEOM|UUID|CURRENT [options]
 
 Commands:
   create	-- Write the header to the sysconfig partition.
@@ -61,19 +61,32 @@ EOF
 }
 
 prepsysconfig () {
-	if [ "$(is_uuid ${1})" = "yes" ] ; then
+	case "${1}" in
+		[cC][uU][rR][rR][eE][nN][tT])
+			export SPEC=$(kenv -q evoke.sysconfig)
+			if [ "$(is_uuid ${SPEC})" = "no" ] ; then
+				echo "Error: You can't use CURRENT if the kernel environment variable isn't set"
+				exit 7
+			fi
+		;;
+		*)
+			SPEC="${1}"
+		;;
+	esac
+
+	if [ "$(is_uuid ${SPEC})" = "yes" ] ; then
 		for scpartition in $(mounter list sysconfig)
 		do
 
 			export SC_GEOM="$(sysctl -b kern.geom.conftxt | grep -a ${scpartition})"
 			export SC_SECTORSIZE="$(echo ${SC_GEOM} | cut -d " " -f 5)"
 			export SC_UUID="$(dd if=${DEVICES}/${scpartition} bs="${SC_SECTORSIZE}" count=1 2>${DEVICES}/null | grep -a '^uuid=' | cut -d = -f 2)"
-			if [ "${SC_UUID}" = "${1}" ] ; then
+			if [ "${SC_UUID}" = "${SPEC}" ] ; then
 				export SC_DEVICE=$(echo ${SC_GEOM} | cut -d " " -f 3)
 			fi
 		done
 	else
-		export SC_DEVICE=${1}
+			export SC_DEVICE=${SPEC}
 	fi
 	TYPE=$(stat -f "%HT" "${DEVICES}/${SC_DEVICE}" 2>${DEVICES}/null)
 	case "${TYPE}" in

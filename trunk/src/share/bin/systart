@@ -210,9 +210,9 @@ mkdir -p ${N_CURUSER}
 
 SC_PART=$(kenv -q evoke.sysconfig)
 
-if [ $(is_uuid "${SC_PART}") = "no" ] ; then
+if [ "$(is_uuid ${SC_PART})" = "no" ] ; then
 	SC_PART=$(sysconfig menu)
-	kenv evoke.sysconfig=$(SC_PART} >/dev/null
+	kenv evoke.sysconfig=${SC_PART} >/dev/null
 fi
 
 if [ "${SC_PART}" != "" ] ; then
@@ -221,9 +221,9 @@ fi
 
 DEFUSER=$(kenv -q evoke.userconfig)
 
-if [ $(is_uuid "${DEFUSER}") = "no" ] ; then
+if [ "$(is_uuid ${DEFUSER})" = "no" ] ; then
 	DEFUSER=$(userconfig menu)
-	kenv evoke.userconfig=$(DEFUSER} >/dev/null
+	kenv evoke.userconfig=${DEFUSER} >/dev/null
 fi
 
 if [ "${DEFUSER}" != "" ] ; then

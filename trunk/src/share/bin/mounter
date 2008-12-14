@@ -124,7 +124,7 @@ echo_config () {
 	fi
 }
 
-mounter_main () {
+mounter () {
 	if [ "${1}" != "" ] ; then
 		# if a : is in the first argument, we treat it as a proto:source, rather then a command
 		if [ "$( echo ${1} | grep :)" != "" ] ; then
@@ -305,10 +305,10 @@ mount_proto () {
 					prep_transport
 					cryptofs_mount
 				;;
-				nullfs)
+				remount)
 					M_PTYPE="REMOUNT"
 					prep_transport
-					nullfs_mount
+					remount_mount
 				;;
 				ipod)
 					M_PTYPE="REMOUNT"
@@ -476,6 +476,26 @@ ipod_mount () {
 	echo_config
 	if [ "${M_STYPE}" = "DIRECTORY" ] ; then
 		IPOD_DIR="${M_FILE}" fusepod ${M_DESTINATION}
+	else
+		mexit 8
+	fi
+}
+
+# remounter wrapper.
+
+remount_mount () {
+	echo_config
+	if [ "${M_STYPE}" = "DIRECTORY" ] ; then
+		if [ -f "${M_FILE}/.cryptofs" ] ; then
+			PROTO=cryptofs
+		else 
+			if [ -f "${M_FILE}/.encfs6.xml" ] ; then
+				PROTO=encfs
+			else
+				PROTO=nullfs
+			fi
+		fi
+		 mounter "${PROTO}:${M_FILE}" ${M_DESTINATION}
 	else
 		mexit 8
 	fi
@@ -728,6 +748,7 @@ list_proto () {
 	}'
 	echo "boot-ufs"
 	echo "swap"
+	echo "remount"
 	echo "entropy"
 	echo "sysconfig"
 	echo "dump"
@@ -804,6 +825,6 @@ mounter_command () {
 		;;
 	esac
 }
-mounter_main $*
+mounter $*
 
 
