@@ -110,6 +110,7 @@ mexit () {
 
 echo_config () {
 	if [ "${DEBUG}" != "" ] ; then
+		echo "options=${OPTIONS}"
 		echo "proto=${M_PROTO}"
 		echo "prototype=${M_PTYPE}"
 		echo "transport=${M_TRANSPORT}"
@@ -450,7 +451,7 @@ nativefs_mount () {
 	echo_config
 	if [ "${M_STYPE}" = "GEOM" ] ; then
 		if [ -c "${DEVICES}/${M_FILE}" ] ; then
-			mount -t ${M_PROTO} ${DEVICES}/${M_FILE} ${M_DESTINATION}
+			rmount -t ${M_PROTO} ${DEVICES}/${M_FILE} ${M_DESTINATION}
 		else
 			mexit 9
 		fi
@@ -464,7 +465,7 @@ nativefs_mount () {
 # XXX helio structure mapping only works for devfs. We mask out the others because of semantic issues.
 
 psuedofs_mount () {
-	mount -t ${M_PROTO} ${M_PROTO} ${M_DESTINATION}
+	rmount -t ${M_PROTO} ${M_PROTO} ${M_DESTINATION}
 	if [ "${M_STYPE}" = "Directory" -a "${M_PROTO}" = "devfs" ] ; then
 		
 	fi
@@ -506,7 +507,7 @@ remount_mount () {
 nullfs_mount () {
 	echo_config
 	if [ "${M_STYPE}" = "DIRECTORY" ] ; then
-		mount -t nullfs "${M_FILE}" ${M_DESTINATION}
+		rmount -t nullfs "${M_FILE}" ${M_DESTINATION}
 	else
 		mexit 8
 	fi
@@ -662,7 +663,7 @@ ntfs_mount () {
 			if [ "$?" != "127" ] ; then
 				ntfs-3g ${DEVICES}/${M_FILE} ${M_DESTINATION}
 			else
-				mount -t ${M_PROTO} ${DEVICES}/${M_FILE} ${M_DESTINATION}
+				rmount -t ${M_PROTO} ${DEVICES}/${M_FILE} ${M_DESTINATION}
 			fi
 		else
 			mexit 9
@@ -678,7 +679,7 @@ buildenv_mount () {
 	if [ "${M_STYPE}" = "GEOM" ] ; then
 		if [ -c "${DEVICES}/${M_FILE}" ] ; then
 			newfs ${DEVICES}/${M_FILE} >/dev/null
-			mount -o acls,noatime ${DEVICES}/${M_FILE} ${M_DESTINATION}
+			rmount ${DEVICES}/${M_FILE} ${M_DESTINATION}
 		else
 			mexit 9
 		fi
@@ -694,6 +695,20 @@ sysconfig_mount () {
 
 }
 
+# Wrapper for the real mount binary. Set default options here 
+
+rmount () {
+	local ROPTIONS="acls,noatime"
+	for option in "${OPTIONS}"
+	do
+		case "${option}" in
+			[rR][eE][aA][dD][oO][nN][lL][yY])
+				ROPTIONS="${ROPTIONS},ro"
+			;;
+		esac
+	done
+	mount -o ${ROPTIONS} $*
+}
 
 unmount_handler () {
 	mount | awk -v MOUNTSPEC=$1 -v DEVICES=${DEVICES} '
