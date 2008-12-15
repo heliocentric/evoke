@@ -50,6 +50,11 @@ list_if () {
    done
 }
 
+mecho () {
+	if [ "${VERBOSE}" = "yes" ] ; then
+		echo $*
+	fi
+}
 case "${1}" in
 	autoboot)
 		MODE="init"		
@@ -66,7 +71,6 @@ export USE_PV=yes
 # Set the OS and ABI environment variables, so we can handle multiple
 # abis/architectures in a neutral way
 
-set
 if [ "${MODE}" = "init" ] ; then
 	export OS=$(uname)
 	case "${OS}" in
@@ -106,7 +110,7 @@ if [ "${MODE}" = "init" ] ; then
 fi
 
 
-echo -n "Merging directories"
+mecho -n "Merging directories"
 
 sh /system/share/bin/merger /system/ /
 
@@ -118,7 +122,7 @@ sh /system/share/bin/merger /system/ /
 
 mount_nullfs -o union,ro /system/share/bin/ /bin/
 export PATH=/bin
-echo ""
+mecho ""
 
 # The fastest root filesystem consistancy check in history.
 # Since the probability that random corruption will cause changes to
@@ -131,25 +135,24 @@ echo ""
 
 if [ "${MODE}" = "init" ] ; then
 
-	for variable in $(kenv | grep ^evoke | cut -d "=" -f 1)
-	do
-		export ${variable}=\"$(kenv -q ${variable})\"
-	done
-
-	echo -n "Verifying root filesystem"
-	ROOTFINGERPRINT=${evoke.fingerprint}
+	export EVOKE_FINGERPRINT="$(kenv -q evoke.fingerprint)"
+	export EVOKE_MOUSED="$(kenv -q evoke.moused)"
+	export EVOKE_USERCONFIG="$(kenv -q evoke.userconfig)"
+	export EVOKE_SYSCONFIG="$(kenv -q evoke.sysconfig)"
+	mecho -n "Verifying root filesystem"
+	ROOTFINGERPRINT=${EVOKE_FINGERPRINT}
 	ROOTDEV=${DEVICES}/$(mount | awk '{ if ($3 == "/") { print $1 } }')
 	if [ "${ROOTFINGERPRINT}" != "" ] ; then
 		if [ "${ROOTFINGERPRINT}" != "$(sha256 -q ${ROOTDEV})" ] ; then
-			echo "[FAILED]"
+			mecho "[FAILED]"
 			reboot
 		fi
 	fi
 	mount -o update,async ${ROOTDEV} /
 
-	echo ""
+	mecho ""
 
-	echo -n "Adding swap, dump,  and entropy"
+	mecho -n "Adding swap, dump,  and entropy"
 
 	for swap in $(mounter list swap)
 	do
@@ -165,11 +168,11 @@ if [ "${MODE}" = "init" ] ; then
 
 	mounter dump:${DUMPDEV}
 
-	echo ""
+	mecho ""
 
 fi
 
-echo -n "Creating /mem"
+mecho -n "Creating /mem"
 
 
 # Memory store
@@ -228,23 +231,24 @@ export N_CURUSER=/mem/curuser
 mkdir -p ${N_CURUSER}
 
 
+mecho ""
 
-SC_PART=${evoke.sysconfig}
+SC_PART=${EVOKE_SYSCONFIG}
 
 if [ "$(is_uuid ${SC_PART})" = "no" ] ; then
 	SC_PART=$(sysconfig menu)
-	export evoke.sysconfig=${SC_PART} >/dev/null
+	export EVOKE_SYSCONFIG=${SC_PART} >/dev/null
 fi
 
 if [ "${SC_PART}" != "" ] ; then
 	sysconfig extract ${SC_PART}
 fi
 
-DEFUSER=${evoke.userconfig}
+DEFUSER=${EVOKE_USERCONFIG}
 
 if [ "$(is_uuid ${DEFUSER})" = "no" ] ; then
 	DEFUSER=$(userconfig menu)
-	export evoke.userconfig=${DEFUSER} >/dev/null
+	export EVOKE_USERCONFIG=${DEFUSER} >/dev/null
 fi
 
 if [ "${DEFUSER}" != "" ] ; then
@@ -253,17 +257,17 @@ fi
 
 
 if [ "${MODE}" = "init" ] ; then
-	echo -n "Starting system daemons"
+	mecho -n "Starting system daemons"
 	# Always start powerd if available, some machines do not have proper heat management
 	# and it can be an issue. 
 	#
 	# Do not remove under penalty of death!
 	powerd >${DEVICES}/null 2>${DEVICES}/null
 	watchdogd -I/mem/pid/watchdogd.pid
-	echo ""
+	mecho ""
 fi
 
-echo -n "Generating passwd files"
+mecho -n "Generating passwd files"
 RPASSWD='$1$1QgK4Xsg$.PInGIAb4c0nznxpRkUPk.'
 
 export HOME=${N_MEMDIR}/home
@@ -280,10 +284,10 @@ echo "/bin/tcsh" >>${N_LIBDIR}/shells
 echo "/bin/csh" >>${N_LIBDIR}/shells
 echo "/bin/sh" >>${N_LIBDIR}/shells
 
-echo ""
+mecho ""
 
 if [ "${MODE}" = "init" ] ; then
-	echo -n "Configuring network"
+	mecho -n "Configuring network"
 	IF="$(kenv -q boot.netif.name)"
 	if [ "${IF}" = "" ] ; then
 		IF="$(list_if | head -n 1)"
@@ -344,8 +348,8 @@ if [ "${MODE}" = "init" ] ; then
 		dhclient ${IF} >${DEVICES}/null 2>/${DEVICES}/null
 	fi
 
-	if [ "${evoke.moused}" != "" ] ; then
-		echo -n "Starting moused"
+	if [ "${EVOKE_MOUSED}" != "" ] ; then
+		mecho -n "Starting moused"
 		cd ${DEVICES}
 		# Auto configure moused (note, it is disabled by default as it does slow 
 		# down the boot a bit.)
@@ -356,7 +360,7 @@ if [ "${MODE}" = "init" ] ; then
 		for ttyv in ${DEVICES}/ttyv* ; do
 			vidcontrol < ${ttyv} -m on
 		done
-		echo ""
+		mecho ""
 	fi
 
 	# syslogd is currently unnecessary, may uncomment later
@@ -412,4 +416,3 @@ fi
 
 cd /
 tcsh
-reboot
