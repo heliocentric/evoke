@@ -36,7 +36,6 @@ else
 	TARGET="${2}"
 fi
 
-set
 if [ -d "${SOURCE}/${OS}-${ABI}/${ARCH}/lib" ] ; then
 	mount_nullfs -o union,ro ${SOURCE}/${OS}-${ABI}/${ARCH}/lib ${TARGET}/lib
 fi

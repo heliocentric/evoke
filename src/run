@@ -128,9 +128,19 @@ run () {
 		fi
 	fi
 	BINDIR=/system/${OS}-${ABI}/${ARCH}/bin	
-	echo PATH=${BINDIR} ${CHROOT} ${DESTINATIONDIR} ${BINDIR}/sh /system/share/bin/systart
+	mount -t devfs devfs ${DESTINATIONDIR}/dev
+	PATH=${BINDIR} ${CHROOT} ${DESTINATIONDIR} ${BINDIR}/sh /system/share/bin/systart
 	cd ${ROOTDIR}
-	mounter umount ${DESTINATIONDIR}
+	umount ${DESTINATIONDIR}/config
+	umount ${DESTINATIONDIR}/config
+	umount ${DESTINATIONDIR}/mem
+	umount ${DESTINATIONDIR}/boot
+	umount ${DESTINATIONDIR}/bin
+	umount ${DESTINATIONDIR}/bin
+	umount ${DESTINATIONDIR}/lib
+	umount ${DESTINATIONDIR}/libexec
+	umount ${DESTINATIONDIR}/dev
+	umount ${DESTINATIONDIR}
 	rm ${FILE}
 	if [ ! -d "${2}" ] ; then
 		rm -r ${DESTINATIONDIR}
