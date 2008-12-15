@@ -73,6 +73,8 @@ case "${OS}" in
 		export ABI="$(sysctl -n kern.osrelease | cut -d . -f 1)"
 		export MACHINE="$(sysctl -n hw.machine)"
 		export ARCH="$(sysctl -n hw.machine_arch)"
+		kldload nullfs 2>${DEVICES}/null >${DEVICES}/null
+		kldload tmpfs 2>${DEVICES}/null >${DEVICES}/null
 		MODEL="$(kenv -q smbios.system.maker)"
 		case "${MODEL}" in
 			EeePC-1234567890)

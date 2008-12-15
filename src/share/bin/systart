@@ -416,3 +416,6 @@ fi
 
 cd /
 tcsh
+if [ "${MODE}" = "init" ] ; then
+	reboot
+fi
