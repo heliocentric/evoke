@@ -110,16 +110,16 @@ run () {
 	fi
 	FILE="${TMPDIR}/$(dd if=/dev/random bs=4m count=1 2>${DEVICES}/null | sha256 -q).fs"
 	gunzip -c ${RELEASE} >${FILE}
-	mounter ufs:${FILE} ${DESTINATIONDIR}
+	OPTIONS="readonly" mounter ufs:${FILE} ${DESTINATIONDIR}
 	CHROOT=$(command -v chroot)
 	cd ${DESTINATIONDIR}
 	BINDIR=/system/${OS}-${ABI}/${ARCH}/bin
 	if [ ! -f "${BINDIR}/sh" ] ; then
 		if [ "${OS}" = "FreeBSD" ] ; then
-			BINDIR=$(for compatabi in $(jot $(( ${ABI} - 1 )) $(( ${ABI} - 1 )) 2)
+			export ABI=$(for compatabi in $(jot $(( ${ABI} - 1 )) $(( ${ABI} - 1 )) 2)
 			do
 				if [ -f "system/${OS}-${compatabi}/${ARCH}/bin/sh" ] ; then
-					echo /system/${OS}-${compatabi}/${ARCH}/bin
+					echo ${compatabi}
 				fi
 			done | head -n 1)
 		else
@@ -127,7 +127,7 @@ run () {
 			exit 4
 		fi
 	fi
-	
+	BINDIR=/system/${OS}-${ABI}/${ARCH}/bin	
 	echo PATH=${BINDIR} ${CHROOT} ${DESTINATIONDIR} ${BINDIR}/sh /system/share/bin/systart
 	cd ${ROOTDIR}
 	mounter umount ${DESTINATIONDIR}

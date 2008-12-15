@@ -65,41 +65,45 @@ export USE_PV=yes
 
 # Set the OS and ABI environment variables, so we can handle multiple
 # abis/architectures in a neutral way
-export OS=$(uname)
-case "${OS}" in
-	OpenBSD)
-		export ABI="$(sysctl -n kern.osrelease)"
-		export MACHINE="$(machine)"
-		export ARCH="$(machine -a)"
-	;;
-	Darwin)
-		export ABI="$(sysctl -n kern.osrelease | cut -d . -f 1)"
-		export MACHINE="$(sysctl -n hw.machine)"
-		if [ "${MACHINE}" != "i386" ] ; then
-			export MACHINE="powerpc"
-		fi
-		export ARCH="${MACHINE}"
-	;;
-	DragonFly)
-		export ABI="$(sysctl -n kern.osrelease | cut -d . -f 1,2)"
-		export MACHINE="$(sysctl -n hw.machine)"
-		export ARCH="$(sysctl -n hw.machine_arch)"
-	;;
-	*)
-		export ABI="$(sysctl -n kern.osrelease | cut -d . -f 1)"
-		export MACHINE="$(sysctl -n hw.machine)"
-		export ARCH="$(sysctl -n hw.machine_arch)"
-		MODEL="$(kenv -q smbios.system.maker)"
-		case "${MODEL}" in
-			EeePC-1234567890)
-				MODEL="EEEPC-$(kenv -q smbios.system.serial)"
-			;;
-			*)
-				MODEL="GENERIC"
-			;;
-		esac
-	;;
-esac
+
+set
+if [ "${MODE}" = "init" ] ; then
+	export OS=$(uname)
+	case "${OS}" in
+		OpenBSD)
+			export ABI="$(sysctl -n kern.osrelease)"
+			export MACHINE="$(machine)"
+			export ARCH="$(machine -a)"
+		;;
+		Darwin)
+			export ABI="$(sysctl -n kern.osrelease | cut -d . -f 1)"
+			export MACHINE="$(sysctl -n hw.machine)"
+			if [ "${MACHINE}" != "i386" ] ; then
+				export MACHINE="powerpc"
+			fi
+			export ARCH="${MACHINE}"
+		;;
+		DragonFly)
+			export ABI="$(sysctl -n kern.osrelease | cut -d . -f 1,2)"
+			export MACHINE="$(sysctl -n hw.machine)"
+			export ARCH="$(sysctl -n hw.machine_arch)"
+		;;
+		*)
+			export ABI="$(sysctl -n kern.osrelease | cut -d . -f 1)"
+			export MACHINE="$(sysctl -n hw.machine)"
+			export ARCH="$(sysctl -n hw.machine_arch)"
+			MODEL="$(kenv -q smbios.system.maker)"
+			case "${MODEL}" in
+				EeePC-1234567890)
+					MODEL="EEEPC-$(kenv -q smbios.system.serial)"
+				;;
+				*)
+					MODEL="GENERIC"
+				;;
+			esac
+		;;
+	esac
+fi
 
 
 echo -n "Merging directories"
