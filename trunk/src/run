@@ -46,18 +46,94 @@ if [ ! -d "${RELEASEDIR}" ] ; then
 	RELEASEDIR=/releases
 fi
 
+# Set the OS and ABI environment variables, so we can handle multiple
+# abis/architectures in a neutral way
+export OS=$(uname)
+
+case "${OS}" in
+	OpenBSD)
+		export ABI="$(sysctl -n kern.osrelease)"
+		export MACHINE="$(machine)"
+		export ARCH="$(machine -a)"
+	;;
+	Darwin)
+		export ABI="$(sysctl -n kern.osrelease | cut -d . -f 1)"
+		export MACHINE="$(sysctl -n hw.machine)"
+		if [ "${MACHINE}" != "i386" ] ; then
+			export MACHINE="powerpc"
+		fi
+		export ARCH="${MACHINE}"
+	;;
+	DragonFly)
+		export ABI="$(sysctl -n kern.osrelease | cut -d . -f 1,2)"
+		export MACHINE="$(sysctl -n hw.machine)"
+		export ARCH="$(sysctl -n hw.machine_arch)"
+	;;
+	*)
+		export ABI="$(sysctl -n kern.osrelease | cut -d . -f 1)"
+		export MACHINE="$(sysctl -n hw.machine)"
+		export ARCH="$(sysctl -n hw.machine_arch)"
+		MODEL="$(kenv -q smbios.system.maker)"
+		case "${MODEL}" in
+			EeePC-1234567890)
+				MODEL="EEEPC-$(kenv -q smbios.system.serial)"
+			;;
+			*)
+				MODEL="GENERIC"
+			;;
+		esac
+	;;
+esac
 
 usage () {
 	cat << EOF
 usage: run version [directory]
 
 EOF
-exit
+	exit 2
 }
 
 run () {
 	if [ "${1}" = "" ] ; then
-			usage
+		usage
+	fi
+	if [ -d "${2}" ] ; then
+		DESTINATIONDIR=${2}
+	else
+		DESTINATIONDIR="${TMPDIR}/destdir/$(dd if=/dev/random bs=4m count=1 2>${DEVICES}/null | sha256 -q)"
+		mkdir -p ${DESTINATIONDIR}
+	fi
+
+	RELEASE=${RELEASEDIR}/evoke/${1}/product/evoke.fs.gz
+	if [ "$(file -ib ${RELEASE})" != "application/x-gzip" ] ; then
+		exit 3
+	fi
+	FILE="${TMPDIR}/$(dd if=/dev/random bs=4m count=1 2>${DEVICES}/null | sha256 -q).fs"
+	gunzip -c ${RELEASE} >${FILE}
+	mounter ufs:${FILE} ${DESTINATIONDIR}
+	CHROOT=$(command -v chroot)
+	cd ${DESTINATIONDIR}
+	BINDIR=/system/${OS}-${ABI}/${ARCH}/bin
+	if [ ! -f "${BINDIR}/sh" ] ; then
+		if [ "${OS}" = "FreeBSD" ] ; then
+			BINDIR=$(for compatabi in $(jot $(( ${ABI} - 1 )) $(( ${ABI} - 1 )) 2)
+			do
+				if [ -f "system/${OS}-${compatabi}/${ARCH}/bin/sh" ] ; then
+					echo /system/${OS}-${compatabi}/${ARCH}/bin
+				fi
+			done | head -n 1)
+		else
+			tcsh
+			exit 4
+		fi
+	fi
+	
+	echo PATH=${BINDIR} ${CHROOT} ${DESTINATIONDIR} ${BINDIR}/sh /system/share/bin/systart
+	cd ${ROOTDIR}
+	mounter umount ${DESTINATIONDIR}
+	rm ${FILE}
+	if [ ! -d "${2}" ] ; then
+		rm -r ${DESTINATIONDIR}
 	fi
 }
 
