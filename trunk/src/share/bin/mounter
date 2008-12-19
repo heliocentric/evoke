@@ -311,6 +311,11 @@ mount_proto () {
 					prep_transport
 					remount_mount
 				;;
+				nullfs)
+					M_PTYPE="REMOUNT"
+					prep_transport
+					nullfs_mount
+				;;
 				ipod)
 					M_PTYPE="REMOUNT"
 					prep_transport

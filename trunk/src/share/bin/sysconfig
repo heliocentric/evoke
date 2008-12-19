@@ -226,7 +226,7 @@ sysconfig () {
 		[lL][iI][sS][tT])
 			PARTLIST=$(mounter list sysconfig)
 			if [ ! "${PARTLIST}" = "" ] ; then
-				for i in "${PARTLIST}"
+				for i in ${PARTLIST}
 				do
 					TYPE=$(stat -f "%HT" "${DEVICES}/${i}")
 					case "${TYPE}" in
