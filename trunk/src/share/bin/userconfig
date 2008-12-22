@@ -59,6 +59,7 @@ Commands:
   login		-- Login as the user specified.
   list		-- List the users in the sysconfig directory.
   menu		-- Display a pretty menu for choosing the user.
+  logout	-- Logout.
 
 EOF
 
@@ -157,6 +158,9 @@ userconfig () {
 		;;
 		[lL][oO][gG][iI][nN])
 			login ${2}
+		;;
+		[lL][oO][gG][oO][uU][tT])
+			mounter umount ${2}
 		;;
 		[lL][iI][sS][tT])
 			if [ -f "${N_SYSCFG}/userlist" ] ; then

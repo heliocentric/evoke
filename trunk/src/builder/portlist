@@ -3,6 +3,8 @@ B:curlftpfs:sysutils/fusefs-curlftpfs:
 B:ntfs-3g:sysutils/fusefs-ntfs:
 B:mount_fusefs:sysutils/fusefs-kmod:
 B:wdfs:sysutils/fusefs-wdfs:
+B:encfs:sysutils/fusefs-encfs:
+B:cryptofs:sysutils/fusefs-cryptofs:
 B:sshfs:sysutils/fusefs-sshfs:
 B:cryptofs:sysutils/fusefs-sshfs:
 B:pv:sysutils/pv:

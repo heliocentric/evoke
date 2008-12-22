@@ -132,7 +132,7 @@ mounter () {
 
 			M_PROTO="$(echo "${1}" | cut -d : -f 1)"
 			M_SOURCE="$(echo "${1}" | cut -d : -f 2-60)"
-
+			echo_config
 
 			# If it's in the form proto+transport, set M_TRANSPORT first, then M_PROTO to the 'real' protocol.
 			
