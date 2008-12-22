@@ -63,7 +63,7 @@ export ROOTDIR=`pwd`
 # Overridable options
 
 if [ "${TMPDIR}" = "" ] ; then
-	export TMPDIR="/usr/obj"
+	export TMPDIR="${ROOTDIR}/obj/tmp"
 fi
 if [ "${NDISTDIR}" = "" ] ; then
 	export NDISTDIR="${ROOTDIR}/dists"

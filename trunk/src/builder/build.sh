@@ -159,12 +159,7 @@ do
 
 	# We use TMPDIR so that it can be different then the OBJDIR, as TMPDIR is write heavy.
 	export MAKEOBJDIRPREFIX=${TMPDIR}/${TARGET_HASH}
-
-	echo -n " * ${target} = Cleaning up"
-	if [ "${NO_CLEAN}" = "" ] ; then
-		rm -rf ${MAKEOBJDIRPREFIX} 
-	fi
-	echo ""
+	mkdir -p ${MAKEOBJDIRPREFIX}
 
 
 	# This copies nsrc to src/, to compile our own code. For some reason does not work, but non-critical.
