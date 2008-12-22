@@ -416,6 +416,17 @@ fi
 
 cd /
 tcsh
+userconfig logout ${N_CURUSER}
+mounter umount /config
+mounter umount /config
+mounter umount /mem
+mounter umount /boot
+mounter umount /bin
+mounter umount /bin
+mounter umount /lib
+mounter umount /libexec
+
+
 if [ "${MODE}" = "init" ] ; then
 	reboot
 fi
