@@ -83,7 +83,8 @@ if [ "${BUILD_PORTS}" != "" ] ; then
 
 	# sharing files.
 	mount_nullfs -o ro /usr/ports ${DESTDIR}/usr/ports
-	mount_nullfs ${OBJDIR}/portsdists ${DESTDIR}/usr/ports/distfiles
+	mkdir -p ${NDISTDIR}/ports
+	mount_nullfs ${NDISTDIR}/ports ${DESTDIR}/usr/ports/distfiles
 
 	# Only for i386 on amd64 building, which doesn't currently work anyway. Still.
 	if [ "$(uname -p)" = "amd64" ] ; then
