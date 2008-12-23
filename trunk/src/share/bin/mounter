@@ -683,7 +683,7 @@ buildenv_mount () {
 	echo_config
 	if [ "${M_STYPE}" = "GEOM" ] ; then
 		if [ -c "${DEVICES}/${M_FILE}" ] ; then
-			newfs ${DEVICES}/${M_FILE} >/dev/null
+			newfs ${DEVICES}/${M_FILE} >&2
 			rmount ${DEVICES}/${M_FILE} ${M_DESTINATION}
 		else
 			mexit 9
