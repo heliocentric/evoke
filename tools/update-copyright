@@ -23,18 +23,46 @@
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+
 # $Id$
 
-export TARGETS="7.0-RC1/i386 6.3-RC1/i386"
-export VERSION="0.1P1"
-echo -n " * share = Cleaning up"
-export ROOTDIR=`pwd`
-export OBJDIR=${ROOTDIR}/obj
-chflags -R noschg ${OBJDIR} 2>/dev/null
-rm -r ${OBJDIR} 2>/dev/null
-mkdir -p ${OBJDIR}
-export BUILDDIR=${ROOTDIR}/builder
+replace_copyright() {
+	sed -i .bak "\/Copyright/ s/${OLDDATE}/${NEWDATE}/g" ${1}
+	rm ${1}.bak
+}
+copyright_loop () {
+	if [ "${1}" = "" ] ; then
+		exit 3
+	fi
+	OLDDATE=${1}
+	shift
 
-echo "						[DONE]"
+	if [ "${1}" = "" ] ; then
+		exit 3
+	fi
+	NEWDATE=${1}
+	shift
 
-${BUILDDIR}/build.sh ${1}
+	while [ "${1}" != "" ]
+	do
+		local STAT_DEV="$(stat -f %d ${1})"
+		local STAT_TYPE="$(stat -f %HT ${1})"
+		case "${STAT_TYPE}" in
+			Directory)
+				for entry in $(ls -a "${1}")
+				do
+					echo "${entry}"
+					if [ "${entry}" != "." -a "${entry}" != ".." -a "${entry}" != ".svn" ] ; then
+						copyright_loop "${OLDDATE}" "${NEWDATE}" "${1}/${entry}"
+					fi
+				done
+			;;
+			Regular*)
+				replace_copyright "${1}"
+			;;
+		esac
+		shift
+	done
+}
+
+copyright_loop $@
