@@ -65,11 +65,11 @@ main_installer () {
 		read -p "Choice: " CHOICE
 		case "${CHOICE}" in
 			2)
-				bsd_chooser
+				evoke_chooser
 				evoke_installer
 			;;
 			1)
-				bsd_chooser
+				freebsd_chooser
 				freebsd_installer
 			;;
 			[qQ])
@@ -81,7 +81,7 @@ main_installer () {
 
 # FreeBSD based distribution destination chooser.
 
-bsd_chooser() {
+freebsd_chooser() {
 	echo ""
 	echo -n "Partition Disks? [yN]: "
 	read ANSWER
@@ -97,26 +97,63 @@ bsd_chooser() {
 	mounter ufs:${ROOTFS} ${DESTDIR}
 }
 
+# Evoke Chooser
+
+evoke_chooser() {
+	echo ""
+	echo -n "Partition Disks? [yN]: "
+	read ANSWER
+	case "${ANSWER}" in
+		[yY])
+			partdisk evoke
+		;;
+	esac
+	if [ "${ROOTFS}" = "" ] ; then
+		clear
+		ROOTFS=$(menu "Choose Root Filesystem" "mounter list boot-ufs")
+	fi
+	if [ "${EVOKE_SYSCONFIG}" = "" ] ; then
+		clear
+		EVOKE_SYSCONFIG=$(sysconfig menu)
+	fi
+	mounter ufs:${ROOTFS} ${DESTDIR}
+}
+
 # Disk partitioning function
 partdisk() {
 	RESULT=$(menu "Choose Disk" "mounter list disk")
 	echo -n "Do you want to use the entire disk? [yN]"
 	read ANSWER
-	case "${ANSWER}" in
-		[yY])
-			dd if=/dev/zero bs=4m count=1 of=${DEVICES}/${RESULT} 2>${DEVICES}/null
-			fdisk -IB ${DEVICES}/${RESULT}
-			bsdlabel -wB ${DEVICES}/${RESULT}s1
-			bsdlabel -e ${DEVICES}/${RESULT}s1
-			if [ -c "${DEVICES}/${RESULT}s1a" ] ; then
-				ROOTHASH=$(dd if=/dev/random bs=4m count=1 2>${DEVICES}/null | md5 -q | cut -b 1-31)
-				ROOTFS="${RESULT}s1a"
-			fi
-			newfs -L ${ROOTHASH} ${DEVICES}/${ROOTFS}
-		;;
-		[nN])
-			echo "Not currently Implemented"
-		;;
+	case "${1}" in
+		evoke)
+			case "${ANSWER}" in
+				[yY])
+					dd if=/dev/zero bs=4m count=1 of=${DEVICES}/${RESULT} 2>${DEVICES}/null
+					fdisk -IB ${DEVICES}/${RESULT}
+					bsdlabel -wB ${DEVICES}/${RESULT}s1
+				;;
+				[nN])
+					echo "Not currently Implemented"	
+				;;
+		break;
+		freebsd)
+			case "${ANSWER}" in
+				[yY])
+					dd if=/dev/zero bs=4m count=1 of=${DEVICES}/${RESULT} 2>${DEVICES}/null
+					fdisk -IB ${DEVICES}/${RESULT}
+					bsdlabel -wB ${DEVICES}/${RESULT}s1
+					bsdlabel -e ${DEVICES}/${RESULT}s1
+					if [ -c "${DEVICES}/${RESULT}s1a" ] ; then
+						ROOTHASH=$(dd if=/dev/random bs=4m count=1 2>${DEVICES}/null | md5 -q | cut -b 1-31)
+						ROOTFS="${RESULT}s1a"
+					fi
+					newfs -L ${ROOTHASH} ${DEVICES}/${ROOTFS}
+				;;
+				[nN])
+					echo "Not currently Implemented"	
+				;;
+			esac
+		break;
 	esac
 }
 
