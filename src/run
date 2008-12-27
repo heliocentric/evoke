@@ -116,11 +116,11 @@ run () {
 	CHROOT=$(command -v chroot)
 	BINDIR=/system/${OS}-${ABI}/${ARCH}/bin
 	cd ${DESTINATIONDIR}
-	if [ ! -f "${BINDIR}/sh" ] ; then
+	if [ ! -f "${DESTINATIONDIR}${BINDIR}/sh" ] ; then
 		if [ "${OS}" = "FreeBSD" ] ; then
 			export ABI=$(for compatabi in $(jot $(( ${ABI} - 1 )) $(( ${ABI} - 1 )) 2)
 			do
-				if [ -f "system/${OS}-${compatabi}/${ARCH}/bin/sh" ] ; then
+				if [ -f "${DESTINATIONDIR}/system/${OS}-${compatabi}/${ARCH}/bin/sh" ] ; then
 					echo ${compatabi}
 				fi
 			done | head -n 1)

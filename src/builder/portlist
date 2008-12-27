@@ -17,5 +17,5 @@ B:vac:devel/plan9port:
 B:vacfs:devel/plan9port:
 B:vcat:devel/plan9port:
 B:unvac:devel/plan9port:
-#B:Xorg:x11/xorg:
+B:Xorg:x11/xorg:
 B:uuid:misc/ossp-uuid:
