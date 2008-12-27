@@ -57,7 +57,7 @@ main_installer () {
 		echo "-----------------------------"
 		echo ""
 		echo " 1) Install FreeBSD"
-		echo " 2) Install DamnSmallBSD "
+		echo " 2) Install Evoke "
 		echo " a) Activater"
 		echo " q) Exit "
 		echo ""
@@ -79,7 +79,7 @@ main_installer () {
 	done
 }
 
-# (Free|DamnSmall)BSD destination chooser.
+# FreeBSD based distribution destination chooser.
 
 bsd_chooser() {
 	echo ""
