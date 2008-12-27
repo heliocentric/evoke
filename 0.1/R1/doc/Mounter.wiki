@@ -1,0 +1,34 @@
+#summary Wrapper for kernel specific mount apis
+#labels Commands
+
+`mounter unmount directory`
+
+`mounter list [ proto | fs | <fsname> ]`
+
+`mounter proto://username:password@hostname:port/directory directory`
+
+`mounter proto://username:password@1.2.3.4:port/directory directory`
+
+`mounter proto://username:password@[08fe::24e5:2319:1]:port/directory directory`
+
+`mounter proto:/directory/file directory`
+
+`mounter proto:geom directory`
+
+== Description ==
+
+A one paragraph short description of the command.
+
+== Feature List ==
+
+ * Feature A
+ * Feature B
+
+== Required Files ==
+
+ * Path where the file is - port it is in and/or base
+    Long Description
+
+== Implementation ==
+
+Implementation Notes
