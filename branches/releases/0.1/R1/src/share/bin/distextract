@@ -1,0 +1,85 @@
+#!/bin/sh
+# Copyright 2007-2008 Dylan Cochran
+# All rights reserved
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted providing that the following conditions 
+# are met:
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+# IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
+# DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+# STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
+# IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
+# $Id$
+
+
+if [ -d "${DESTDIR}" ] ; then
+	if [ "${DISTS}" = "" ] ; then
+		exit 2
+	fi
+	if [ "${SRCDIR}" = "" ] ; then 
+		exit 3
+		if [ -d "${SRCDIR}" ] ; then
+
+		else
+			exit 4
+		fi
+	fi
+	cd ${SRCDIR}
+	for distset in ${DISTS}
+	do
+		if [ -d "${SRCDIR}/${distset}" ] ; then
+			cd ${SRCDIR}/${distset}
+			# src and kernels both have multiple sets in a directory; luckily, since they are cat'd, they all have a .aa with the name.
+			for dist in *.aa
+			do
+				distfile=$(echo ${dist} | cut -d \. -f 1)
+				# Dists are extracted to different places depending upon the set, so handle them here.
+				case "${distset}" in
+					src)
+						DESTINATION=${DESTDIR}/usr/src
+					;;
+					kernels)
+						DESTINATION=${DESTDIR}/boot
+					;;
+					*)
+						DESTINATION=${DESTDIR}/
+					;;
+				esac
+				mkdir -p ${DESTINATION}
+				if [ "${EXCLUDES}" = "" ] ; then
+					if [ "${USE_PV}" != "" ] ; then
+						pv ${distfile}.?? -N ${distfile} | gunzip | tar -xpf - -C ${DESTINATION}
+					else
+						echo "Extracting ${distfile}"
+						cat ${distfile}.?? | gunzip | tar -xpvf - -C ${DESTINATION}
+					fi
+				else
+					if [ "${USE_PV}" != "" ] ; then
+						pv ${distfile}.?? -N ${distfile} | gunzip | tar -xpf - --exclude "${EXCLUDES}" -C ${DESTINATION}
+					else
+						echo "Extracting ${distfile}"
+						cat ${distfile}.?? | gunzip | tar -xpvf - --exclude "${EXCLUDES}" -C ${DESTINATION}
+					fi
+				fi
+			done
+		else
+			exit 5
+		fi
+	done
+else
+	exit 1
+fi

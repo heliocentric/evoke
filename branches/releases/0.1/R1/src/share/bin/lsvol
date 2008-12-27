@@ -1,0 +1,137 @@
+#!/bin/sh
+# Copyright 2007-2008 Dylan Cochran
+# All rights reserved
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted providing that the following conditions
+# are met:
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+# IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
+# DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+# STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
+# IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
+
+# $Id$
+sysctl -b kern.geom.conftxt | \
+awk '{
+	if ($2 == "DISK") {
+		if ($3 ~ /cd/) {
+			print "cd9660:"$3;
+		}
+		else {
+			if ($3 ~ /fd/) {
+				print "floppy:"$3;
+			}
+			else {
+				print "disk:"$3;
+			}
+		}
+	}
+	if ($2 == "PART") {
+		# FreeBSD defined values.
+
+		if ($11 == "freebsd-ufs") {
+			print "ufs:"$3;
+		}
+		if ($11 == "freebsd-swap") {
+			print "swap:"$3;
+		}
+
+		# Our usage values.
+		if ($11 == "!4b4cf826-e53e-4b56-86b6-0f9b728e0436") {
+			print "sysconfig:"$3;
+		}
+		if ($11 == "!fa8e2f44-6728-490a-89ae-a8e286be45af") {
+			print "dump:"$3;
+		}
+		if ($11 == "!ac4b7c4a-9c4c-4687-b55f-f51a731d36d2") {
+			print "entropy:"$3;
+		}
+		if ($11 == "!72717d60-1a4b-43e2-bca3-4418bc0669ee") {
+			print "buildenv:"$3;
+		}
+		if ($11 == "!0b79a13e-87f2-4238-a86d-d00bd1fce04e") {
+			print "object:"$3;
+		}
+		if ($11 == "!12f31621-10a0-4a3c-a0e8-9406c2e485f0") {
+			print "boot-ufs:"$3;
+			print "ufs:"$3;
+		}
+	}
+	if ($2 == "BSD") {
+		if ($11 == "7") {
+			if ($3 ~ /a$/) { 
+				print "boot-ufs:"$3;
+			}
+			print "ufs:"$3;
+
+		}
+		if ($11 == "8") {
+			print "msdosfs:"$3;
+		}
+		if ($11 == "1") {
+			print "swap:"$3;
+		}
+		if ($11 == "12") {
+			print "cd9660:"$3;
+		}
+		if ($11 == "17") {
+			print "ext2fs:"$3;
+		}
+		if ($11 == "18") {
+			print "ntfs:"$3;
+		}
+		if ($11 == "24") {
+			print "udf:"$3;
+		}
+		if ($11 == "27") {
+			print "zfs:"$3;
+		}
+		if ($11 == "28") {
+			print "sysconfig:"$3;
+		}
+	}
+	else if ($2 == "MBR") {
+		if ($11 == "4") {
+			print "boot-msdosfs:"$3;
+			print "msdosfs:"$3;
+		}
+		else if ($11 == "6") {
+			print "boot-msdosfs:"$3;
+			print "msdosfs:"$3;
+		} 
+		else if ($11 == "130") {
+			print "swap:"$3;
+		} 
+		else if ($11 == "131") {
+			print "linux:"$3;
+		} 
+		else if ($11 == "11") {
+			print "boot-msdosfs:"$3;
+			print "msdosfs:"$3;
+		} 
+		else if ($11 == "14") {
+			print "boot-msdosfs:"$3;
+			print "msdosfs:"$3;
+		} 
+		else if ($11 == "7") {
+			print "ntfs:"$3;
+		} 
+	}
+}'
+if [ "${URLS}" != "" ] ; then
+	echo "${URLS}"
+fi
