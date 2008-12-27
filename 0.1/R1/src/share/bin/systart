@@ -1,0 +1,423 @@
+#!/bin/sh
+# Copyright 2007-2008 Dylan Cochran
+# All rights reserved
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted providing that the following conditions
+# are met:
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+# IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
+# DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+# STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
+# IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
+# $Id$
+
+list_if () {
+   for i in `ifconfig -l`
+   do
+               case ${i} in
+                        lo*)
+                       ;;
+                        plip*)
+                       ;;
+                        slip*)
+                       ;;
+                        fw*)
+                       ;;
+                        ppp*)
+                       ;;
+			net*)
+		       ;;
+			pf*)
+			;;
+                       *)
+				echo ${i}
+                       ;;
+               esac
+   done
+}
+
+mecho () {
+	if [ "${VERBOSE}" != "no" ] ; then
+		echo $*
+	fi
+}
+case "${1}" in
+	autoboot)
+		MODE="init"		
+		export TERM=cons25
+		export DISPLAY=:-0
+	;;
+esac
+
+umask 077
+export DEVICES=/dev
+export EDITOR=nano
+export USE_PV=yes
+
+# Set the OS and ABI environment variables, so we can handle multiple
+# abis/architectures in a neutral way
+
+if [ "${MODE}" = "init" ] ; then
+	export OS=$(uname)
+	case "${OS}" in
+		OpenBSD)
+			export ABI="$(sysctl -n kern.osrelease)"
+			export MACHINE="$(machine)"
+			export ARCH="$(machine -a)"
+		;;
+		Darwin)
+			export ABI="$(sysctl -n kern.osrelease | cut -d . -f 1)"
+			export MACHINE="$(sysctl -n hw.machine)"
+			if [ "${MACHINE}" != "i386" ] ; then
+				export MACHINE="powerpc"
+			fi
+			export ARCH="${MACHINE}"
+		;;
+		DragonFly)
+			export ABI="$(sysctl -n kern.osrelease | cut -d . -f 1,2)"
+			export MACHINE="$(sysctl -n hw.machine)"
+			export ARCH="$(sysctl -n hw.machine_arch)"
+		;;
+		*)
+			export ABI="$(sysctl -n kern.osrelease | cut -d . -f 1)"
+			export MACHINE="$(sysctl -n hw.machine)"
+			export ARCH="$(sysctl -n hw.machine_arch)"
+			MODEL="$(kenv -q smbios.system.maker)"
+			case "${MODEL}" in
+				EeePC-1234567890)
+					MODEL="EEEPC-$(kenv -q smbios.system.serial)"
+				;;
+				*)
+					MODEL="GENERIC"
+				;;
+			esac
+		;;
+	esac
+fi
+
+
+mecho -n "Merging directories"
+
+sh /system/share/bin/merger /system/ /
+
+# This is the cutoff point, everything after this can be dynamically linked, 
+# and everything before it, HAS to be statically linked. No exceptions.
+#
+# merger is what mounts /libexec and /lib so we have a proper dynamic 
+# linker and basic libraries.
+
+mount_nullfs -o union,ro /system/share/bin/ /bin/
+export PATH=/bin
+mecho ""
+
+# The fastest root filesystem consistancy check in history.
+# Since the probability that random corruption will cause changes to
+# both the disk, and the fingerprint on that sector to match it exactly
+# is so high, we can assume that if the fingerprint matches the
+# output of sha256 of the device node, that the root filesystem is sane.
+#
+# If not, we reboot forever, as there is nothing else we can really do
+# at this point.
+
+if [ "${MODE}" = "init" ] ; then
+
+	export EVOKE_FINGERPRINT="$(kenv -q evoke.fingerprint)"
+	export EVOKE_MOUSED="$(kenv -q evoke.moused)"
+	export EVOKE_USERCONFIG="$(kenv -q evoke.userconfig)"
+	export EVOKE_SYSCONFIG="$(kenv -q evoke.sysconfig)"
+	mecho -n "Verifying root filesystem"
+	ROOTFINGERPRINT=${EVOKE_FINGERPRINT}
+	ROOTDEV=${DEVICES}/$(mount | awk '{ if ($3 == "/") { print $1 } }')
+	if [ "${ROOTFINGERPRINT}" != "" ] ; then
+		if [ "${ROOTFINGERPRINT}" != "$(sha256 -q ${ROOTDEV})" ] ; then
+			mecho "[FAILED]"
+			reboot
+		fi
+	fi
+	mount -o update,async ${ROOTDEV} /
+
+	mecho ""
+
+	mecho -n "Adding swap, dump,  and entropy"
+
+	for swap in $(mounter list swap)
+	do
+		mounter swap:${swap} enc
+	done
+
+	for entropy in $(mounter list entropy)
+	do
+		mounter entropy:${entropy}
+	done
+
+	DUMPDEV=$(mounter list dump | awk '{ print $1 }')
+
+	mounter dump:${DUMPDEV}
+
+	mecho ""
+
+fi
+
+mecho -n "Creating /mem"
+
+
+# Memory store
+export N_MEMDIR=/mem
+
+# If we are running 7 or higher releases, use tmpfs, everything else,
+# create a large ramdisk.
+
+if [ "${OS}" = "FreeBSD" ] ; then
+	if [ "${ABI}" -ge "7" ] ; then
+		mount -t tmpfs tmpfs ${N_MEMDIR}
+	else
+		mdmfs -s60m md ${N_MEMDIR}
+	fi
+fi
+
+# 'Running' files. mainly lockfiles
+export N_RUNDIR=${N_MEMDIR}/run
+mkdir -p ${N_RUNDIR}
+
+# PID files, format is logicalname.pid
+export N_PIDDIR=${N_MEMDIR}/pid
+mkdir -p ${N_PIDDIR}
+
+# DB files, mostly storage of leases, etc.
+export N_DBDIR=${N_MEMDIR}/db
+mkdir -p ${N_DBDIR}
+
+# Temporary mountpoint, ie, /mnt.
+export N_MNTDIR=${N_MEMDIR}/mnt
+mkdir -p ${N_MNTDIR}
+
+# Empty directory
+export N_NULLDIR=${N_MEMDIR}/empty
+mkdir -p ${N_NULLDIR}
+
+# Scratch directory
+export TMPDIR=${N_MEMDIR}/scratch
+mkdir -p ${TMPDIR}
+chmod 777 ${TMPDIR}
+chmod +t ${TMPDIR}
+
+# Lib Dir (ie, automagically generated config files.)
+
+export N_LIBDIR=${N_MEMDIR}/lib
+mkdir -p ${N_LIBDIR}
+
+mount_nullfs -o union,ro /system/share/lib/ /config/
+mount_nullfs -o union,ro /mem/lib/ /config/
+export N_CFGDIR=/config
+
+export N_SYSCFG=/mem/sysconfig
+mkdir -p ${N_SYSCFG}
+
+export N_CURUSER=/mem/curuser
+mkdir -p ${N_CURUSER}
+
+
+mecho ""
+
+SC_PART=${EVOKE_SYSCONFIG}
+
+if [ "$(is_uuid ${SC_PART})" = "no" ] ; then
+	SC_PART=$(sysconfig menu)
+	export EVOKE_SYSCONFIG=${SC_PART} >/dev/null
+fi
+
+if [ "${SC_PART}" != "" ] ; then
+	sysconfig extract ${SC_PART}
+fi
+
+DEFUSER=${EVOKE_USERCONFIG}
+
+if [ "$(is_uuid ${DEFUSER})" = "no" ] ; then
+	DEFUSER=$(userconfig menu)
+	export EVOKE_USERCONFIG=${DEFUSER} >/dev/null
+fi
+
+if [ "${DEFUSER}" != "" ] ; then
+	userconfig login ${DEFUSER}
+fi
+
+
+if [ "${MODE}" = "init" ] ; then
+	mecho -n "Starting system daemons"
+	# Always start powerd if available, some machines do not have proper heat management
+	# and it can be an issue. 
+	#
+	# Do not remove under penalty of death!
+	powerd >${DEVICES}/null 2>${DEVICES}/null
+	watchdogd -I/mem/pid/watchdogd.pid
+	mecho ""
+fi
+
+mecho -n "Generating passwd files"
+RPASSWD='$1$1QgK4Xsg$.PInGIAb4c0nznxpRkUPk.'
+
+export HOME=${N_MEMDIR}/home
+mkdir -p ${HOME}
+
+echo "root:${RPASSWD}:0:0::0:0:Super-User:${HOME}:/bin/tcsh" >>${N_LIBDIR}/master.passwd
+echo "nobody:NOTREALPASSWORD:1:1::0:0:nobody:${N_NULLDIR}:${DEVICES}/null" >>${N_LIBDIR}/master.passwd
+echo "wheel:*:0:" >>${N_LIBDIR}/group
+echo "operator:*:5:" >>${N_LIBDIR}/group
+
+pwd_mkdb -i -p -d ${N_LIBDIR} ${N_LIBDIR}/master.passwd 2>${DEVICES}/null
+cap_mkdb -f ${N_LIBDIR}/login.conf.db ${N_CFGDIR}/login.conf
+echo "/bin/tcsh" >>${N_LIBDIR}/shells
+echo "/bin/csh" >>${N_LIBDIR}/shells
+echo "/bin/sh" >>${N_LIBDIR}/shells
+
+mecho ""
+
+if [ "${MODE}" = "init" ] ; then
+	mecho -n "Configuring network"
+	IF="$(kenv -q boot.netif.name)"
+	if [ "${IF}" = "" ] ; then
+		IF="$(list_if | head -n 1)"
+	fi
+
+	# This is /needed/, else some programs will just not work, as they need
+	# some ip available.
+
+	ifconfig lo0 inet 127.0.0.1 netmask 255.255.255.255
+	ifconfig lo0 up
+
+	# Grab the ip, netmask, and gateway from kenv so pxebooting doesn't need
+	# an extra dhcp request. For robustness.
+
+	IP="$(kenv -q boot.netif.ip)"
+	NETMASK="$(kenv -q boot.netif.netmask)"
+	GATEWAY="$(kenv -q boot.netif.gateway)"
+
+	# Unfortunately, doesn't exist yet. Yay! Add it here as a reminder that
+	# I should request it.
+
+	DNS="$(kenv -q boot.netif.dns)"
+	sysctl net.inet6.ip6.accept_rtadv=1 >/${DEVICES}/null
+
+	INTERFACES=$(list_if)
+	#for network in ${INTERFACES}
+	#do
+	#	BRIDGEIF=$(ifconfig bridge create)
+	#	NETNAME=net$(echo ${BRIDGEIF} | cut -c 7-100)
+	#	NICLINK=$(ifconfig ${network} | grep ether | awk ' { print $2 }')
+	#	BRIDGELINK=$(ifconfig ${BRIDGEIF} | grep ether | awk ' { print $2 }')
+	#	ifconfig ${network} lladdr ${BRIDGELINK}
+	#	ifconfig ${BRIDGEIF} lladdr ${NICLINK}
+	#	ifconfig ${network} up
+	#	ifconfig ${BRIDGEIF} addm ${network} stp ${network} up
+	#	ifconfig ${BRIDGEIF} name ${NETNAME}
+	#	if [ "${network}" = "${IF}" ] ; then
+	#		IF=${NETNAME}
+	#	fi
+	#	rtsol ${network}
+	#done
+	sysctl net.inet6.ip6.accept_rtadv=0 >${DEVICES}/null
+
+	if [ "${IP}" != "" -a "${NETMASK}" != "" -a "${GATEWAY}" != "" ] ; then
+		ifconfig ${IF} inet ${IP} netmask ${NETMASK}
+		route add default ${GATEWAY} 2>${DEVICES}/null >${DEVICES}/null
+	
+		if [ "${DNS}" = "" ] ; then
+			echo "nameserver ${GATEWAY}" >/mem/lib/resolv.conf
+		else
+			echo "nameserver ${DNS}" >/mem/lib/resolv.conf
+		fi
+
+	else
+
+	# If /anything/ is missing, dhclient it. Where else are we going to get it from?
+
+		dhclient ${IF} >${DEVICES}/null 2>/${DEVICES}/null
+	fi
+
+	if [ "${EVOKE_MOUSED}" != "" ] ; then
+		mecho -n "Starting moused"
+		cd ${DEVICES}
+		# Auto configure moused (note, it is disabled by default as it does slow 
+		# down the boot a bit.)
+		for i in ums* psm*
+		do
+			moused -p ${DEVICES}/${i} -3 -I ${N_PIDDIR}/${i}.pid 2>${DEVICES}/null
+		done
+		for ttyv in ${DEVICES}/ttyv* ; do
+			vidcontrol < ${ttyv} -m on
+		done
+		mecho ""
+	fi
+
+	# syslogd is currently unnecessary, may uncomment later
+
+	#echo -n "Starting syslogd"
+	#echo "syslog		514/udp" >> ${N_LIBDIR}/services
+	#echo "" >${N_DBDIR}/log
+	#cat >${N_LIBDIR}/syslogd.conf << EOF
+	#33*.notice;authpriv.none;kern.debug;*.info;*.crit;*.err	${N_DBDIR}/log
+	#!ftpd
+	#*.*	${N_DBDIR}/log
+	#!sshd
+	#*.*	${N_DBDIR}/log
+	#EOF
+	#syslogd -ss -f ${N_CFGDIR}/syslogd.conf -P ${N_PIDDIR}/syslogd.pid -p ${N_RUNDIR}/log
+	#echo "[DONE]"
+
+	# Also removed because it was deemed unnecessary. 
+	# Note: might be useful to make it tunables, but default off
+
+	#echo -n "Starting sshd							"
+	#ln -s . ${N_LIBDIR}/ssh
+	#ssh-keygen -t dsa -f ${N_LIBDIR}/ssh_key -N '' >${DEVICES}/null 2>${DEVICES}/null
+
+	# Don't change these under penalty of death!
+
+	#cat >${N_LIBDIR}/sshd.conf << "EOF"
+	#HostKey ${N_CFGDIR}/ssh_key
+	#PermitRootLogin yes
+	#UsePrivilegeSeparation no                       
+	#UseDNS no
+	#PidFile ${N_PIDDIR}/sshd.pid
+	#PasswordAuthentication yes
+	#PermitEmptyPasswords no
+	#ForceCommand tcsh
+	#EOF
+	#cat >${N_LIBDIR}/ssh_config << "EOF"
+	#StrictHostKeyChecking no
+	#EOF
+	#/bin/sshd -f ${N_CFGDIR}/sshd.conf 2>${DEVICES}/null
+	#echo "[DONE]"
+
+	# ftpd is unnecessary, rather have only ssh.
+
+	#echo -n "Starting ftpd							"
+	#echo "ftp	21/tcp" >>${N_LIBDIR}/services
+	#cat >${N_LIBDIR}/ftpusers << EOF
+	# blah
+	#EOF
+	#ftpd -D -d -p ${N_PIDDIR}/ftpd.pid
+	#echo "[DONE]"
+fi
+
+cd /
+tcsh
+userconfig logout ${N_CURUSER}
+
+if [ "${MODE}" = "init" ] ; then
+	reboot
+fi

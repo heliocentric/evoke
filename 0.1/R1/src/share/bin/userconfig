@@ -1,0 +1,185 @@
+#!/bin/sh
+# Copyright 2007-2008 Dylan Cochran
+# All rights reserved
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted providing that the following conditions
+# are met:
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+# IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
+# DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+# STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
+# IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
+
+# $Id$
+
+if [ ! -c "${DEVICES}/null" ] ; then
+	if [ -c "/dev/null" ] ; then
+		DEVICES=/dev
+	else
+		echo "Error, no device nodes found"
+		exit 1
+	fi
+fi
+
+if [ ! -d "${TMPDIR}" ] ; then
+	TMPDIR=/tmp
+fi
+
+
+if [ ! -d "${N_SYSCFG}" ] ; then
+	N_SYSCFG="/tmp/sysconfig"
+	mkdir -p "${N_SYSCFG}"
+fi
+
+if [ ! -d "${N_CURUSER}" ] ; then
+	N_CURUSER="/tmp/currentuser"
+	mkdir -p "${N_CURUSER}"
+fi
+
+usage () {
+	cat << EOF
+usage: userconfig command [UUID] [options]
+
+Commands:
+  create	-- Create a directory for a user, and set a password.
+  login		-- Login as the user specified.
+  list		-- List the users in the sysconfig directory.
+  menu		-- Display a pretty menu for choosing the user.
+  logout	-- Logout.
+
+EOF
+
+}
+
+create () {
+	. $(command -v menu)
+	read -p "Username: " LOGIN
+	read -p "Display Name: " DISPNAME
+	read -p "Do you already have an Evoke user id? [y/N]: " ANSWER
+	case "${ANSWER}" in
+		[yY])
+			ESCAPE="no"
+			until [ "${ESCAPE}" = "yes" ]
+			do
+				read -p "Enter UUID: " UUID
+				if [ "$(is_uuid ${UUID})" = "yes" ] ; then
+					if [ -d "${N_SYSCFG}/${UUID}" ] ; then
+						echo "Error: user already exists."
+						exit 3
+					else
+						ESCAPE="yes"
+					fi
+				fi
+			done
+			unset ESCAPE
+		;;
+		*)
+			ESCAPE="no"
+			until [ "${ESCAPE}" = "yes" ]
+			do
+				UUID="$(uuid -v 4)"
+				if [ ! -d "${N_SYSCFG}/${UUID}" ] ; then
+					ESCAPE="yes"
+				fi
+			done
+			unset ESCAPE
+		;;
+	esac
+
+	mkdir -p "${N_SYSCFG}/${UUID}"
+
+	ENCTYPE=$(menu "Encryption Method" "mounter list fs | grep encfs; mounter list fs | grep cryptofs; echo none")
+	echo ${ENCTYPE}
+	case "${ENCTYPE}" in
+		encfs)
+			mounter encfs:${N_SYSCFG}/${UUID} ${N_CURUSER} 1>&2
+		;;
+		cryptofs)
+			cat >${N_SYSCFG}/${UUID}/.cryptofs << EOF
+[CryptoFS]
+cipher=AES256
+md=MD5
+blocksize=2048
+salts=256
+EOF
+			mounter cryptofs:${N_SYSCFG}/${UUID} ${N_CURUSER} 1>&2
+		;;
+		*)
+			mounter nullfs:${N_SYSCFG}/${UUID} ${N_CURUSER} 1>&2
+		;;
+	esac
+	echo ${DISPNAME} >${N_CURUSER}/display
+	echo ${LOGIN} >${N_CURUSER}/login
+	echo "${UUID}:${LOGIN}:${DISPNAME}" >>${N_SYSCFG}/userlist
+	read -p "Would you like to commit the new system configuration? [Y/n]: " ANSWER
+	case "${ANSWER}" in
+		[nN])
+			
+		;;
+		*)
+			sysconfig commit CURRENT ${N_SYSCFG}
+		;;
+	esac
+	echo $UUID
+
+}
+
+login () {
+	if [ "$(is_uuid ${1})" = "no" ] ; then
+		echo "Error: Not UUID"
+		exit 4
+	fi
+	DIRECTORY="${N_SYSCFG}/${1}"
+	if [ ! -d "${DIRECTORY}" ] ; then
+		echo "Error: User not found"
+		exit 5
+	fi
+	mounter remount:${N_SYSCFG}/${1} ${N_CURUSER}
+}
+
+userconfig () {
+	case "${1}" in
+		[cC][rR][eE][aA][tT][eE])
+			create
+		;;
+		[lL][oO][gG][iI][nN])
+			login ${2}
+		;;
+		[lL][oO][gG][oO][uU][tT])
+			mounter umount ${2}
+		;;
+		[lL][iI][sS][tT])
+			if [ -f "${N_SYSCFG}/userlist" ] ; then
+				cat ${N_SYSCFG}/userlist | awk -F ":" '{ print $1 " - " $3; }'
+			fi	
+		;;
+
+		[mM][eE][nN][uU])
+			. $(command -v menu)
+			CHOICE=$(menu "Available Users" "userconfig list")
+			if [ "$(is_uuid ${CHOICE})" = "yes" ] ; then
+				UUID="$(echo "${CHOICE}" | awk '{ print $1 }')"
+				echo ${UUID}
+			fi
+		;;
+		*)
+			usage
+		;;
+	esac
+}
+
+userconfig $*
