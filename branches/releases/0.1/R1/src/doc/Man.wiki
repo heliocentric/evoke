@@ -1,0 +1,26 @@
+#summary Man page and Document viewer.
+#labels Commands, Docs
+
+`man [search string]`
+
+
+== Description ==
+
+man is a wrapper for the real man page viewer, and our documents. You specify a search string, for the document you wish to view. Currently the search string format is being devised.
+
+Search string is specified by key=name tuples, any spaces must use quotes, so that the shell will put them into single argv[] entries in the array.
+
+If a = does not exist in an argv entry, it is treated like it was name=*.
+
+Ex.
+
+ * `man name=mounter` - get the normal doc wiki for mounter.
+ * `man name=close type=libc` - get the close function call definition, as it applies to libc.
+ * `man name=read type=libc doctype=man` - get the read call, and force it to be a typical man page.
+ * `man sh` - equivalent to `man name=sh`
+
+== Search options ==
+
+ * name - the logical name of the command, function call, etc.
+ * type - the type, useful if you have conflicting names, for example, read can be a sh builtin, a libc call, or a function in another language.
+ * doctype - man, doc, wiki, useful to force an output format or scope; but ideally should not be used.
