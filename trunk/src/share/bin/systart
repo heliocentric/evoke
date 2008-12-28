@@ -176,59 +176,59 @@ mecho -n "Creating /mem"
 
 
 # Memory store
-export N_MEMDIR=/mem
+export EVOKE_MEMDIR=/mem
 
 # If we are running 7 or higher releases, use tmpfs, everything else,
 # create a large ramdisk.
 
 if [ "${OS}" = "FreeBSD" ] ; then
 	if [ "${ABI}" -ge "7" ] ; then
-		mount -t tmpfs tmpfs ${N_MEMDIR}
+		mount -t tmpfs tmpfs ${EVOKE_MEMDIR}
 	else
-		mdmfs -s60m md ${N_MEMDIR}
+		mdmfs -s60m md ${EVOKE_MEMDIR}
 	fi
 fi
 
 # 'Running' files. mainly lockfiles
-export N_RUNDIR=${N_MEMDIR}/run
-mkdir -p ${N_RUNDIR}
+export EVOKE_RUNDIR=${EVOKE_MEMDIR}/run
+mkdir -p ${EVOKE_RUNDIR}
 
 # PID files, format is logicalname.pid
-export N_PIDDIR=${N_MEMDIR}/pid
-mkdir -p ${N_PIDDIR}
+export EVOKE_PIDDIR=${EVOKE_MEMDIR}/pid
+mkdir -p ${EVOKE_PIDDIR}
 
 # DB files, mostly storage of leases, etc.
-export N_DBDIR=${N_MEMDIR}/db
-mkdir -p ${N_DBDIR}
+export EVOKE_DBDIR=${EVOKE_MEMDIR}/db
+mkdir -p ${EVOKE_DBDIR}
 
 # Temporary mountpoint, ie, /mnt.
-export N_MNTDIR=${N_MEMDIR}/mnt
-mkdir -p ${N_MNTDIR}
+export EVOKE_MNTDIR=${EVOKE_MEMDIR}/mnt
+mkdir -p ${EVOKE_MNTDIR}
 
 # Empty directory
-export N_NULLDIR=${N_MEMDIR}/empty
-mkdir -p ${N_NULLDIR}
+export EVOKE_NULLDIR=${EVOKE_MEMDIR}/empty
+mkdir -p ${EVOKE_NULLDIR}
 
 # Scratch directory
-export TMPDIR=${N_MEMDIR}/scratch
+export TMPDIR=${EVOKE_MEMDIR}/scratch
 mkdir -p ${TMPDIR}
 chmod 777 ${TMPDIR}
 chmod +t ${TMPDIR}
 
 # Lib Dir (ie, automagically generated config files.)
 
-export N_LIBDIR=${N_MEMDIR}/lib
-mkdir -p ${N_LIBDIR}
+export EVOKE_LIBDIR=${EVOKE_MEMDIR}/lib
+mkdir -p ${EVOKE_LIBDIR}
 
 mount_nullfs -o union,ro /system/share/lib/ /config/
 mount_nullfs -o union,ro /mem/lib/ /config/
-export N_CFGDIR=/config
+export EVOKE_CFGDIR=/config
 
-export N_SYSCFG=/mem/sysconfig
-mkdir -p ${N_SYSCFG}
+export EVOKE_SYSCFG=/mem/sysconfig
+mkdir -p ${EVOKE_SYSCFG}
 
-export N_CURUSER=/mem/curuser
-mkdir -p ${N_CURUSER}
+export EVOKE_CURUSER=/mem/curuser
+mkdir -p ${EVOKE_CURUSER}
 
 
 mecho ""
@@ -270,19 +270,19 @@ fi
 mecho -n "Generating passwd files"
 RPASSWD='$1$1QgK4Xsg$.PInGIAb4c0nznxpRkUPk.'
 
-export HOME=${N_MEMDIR}/home
+export HOME=${EVOKE_MEMDIR}/home
 mkdir -p ${HOME}
 
-echo "root:${RPASSWD}:0:0::0:0:Super-User:${HOME}:/bin/tcsh" >>${N_LIBDIR}/master.passwd
-echo "nobody:NOTREALPASSWORD:1:1::0:0:nobody:${N_NULLDIR}:${DEVICES}/null" >>${N_LIBDIR}/master.passwd
-echo "wheel:*:0:" >>${N_LIBDIR}/group
-echo "operator:*:5:" >>${N_LIBDIR}/group
+echo "root:${RPASSWD}:0:0::0:0:Super-User:${HOME}:/bin/tcsh" >>${EVOKE_LIBDIR}/master.passwd
+echo "nobody:NOTREALPASSWORD:1:1::0:0:nobody:${EVOKE_NULLDIR}:${DEVICES}/null" >>${EVOKE_LIBDIR}/master.passwd
+echo "wheel:*:0:" >>${EVOKE_LIBDIR}/group
+echo "operator:*:5:" >>${EVOKE_LIBDIR}/group
 
-pwd_mkdb -i -p -d ${N_LIBDIR} ${N_LIBDIR}/master.passwd 2>${DEVICES}/null
-cap_mkdb -f ${N_LIBDIR}/login.conf.db ${N_CFGDIR}/login.conf
-echo "/bin/tcsh" >>${N_LIBDIR}/shells
-echo "/bin/csh" >>${N_LIBDIR}/shells
-echo "/bin/sh" >>${N_LIBDIR}/shells
+pwd_mkdb -i -p -d ${EVOKE_LIBDIR} ${EVOKE_LIBDIR}/master.passwd 2>${DEVICES}/null
+cap_mkdb -f ${EVOKE_LIBDIR}/login.conf.db ${EVOKE_CFGDIR}/login.conf
+echo "/bin/tcsh" >>${EVOKE_LIBDIR}/shells
+echo "/bin/csh" >>${EVOKE_LIBDIR}/shells
+echo "/bin/sh" >>${EVOKE_LIBDIR}/shells
 
 mecho ""
 
@@ -355,7 +355,7 @@ if [ "${MODE}" = "init" ] ; then
 		# down the boot a bit.)
 		for i in ums* psm*
 		do
-			moused -p ${DEVICES}/${i} -3 -I ${N_PIDDIR}/${i}.pid 2>${DEVICES}/null
+			moused -p ${DEVICES}/${i} -3 -I ${EVOKE_PIDDIR}/${i}.pid 2>${DEVICES}/null
 		done
 		for ttyv in ${DEVICES}/ttyv* ; do
 			vidcontrol < ${ttyv} -m on
@@ -366,57 +366,57 @@ if [ "${MODE}" = "init" ] ; then
 	# syslogd is currently unnecessary, may uncomment later
 
 	#echo -n "Starting syslogd"
-	#echo "syslog		514/udp" >> ${N_LIBDIR}/services
-	#echo "" >${N_DBDIR}/log
-	#cat >${N_LIBDIR}/syslogd.conf << EOF
-	#33*.notice;authpriv.none;kern.debug;*.info;*.crit;*.err	${N_DBDIR}/log
+	#echo "syslog		514/udp" >> ${EVOKE_LIBDIR}/services
+	#echo "" >${EVOKE_DBDIR}/log
+	#cat >${EVOKE_LIBDIR}/syslogd.conf << EOF
+	#33*.notice;authpriv.none;kern.debug;*.info;*.crit;*.err	${EVOKE_DBDIR}/log
 	#!ftpd
-	#*.*	${N_DBDIR}/log
+	#*.*	${EVOKE_DBDIR}/log
 	#!sshd
-	#*.*	${N_DBDIR}/log
+	#*.*	${EVOKE_DBDIR}/log
 	#EOF
-	#syslogd -ss -f ${N_CFGDIR}/syslogd.conf -P ${N_PIDDIR}/syslogd.pid -p ${N_RUNDIR}/log
+	#syslogd -ss -f ${EVOKE_CFGDIR}/syslogd.conf -P ${EVOKE_PIDDIR}/syslogd.pid -p ${EVOKE_RUNDIR}/log
 	#echo "[DONE]"
 
 	# Also removed because it was deemed unnecessary. 
 	# Note: might be useful to make it tunables, but default off
 
 	#echo -n "Starting sshd							"
-	#ln -s . ${N_LIBDIR}/ssh
-	#ssh-keygen -t dsa -f ${N_LIBDIR}/ssh_key -N '' >${DEVICES}/null 2>${DEVICES}/null
+	#ln -s . ${EVOKE_LIBDIR}/ssh
+	#ssh-keygen -t dsa -f ${EVOKE_LIBDIR}/ssh_key -N '' >${DEVICES}/null 2>${DEVICES}/null
 
 	# Don't change these under penalty of death!
 
-	#cat >${N_LIBDIR}/sshd.conf << "EOF"
-	#HostKey ${N_CFGDIR}/ssh_key
+	#cat >${EVOKE_LIBDIR}/sshd.conf << "EOF"
+	#HostKey ${EVOKE_CFGDIR}/ssh_key
 	#PermitRootLogin yes
 	#UsePrivilegeSeparation no                       
 	#UseDNS no
-	#PidFile ${N_PIDDIR}/sshd.pid
+	#PidFile ${EVOKE_PIDDIR}/sshd.pid
 	#PasswordAuthentication yes
 	#PermitEmptyPasswords no
 	#ForceCommand tcsh
 	#EOF
-	#cat >${N_LIBDIR}/ssh_config << "EOF"
+	#cat >${EVOKE_LIBDIR}/ssh_config << "EOF"
 	#StrictHostKeyChecking no
 	#EOF
-	#/bin/sshd -f ${N_CFGDIR}/sshd.conf 2>${DEVICES}/null
+	#/bin/sshd -f ${EVOKE_CFGDIR}/sshd.conf 2>${DEVICES}/null
 	#echo "[DONE]"
 
 	# ftpd is unnecessary, rather have only ssh.
 
 	#echo -n "Starting ftpd							"
-	#echo "ftp	21/tcp" >>${N_LIBDIR}/services
-	#cat >${N_LIBDIR}/ftpusers << EOF
+	#echo "ftp	21/tcp" >>${EVOKE_LIBDIR}/services
+	#cat >${EVOKE_LIBDIR}/ftpusers << EOF
 	# blah
 	#EOF
-	#ftpd -D -d -p ${N_PIDDIR}/ftpd.pid
+	#ftpd -D -d -p ${EVOKE_PIDDIR}/ftpd.pid
 	#echo "[DONE]"
 fi
 
 cd /
 tcsh
-userconfig logout ${N_CURUSER}
+userconfig logout ${EVOKE_CURUSER}
 
 if [ "${MODE}" = "init" ] ; then
 	reboot
