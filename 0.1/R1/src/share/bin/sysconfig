@@ -335,5 +335,5 @@ sysconfig () {
 	rm -r ${SCRATCHDIR}
 }
 
-sysconfig $*
+sysconfig $@
 
