@@ -6,7 +6,9 @@
 To initially create a release branch, always use the following steps:
 
  `svn mkdir https://evoke.googlecode.com/svn/branches/releases/0.2`
+
  `svn copy https://evoke.googlecode.com/svn/trunk https://evoke.googlecode.com/svn/branches/releases/0.2/R1`
+
  `svn copy https://evoke.googlecode.com/svn/wiki https://evoke.googlecode.com/svn/branches/releases/0.2/R1/src/doc`
 
 R1 is always the first revision.
@@ -17,6 +19,7 @@ When the binaries for a revision of a release branch are finished, and placed on
 tree. After this point, NO more commits may happen to that revision. You must create a new revision of the release branch and work on that.
 
 You should set it with this command:
+
  `svn propset evoke-binaries-built "" https://evoke.googlecode.com/svn/branches/releases/0.2/R1`
 
 == Back merging changes into a release branch ==
