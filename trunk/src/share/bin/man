@@ -30,7 +30,7 @@ if [ "${EVOKE_DOCPATH}" = "" ] ; then
 	export EVOKE_DOCPATH="/system/share/lib/doc"
 fi
 
-find_document () {
+display_vars () {
 	for i in ${DOC_NAME}
 	do
 		echo -n "name="
@@ -46,8 +46,21 @@ find_document () {
 		echo -n "doctype="
 		echo ${i}
 	done
-	echo ${DOC_OUTPUT}
+	echo output=${DOC_OUTPUT}
 }
+
+find_document() {
+	while [ "${1}" != "" ]
+	do
+		case "${1}" in
+			wiki)
+			;;
+			man)
+			;;
+		shift
+	done
+}
+
 man() {
 	while [ "${1}" != "" ]
 	do
@@ -85,7 +98,14 @@ man() {
 	done
 	unset DOC_KEY
 	unset DOC_VALUE
-	find_document
+	if [ "${DOC_DOCTYPE}" = "" ] ; then
+		DOC_DOCTYPE="wiki man"
+	fi
+	if [ "${DOC_OUTPUT}" = "" ] ; then
+		DOC_OUTPUT="tty"
+	fi
+	display_vars
+	find_document ${DOC_DOCTYPE}
 }
 
 man $@
