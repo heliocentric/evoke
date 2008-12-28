@@ -76,7 +76,6 @@ if [ "${BUILD_PORTS}" != "" ] ; then
 
 	# We'll share ports and port dist files, as they don't change.
 	mkdir -p ${DESTDIR}/usr/ports
-	mkdir -p ${OBJDIR}/portsdists
 
 	# Needed by perl. Damn it.
 	mount -t devfs devfs ${DESTDIR}/dev
