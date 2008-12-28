@@ -33,11 +33,36 @@ fi
 man() {
 	while [ "${1}" != "" ]
 	do
-		if [ -f "${EVOKE_DOCPATH}/${1}.wiki" ] ; then
-			grep -v ^# ${EVOKE_DOCPATH}/${1}.wiki | more
-		fi
+		case "${1}" in
+			*=*)
+				DOC_KEY=$(echo ${1} | cut -d "=" -f 1)
+				DOC_VALUE=$(echo ${1} | cut -d "=" -f 2)
+			;;
+			*)
+				DOC_KEY=name
+				DOC_VALUE=${1}
+			;;
+		esac
+
+		case "${DOC_KEY}" in
+			[nN][aA][mM][eE])
+				DOC_NAME=$(printf "${DOC_NAME}\n${DOC_VALUE}")
+			;;
+			[dD][oO][cC][tT][yY][pP][eE])
+				DOC_DOCTYPE=${DOC_VALUE}
+			;;
+		esac
+
 		shift
 	done
+	unset DOC_KEY
+	unset DOC_VALUE
+	for i in ${DOC_NAME}
+	do
+		echo -n "name="
+		echo ${i}
+	done
+	echo doctype=${DOC_DOCTYPE}
 }
 
 man $@
