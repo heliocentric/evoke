@@ -1,0 +1,10 @@
+#summary Man page and Document viewer.
+#labels Commands, Docs
+
+`man [search string]`
+
+
+== Description ==
+
+man is a wrapper for the real man page viewer, and our documents. You specify a search string, for the document you wish to view. Currently the 
+search string format is being devised.

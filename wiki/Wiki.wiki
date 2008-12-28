@@ -16,3 +16,4 @@
  * [Sysconfig sysconfig]
  * [Installer installer]
  * [Systart systart]
+ * [Man man]
