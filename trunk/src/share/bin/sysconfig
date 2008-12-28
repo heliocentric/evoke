@@ -40,9 +40,9 @@ if [ ! -d "${TMPDIR}" ] ; then
 fi
 
 
-if [ ! -d "${EVOKE_SYSCFG}" ] ; then
-	EVOKE_SYSCFG="/tmp/sysconfig"
-	mkdir -p "${EVOKE_SYSCFG}"
+if [ ! -d "${EVOKE_SCDIR}" ] ; then
+	EVOKE_SCDIR="/tmp/sysconfig"
+	mkdir -p "${EVOKE_SCDIR}"
 fi
 
 usage () {
@@ -217,7 +217,7 @@ sysconfig () {
 				exit 6
 			else
 				if [ ! -d "${EXTRACTPOINT}" ] ; then
-					tar -xpf ${SCRATCHDIR}/record${SC_CURRECORD}/tarball.tgz -C ${EVOKE_SYSCFG}/
+					tar -xpf ${SCRATCHDIR}/record${SC_CURRECORD}/tarball.tgz -C ${EVOKE_SCDIR}/
 				else
 					tar -xpf ${SCRATCHDIR}/record${SC_CURRECORD}/tarball.tgz -C ${EXTRACTPOINT}/
 				fi
