@@ -36,5 +36,5 @@ menu () {
 }
 
 if [ "${0}" = "menu" ] ; then
-	menu $*
+	menu $@
 fi

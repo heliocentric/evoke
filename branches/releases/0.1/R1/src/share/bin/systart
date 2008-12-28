@@ -52,7 +52,7 @@ list_if () {
 
 mecho () {
 	if [ "${VERBOSE}" != "no" ] ; then
-		echo $*
+		echo $@
 	fi
 }
 case "${1}" in
