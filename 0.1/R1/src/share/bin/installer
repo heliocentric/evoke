@@ -36,9 +36,9 @@ if [ ! -c "${DEVICES}/null" ] ; then
 	fi
 fi
 
-if [ "${N_MNTDIR}" = "" ] ; then
+if [ "${EVOKE_MNTDIR}" = "" ] ; then
 	if [ -d /media ] ; then
-		export N_MNTDIR="/media"
+		export EVOKE_MNTDIR="/media"
 	fi
 fi
 
@@ -225,8 +225,8 @@ evoke_installer() {
 # Give the admin the option, and hope to hell they are smart enough not 
 # to run installer on the same device nodes.
 
-export SOURCEDIR=${N_MNTDIR}/$(dd if=/dev/random bs=4m count=1 2>/dev/null | sha256 -q)
-export DESTDIR=${N_MNTDIR}/$(dd if=/dev/random bs=4m count=1 2>/dev/null | sha256 -q)
+export SOURCEDIR=${EVOKE_MNTDIR}/$(dd if=/dev/random bs=4m count=1 2>/dev/null | sha256 -q)
+export DESTDIR=${EVOKE_MNTDIR}/$(dd if=/dev/random bs=4m count=1 2>/dev/null | sha256 -q)
 
 mkdir -p ${SOURCEDIR}
 mkdir -p ${DESTDIR}
