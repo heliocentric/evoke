@@ -66,6 +66,9 @@ awk '{
 		if ($11 == "!0b79a13e-87f2-4238-a86d-d00bd1fce04e") {
 			print "object:"$3;
 		}
+		if ($11 == "!83f90024-8f13-47cf-9b01-12f4af79138a") {
+			print "dists:"$3;
+		}
 		if ($11 == "!12f31621-10a0-4a3c-a0e8-9406c2e485f0") {
 			print "boot-ufs:"$3;
 			print "ufs:"$3;
