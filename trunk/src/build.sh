@@ -62,17 +62,21 @@ export ROOTDIR=`pwd`
 
 # Overridable options
 
+if [ "${OBJDIR}" = "" ] ; then
+	export OBJDIR="${ROOTDIR}/obj"
+	mkdir -p ${OBJDIR}
+fi
 if [ "${TMPDIR}" = "" ] ; then
 	export TMPDIR="${ROOTDIR}/obj/tmp"
+	mkdir -p ${TMPDIR}
 fi
 if [ "${NDISTDIR}" = "" ] ; then
 	export NDISTDIR="${ROOTDIR}/dists"
-fi
-if [ "${OBJDIR}" = "" ] ; then
-	export OBJDIR="${ROOTDIR}/obj"
+	mkdir -p ${NDISTDIR}
 fi
 if [ "${RELEASEDIR}" = "" ] ; then
 	export RELEASEDIR="/releases"
+	mkdir -p ${RELEASEDIR}
 fi
 
 export PATH="${PATH}:${ROOTDIR}/share/bin"
