@@ -3,6 +3,7 @@
  * [BuildEnvironment Requirements for a build environment]
  * [SystemRequirements Requirements for a running evoke system]
  * [Target Idealized Target Environment]
+ * [DeveloperGuide Guide for Developers]
 
 == Design Notes ==
  * [GUIDList Reserved UUID list]
