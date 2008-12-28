@@ -30,6 +30,24 @@ if [ "${EVOKE_DOCPATH}" = "" ] ; then
 	export EVOKE_DOCPATH="/system/share/lib/doc"
 fi
 
+find_document () {
+	for i in ${DOC_NAME}
+	do
+		echo -n "name="
+		echo ${i}
+	done
+	for i in ${DOC_TYPE}
+	do
+		echo -n "type="
+		echo ${i}
+	done
+	for i in ${DOC_DOCTYPE}
+	do
+		echo -n "doctype="
+		echo ${i}
+	done
+	echo ${DOC_OUTPUT}
+}
 man() {
 	while [ "${1}" != "" ]
 	do
@@ -46,10 +64,20 @@ man() {
 
 		case "${DOC_KEY}" in
 			[nN][aA][mM][eE])
+				DOC_VALUE=$(echo "${DOC_VALUE}" | tr "[:upper:]" "[:lower:]")
 				DOC_NAME=$(printf "${DOC_NAME}\n${DOC_VALUE}")
 			;;
+			[tT][yY][pP][eE])
+				DOC_VALUE=$(echo "${DOC_VALUE}" | tr "[:upper:]" "[:lower:]")
+				DOC_TYPE=$(printf "${DOC_TYPE}\n${DOC_VALUE}")
+			;;
 			[dD][oO][cC][tT][yY][pP][eE])
-				DOC_DOCTYPE=${DOC_VALUE}
+				DOC_VALUE=$(echo "${DOC_VALUE}" | tr "[:upper:]" "[:lower:]")
+				DOC_DOCTYPE=$(printf "${DOC_DOCTYPE}\n${DOC_VALUE}")
+			;;
+			[Oo][uU][tT][pP][uU][tT])
+				DOC_VALUE=$(echo "${DOC_VALUE}" | tr "[:upper:]" "[:lower:]")
+				DOC_OUTPUT=${DOC_VALUE}
 			;;
 		esac
 
@@ -57,12 +85,7 @@ man() {
 	done
 	unset DOC_KEY
 	unset DOC_VALUE
-	for i in ${DOC_NAME}
-	do
-		echo -n "name="
-		echo ${i}
-	done
-	echo doctype=${DOC_DOCTYPE}
+	find_document
 }
 
 man $@
