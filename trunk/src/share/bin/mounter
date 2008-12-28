@@ -227,7 +227,7 @@ mounter () {
 
 			mount_proto "${*}"
 		else
-			mounter_command $*
+			mounter_command $@
 		fi 
 	else
 		mexit 5
@@ -712,7 +712,7 @@ rmount () {
 			;;
 		esac
 	done
-	mount -o ${ROPTIONS} $*
+	mount -o ${ROPTIONS} $@
 }
 
 unmount_handler () {
@@ -845,6 +845,6 @@ mounter_command () {
 		;;
 	esac
 }
-mounter $*
+mounter $@
 
 
