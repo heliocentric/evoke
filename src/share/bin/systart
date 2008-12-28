@@ -138,7 +138,7 @@ if [ "${MODE}" = "init" ] ; then
 	export EVOKE_FINGERPRINT="$(kenv -q evoke.fingerprint)"
 	export EVOKE_MOUSED="$(kenv -q evoke.moused)"
 	export EVOKE_USERCONFIG="$(kenv -q evoke.userconfig)"
-	export EVOKE_SYSCONFIG="$(kenv -q evoke.sysconfig)"
+	export EVOKE_SCDEVICE="$(kenv -q evoke.sysconfig)"
 	mecho -n "Verifying root filesystem"
 	ROOTFINGERPRINT=${EVOKE_FINGERPRINT}
 	ROOTDEV=${DEVICES}/$(mount | awk '{ if ($3 == "/") { print $1 } }')
@@ -224,8 +224,8 @@ mount_nullfs -o union,ro /system/share/lib/ /config/
 mount_nullfs -o union,ro /mem/lib/ /config/
 export EVOKE_CFGDIR=/config
 
-export EVOKE_SYSCFG=/mem/sysconfig
-mkdir -p ${EVOKE_SYSCFG}
+export EVOKE_SCDIR=/mem/sysconfig
+mkdir -p ${EVOKE_SCDIR}
 
 export EVOKE_CURUSER=/mem/curuser
 mkdir -p ${EVOKE_CURUSER}
@@ -233,11 +233,11 @@ mkdir -p ${EVOKE_CURUSER}
 
 mecho ""
 
-SC_PART=${EVOKE_SYSCONFIG}
+SC_PART=${EVOKE_SCDEVICE}
 
 if [ "$(is_uuid ${SC_PART})" = "no" ] ; then
 	SC_PART=$(sysconfig menu)
-	export EVOKE_SYSCONFIG=${SC_PART} >/dev/null
+	export EVOKE_SCDEVICE=${SC_PART} >/dev/null
 fi
 
 if [ "${SC_PART}" != "" ] ; then
