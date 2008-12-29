@@ -110,7 +110,7 @@ list_docs() {
 }
 
 wiki_display () {
-
+	
 }
 
 
@@ -119,7 +119,7 @@ display_page() {
 	NAME="${2}"
 	case "${TYPE}" in
 		wiki)
-			wiki_display ${EVOKE_DOCDIR}/${NAME}.wiki
+			wiki_display "${EVOKE_DOCDIR}/${NAME}.wiki"
 		;;
 	esac
 }
@@ -178,9 +178,9 @@ man() {
 						BREAK="yes"
 					;;
 					*)
-						SPEC=$(echo ${CHOICE} | cut -d - -f 1)
-						NAME=$(echo ${SPEC} | cut -d "(" -f 1)
-						TYPE=$(echo ${SPEC} | cut -d "(" -f 2 | cut -d ")" -f 1)
+						SPEC="$(echo ${CHOICE} | cut -d - -f 1)"
+						NAME="$(echo ${SPEC} | cut -d "(" -f 1)"
+						TYPE="$(echo ${SPEC} | cut -d "(" -f 2 | cut -d ")" -f 1)"
 						display_page "${TYPE}" "${NAME}"
 					;;
 				esac
