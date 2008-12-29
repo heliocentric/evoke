@@ -3,6 +3,18 @@
 
 <wiki:toc max_depth="3" />
 
+= Using the SVN Repo =
+
+== Commit Log format ==
+
+{{{
+Short description
+	
+* Item A
+* Item B
+* Item C
+}}}
+
 = Release Engineering Guide =
 
 == Creating a Release Branch ==
