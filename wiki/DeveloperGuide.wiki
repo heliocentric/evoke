@@ -24,9 +24,8 @@ You should set it with this command:
 
 == Back merging changes into a release branch ==
 
-Always use svn merge, and make sure you use the revision of the last back merge, and the most recent applicable revision, like so:
-
- `svn merge -r 230:290 https://evoke.googlecode.com/svn/trunk/src/share/bin`
+Always use svn merge, like so:
+`svn merge https://evoke.googlecode.com/svn/branches/releases/0.1/R1/src https://evoke.googlecode.com/svn/trunk/src https://evoke.googlecode.com/svn/branches/releases/0.1/R1/src`
 
 == Creating a new revision ==
 
