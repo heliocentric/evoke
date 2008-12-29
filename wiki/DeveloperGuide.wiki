@@ -8,12 +8,22 @@
 == Commit Log format ==
 
 {{{
-Short description
-	
 * Item A
 * Item B
 * Item C
 }}}
+
+For certain commits, a short description line is necessary, like so.
+
+{{{
+Description
+
+* Item A
+* Item B
+* Item C
+}}}
+
+Right now, only merge backs do.
 
 = Release Engineering Guide =
 
@@ -42,9 +52,23 @@ You should set it with this command:
 
 Always use svn merge, like so:
 
-`svn merge https://evoke.googlecode.com/svn/branches/releases/0.1/R1/src https://evoke.googlecode.com/svn/trunk/src .`
+`svn merge https://evoke.googlecode.com/svn/branches/releases/0.2/R1/src https://evoke.googlecode.com/svn/trunk/src .`
 
 Make sure you run svn diff, and review the changes.
+
+The log message should be formatted like so:
+
+{{{
+Merge /trunk/src r310 to /branches/releases/0.2/R1/src
+
+* Item A
+* Item B
+* Item C
+}}}
+
+Please follow this format to the letter, only changing the directories and revisions. This way any scripts will work as intended.
+
+Also, remember to duplicate the items from the commmit you are merging, and any relevant history.
 
 == Creating a new revision ==
 
