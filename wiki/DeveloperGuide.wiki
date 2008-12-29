@@ -1,6 +1,9 @@
 #summary Guide for new developers.
 #labels Developer
 
+
+= Release Engineering Guide =
+
 == Creating a Release Branch ==
 
 To initially create a release branch, always use the following steps:
@@ -25,9 +28,11 @@ You should set it with this command:
 == Back merging changes into a release branch ==
 
 Always use svn merge, like so:
+
 `svn merge https://evoke.googlecode.com/svn/branches/releases/0.1/R1/src https://evoke.googlecode.com/svn/trunk/src .`
 
 Make sure you run svn diff, and review the changes.
+
 == Creating a new revision ==
 
 As stated earlier, you cannot commit to a revision after the binaries have been built, therefore you must do a copy, like so:
