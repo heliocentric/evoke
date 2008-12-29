@@ -125,7 +125,7 @@ display_page() {
 	esac
 }
 
-man() {
+doc() {
 	while [ "${1}" != "" ]
 	do
 		case "${1}" in
@@ -192,4 +192,4 @@ if [ "$(command -v menu)" != "" ] ; then
 	. "$(command -v menu)"
 fi
 
-man $@
+doc $@
