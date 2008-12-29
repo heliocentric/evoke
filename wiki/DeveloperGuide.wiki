@@ -7,13 +7,13 @@
 
 == Commit Log format ==
 
-{{{
+<pre>
 Short description
 	
 * Item A
 * Item B
 * Item C
-}}}
+</pre>
 
 = Release Engineering Guide =
 
