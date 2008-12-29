@@ -29,7 +29,7 @@
 export i386_ACTIVE="7.1-RELEASE/i386"
 
 # Evoke Version
-export VERSION="0.1R1"
+export VERSION="HEAD"
 export REVISION="$(svnversion)"
 
 # Release Engineer
