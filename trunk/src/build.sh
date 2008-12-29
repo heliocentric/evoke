@@ -87,20 +87,26 @@ export ERRFILE=${ROOTDIR}/logs/$(date +%Y%m%d%H%M%S).log
 echo -n " * share = Cleaning up"
 
 
-BDENV="$(mounter list buildenv 2>${DEVICES}/null)"
+OBJENV="$(mounter list object 2>${DEVICES}/null)"
 
-if [ "${BDENV}" != "" ] ; then 
-	mounter "buildenv:$(echo ${BDENV} | head -n 1)" ${OBJDIR} 2>>${ERRFILE}
+if [ "${OBJENV}" != "" ] ; then 
+	mounter "object:$(echo ${OBJENV} | head -n 1)" ${OBJDIR} 2>>${ERRFILE}
 else
 	chflags -R noschg ${OBJDIR} 2>>${ERRFILE}
 	rm -r ${OBJDIR} 2>>${ERRFILE}
 	mkdir -p ${OBJDIR} 2>>${ERRFILE}
 fi
 
+DISTENV="$(mounter list dists 2>${DEVICES}/null)"
+
+if [ "${DISTENV}" != "" ] ; then 
+	mounter "dists:$(echo ${DISTENV} | head -n 1)" ${NDISTDIR} 2>>${ERRFILE}
+fi
+
 export BUILDDIR=${ROOTDIR}/builder
 echo "						[DONE]"
 
 ${BUILDDIR}/build.sh 2>>${ERRFILE}
-if [ "${BDENV}" != "" ] ; then 
+if [ "${OBJENV}" != "" ] ; then 
 	mounter umount ${OBJDIR} 2>>${ERRFILE}
 fi
