@@ -1,0 +1,37 @@
+#summary Guide for new developers.
+#labels Developer
+
+== Creating a Release Branch ==
+
+To initially create a release branch, always use the following steps:
+
+ `svn mkdir https://evoke.googlecode.com/svn/branches/releases/0.2`
+
+ `svn copy https://evoke.googlecode.com/svn/trunk https://evoke.googlecode.com/svn/branches/releases/0.2/R1`
+
+ `svn copy https://evoke.googlecode.com/svn/wiki https://evoke.googlecode.com/svn/branches/releases/0.2/R1/src/doc`
+
+R1 is always the first revision.
+
+== 'Setting' a release branch ==
+
+When the binaries for a revision of a release branch are finished, and placed on the http mirror, you must set a property on the copy of the release 
+tree. After this point, NO more commits may happen to that revision. You must create a new revision of the release branch and work on that.
+
+You should set it with this command:
+
+ `svn propset evoke-binaries-built "" https://evoke.googlecode.com/svn/branches/releases/0.2/R1`
+
+== Back merging changes into a release branch ==
+
+Always use svn merge, and make sure you use the revision of the last back merge, and the most recent applicable revision, like so:
+
+ `svn merge -r 230:290 https://evoke.googlecode.com/svn/trunk/src/share/bin`
+
+== Creating a new revision ==
+
+As stated earlier, you cannot commit to a revision after the binaries have been built, therefore you must do a copy, like so:
+
+ `svn copy https://evoke.googlecode.com/svn/branches/releases/0.2/R1 https://evoke.googlecode.com/svn/branches/releases/0.2/R2`
+
+The rules for creating binaries apply to every revision, not just the first revision. In this way, our boot versioning system can be used by the users effectively.
