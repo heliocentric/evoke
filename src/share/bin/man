@@ -26,8 +26,8 @@
 
 # $Id$
 
-if [ "${EVOKE_DOCPATH}" = "" ] ; then
-	export EVOKE_DOCPATH="/system/share/lib/doc"
+if [ "${EVOKE_DOCDIR}" = "" ] ; then
+	export EVOKE_DOCDIR="/system/share/lib/doc"
 fi
 
 display_vars () {
@@ -81,7 +81,7 @@ find_matching_wiki() {
 		do
 			PAGELIST_TEMP="$(for file in ${PAGELIST_TEMP}
 			do
-				RESULT=$(grep ^#labels ${EVOKE_DOCPATH}/${file} | grep -i ${type})
+				RESULT=$(grep ^#labels ${EVOKE_DOCDIR}/${file} | grep -i ${type})
 				if [ "${RESULT}" != "" ] ; then
 					echo ${file}
 				fi
@@ -93,13 +93,13 @@ find_matching_wiki() {
 	fi
 	for page in ${PAGELIST}
 	do
-		printf "$(echo ${page} | cut -d . -f 1) - "
-		grep ^#summary ${EVOKE_DOCPATH}/${page} | awk '{ print $2 " " $3 " " $4 " " $5 " " $6 " " $7 " " $8 " " $9 " " $10 " " $11; }' 
+		printf "$(echo ${page} | cut -d . -f 1) (wiki) - "
+		grep ^#summary ${EVOKE_DOCDIR}/${page} | awk '{ print $2 " " $3 " " $4 " " $5 " " $6 " " $7 " " $8 " " $9 " " $10 " " $11; }' 
 	done
 }
 
 list_docs() {
-	cd ${EVOKE_DOCPATH}
+	cd ${EVOKE_DOCDIR}
 	for name in $(ls | grep .wiki)
 	do
 		ISDOC=$(grep ^#labels ${name} | grep Docs)
@@ -111,6 +111,17 @@ list_docs() {
 
 wiki_display () {
 
+}
+
+
+display_page() {
+	TYPE="${1}"
+	NAME="${2}"
+	case "${TYPE}" in
+		wiki)
+			wiki_display ${EVOKE_DOCDIR}/${NAME}.wiki
+		;;
+	esac
 }
 
 man() {
@@ -157,17 +168,25 @@ man() {
 		DOC_OUTPUT="tty"
 	fi
 	display_vars
-	while [ "${BREAK}" != "yes" ]
-	do
-		CHOICE=$(menu "Results" "getlist ${DOC_DOCTYPE} ; echo Quit")
-		case "${CHOICE}" in
-			[qQ][uU][iI][tT])
-				BREAK="yes"
-			;;
-			*)
-			;;
-		esac
-	done
+	case "${DOC_OUTPUT}" in
+		[tT][tT][yY])
+			while [ "${BREAK}" != "yes" ]
+			do
+				CHOICE=$(menu "Results" "getlist ${DOC_DOCTYPE} ; echo Quit")
+				case "${CHOICE}" in
+					[qQ][uU][iI][tT])
+						BREAK="yes"
+					;;
+					*)
+						SPEC=$(echo ${CHOICE} | cut -d - -f 1)
+						NAME=$(echo ${SPEC} | cut -d "(" -f 1)
+						TYPE=$(echo ${SPEC} | cut -d "(" -f 2 | cut -d ")" -f 1)
+						display_page "${TYPE}" "${NAME}"
+					;;
+				esac
+			done
+		;;
+	esac
 }
 if [ "$(command -v menu)" != "" ] ; then
 	. "$(command -v menu)"
