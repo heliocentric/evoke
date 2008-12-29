@@ -29,7 +29,7 @@
 export i386_ACTIVE="7.1-RELEASE/i386"
 
 # Evoke Version
-export VERSION="HEAD"
+export VERSION="0.1R1"
 export REVISION="$(svnversion)"
 
 # Release Engineer
@@ -109,4 +109,7 @@ echo "						[DONE]"
 ${BUILDDIR}/build.sh 2>>${ERRFILE}
 if [ "${OBJENV}" != "" ] ; then 
 	mounter umount ${OBJDIR} 2>>${ERRFILE}
+fi
+if [ "${OBJENV}" != "" ] ; then 
+	mounter umount ${NDISTDIR} 2>>${ERRFILE}
 fi
