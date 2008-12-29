@@ -49,16 +49,61 @@ display_vars () {
 	echo output=${DOC_OUTPUT}
 }
 
-find_document() {
+getlist() {
 	while [ "${1}" != "" ]
 	do
 		case "${1}" in
 			wiki)
+				find_matching_wiki
 			;;
-			man)
-			;;
+		esac
 		shift
 	done
+}
+
+find_matching_wiki() {
+	# first pass, lets get ones that match the name.
+	if [ "${DOC_NAME}" != "" ] ; then
+		for name in ${DOC_NAME}
+		do
+			PAGELIST_NAME=$(printf "${PAGELIST}\n$(list_docs | grep -i ${name})")
+		done
+	else
+		PAGELIST_NAME="$(list_docs)"
+	fi
+
+	# second pass, check type
+	if [ "${DOC_TYPE}" != "" ] ; then
+		PAGELIST_TEMP="${PAGELIST_NAME}"
+		for type in ${DOC_TYPE}
+		do
+			PAGELIST_TEMP="$(for file in ${PAGELIST_TEMP}
+			do
+				RESULT=$(grep ^#labels ${EVOKE_DOCPATH}/${file} | grep -i ${type})
+				if [ "${RESULT}" != "" ] ; then
+					echo ${file}
+				fi
+			done)"
+		done
+		PAGELIST="${PAGELIST_TEMP}"
+	else
+		PAGELIST="${PAGELIST_NAME}"
+	fi
+	echo "${PAGELIST}"
+}
+
+list_docs() {
+	cd ${EVOKE_DOCPATH}
+	for name in $(ls | grep .wiki)
+	do
+		ISDOC=$(grep ^#labels ${name} | grep Docs)
+		if [ "${ISDOC}" != "" ] ; then
+			echo ${name}
+		fi
+	done
+}
+wiki_display () {
+
 }
 
 man() {
@@ -99,13 +144,16 @@ man() {
 	unset DOC_KEY
 	unset DOC_VALUE
 	if [ "${DOC_DOCTYPE}" = "" ] ; then
-		DOC_DOCTYPE="wiki man"
+		DOC_DOCTYPE="wiki"
 	fi
 	if [ "${DOC_OUTPUT}" = "" ] ; then
 		DOC_OUTPUT="tty"
 	fi
 	display_vars
-	find_document ${DOC_DOCTYPE}
+	getlist ${DOC_DOCTYPE}
 }
+if [ "$(command -v menu)" != "" ] ; then
+	. "$(command -v menu)"
+fi
 
 man $@
