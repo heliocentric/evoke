@@ -1,7 +1,7 @@
 #summary Guide for new developers.
 #labels Developer
 
-<wiki:toc max_depth="1" />
+<wiki:toc max_depth="3" />
 
 = Release Engineering Guide =
 
