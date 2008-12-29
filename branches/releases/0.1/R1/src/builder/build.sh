@@ -259,6 +259,19 @@ do
 	chmod a+rx ${FSDIR}/system/${file}
 done
 
+mkdir -p ${FSDIR}/system/share/doc
+
+if [ -d "${ROOTDIR}/doc" ] ; then
+	cd ${ROOTDIR}/doc
+	for file in $(ls)
+	do
+		ISDOC=$(grep ^#labels ${file} | grep Docs)
+		if [ "${ISDOC}" != "" ] ; then
+			cp ${file} ${FSDIR}/system/share/lib/doc/${file}
+		fi
+ 	done
+fi
+
 echo "					[DONE]"
 
 
