@@ -31,22 +31,24 @@ if [ "${EVOKE_DOCPATH}" = "" ] ; then
 fi
 
 display_vars () {
-	for i in ${DOC_NAME}
-	do
-		echo -n "name="
-		echo ${i}
-	done
-	for i in ${DOC_TYPE}
-	do
-		echo -n "type="
-		echo ${i}
-	done
-	for i in ${DOC_DOCTYPE}
-	do
-		echo -n "doctype="
-		echo ${i}
-	done
-	echo output=${DOC_OUTPUT}
+	if [ "${DEBUG}" = "yes" ] ; then
+		for i in ${DOC_NAME}
+		do
+			echo -n "name="
+			echo ${i}
+		done
+		for i in ${DOC_TYPE}
+		do
+			echo -n "type="
+			echo ${i}
+		done
+		for i in ${DOC_DOCTYPE}
+		do
+			echo -n "doctype="
+			echo ${i}
+		done
+		echo output=${DOC_OUTPUT}
+	fi
 }
 
 getlist() {
@@ -66,7 +68,7 @@ find_matching_wiki() {
 	if [ "${DOC_NAME}" != "" ] ; then
 		for name in ${DOC_NAME}
 		do
-			PAGELIST_NAME=$(printf "${PAGELIST}\n$(list_docs | grep -i ${name})")
+			PAGELIST_NAME=$(printf "${PAGELIST_NAME}\n$(list_docs | grep -i ${name})")
 		done
 	else
 		PAGELIST_NAME="$(list_docs)"
@@ -89,7 +91,11 @@ find_matching_wiki() {
 	else
 		PAGELIST="${PAGELIST_NAME}"
 	fi
-	echo "${PAGELIST}"
+	for page in ${PAGELIST}
+	do
+		printf "$(echo ${page} | cut -d . -f 1) - "
+		grep ^#summary ${EVOKE_DOCPATH}/${page} | awk '{ print $2 " " $3 " " $4 " " $5 " " $6 " " $7 " " $8 " " $9 " " $10 " " $11; }' 
+	done
 }
 
 list_docs() {
@@ -102,6 +108,7 @@ list_docs() {
 		fi
 	done
 }
+
 wiki_display () {
 
 }
@@ -150,7 +157,17 @@ man() {
 		DOC_OUTPUT="tty"
 	fi
 	display_vars
-	getlist ${DOC_DOCTYPE}
+	while [ "${BREAK}" != "yes" ]
+	do
+		CHOICE=$(menu "Results" "getlist ${DOC_DOCTYPE} ; echo Quit")
+		case "${CHOICE}" in
+			[qQ][uU][iI][tT])
+				BREAK="yes"
+			;;
+			*)
+			;;
+		esac
+	done
 }
 if [ "$(command -v menu)" != "" ] ; then
 	. "$(command -v menu)"
