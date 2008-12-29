@@ -1,4 +1,0 @@
-#summary The run time system requirements
-#labels Phase-Deploy
-
-  * 128MB of ram recommended, it can run in 32MB, however, you must have configured swap space.

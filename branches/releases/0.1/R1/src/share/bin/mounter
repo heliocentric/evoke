@@ -361,10 +361,15 @@ mount_proto () {
 					prep_transport
 					ntfs_mount
 				;;
-				buildenv)
+				object)
 					M_PTYPE="DEV"
 					prep_transport
-					buildenv_mount
+					object_mount
+				;;
+				dists)
+					M_PTYPE="DEV"
+					prep_transport
+					dists_mount
 				;;
 				*)
 					M_PTYPE="DEV"
@@ -677,13 +682,27 @@ ntfs_mount () {
 		mexit 8
 	fi
 }
-# NTFS filesystem mounter. If ntfs-3g is available, use it.
+# Object file store mounter. We newfs it before we use it, as it's faster then a full clean.
 
-buildenv_mount () {
+object_mount () {
 	echo_config
 	if [ "${M_STYPE}" = "GEOM" ] ; then
 		if [ -c "${DEVICES}/${M_FILE}" ] ; then
 			newfs ${DEVICES}/${M_FILE} >&2
+			rmount ${DEVICES}/${M_FILE} ${M_DESTINATION}
+		else
+			mexit 9
+		fi
+	else
+		mexit 8
+	fi
+}
+# distfile store wrapper.
+
+dists_mount () {
+	echo_config
+	if [ "${M_STYPE}" = "GEOM" ] ; then
+		if [ -c "${DEVICES}/${M_FILE}" ] ; then
 			rmount ${DEVICES}/${M_FILE} ${M_DESTINATION}
 		else
 			mexit 9
@@ -772,7 +791,8 @@ list_proto () {
 	echo "entropy"
 	echo "sysconfig"
 	echo "dump"
-	echo "buildenv"
+	echo "object"
+	echo "dists"
 	for fuse in wdfs sshfs curlftpfs ntfs-3g encfs cryptofs vacfs fusepod
 	do
 		command -v ${fuse} >${DEVICES}/null 

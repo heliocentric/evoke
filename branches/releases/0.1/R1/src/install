@@ -30,6 +30,7 @@ clear
 echo "Available Evoke Releases"
 echo "==============================="
 echo ""
+echo "1 - Evoke 0.1R1"
 echo "1 - DSBSD 0.1P1"
 echo "d - HEAD"
 echo ""
@@ -39,14 +40,20 @@ read -p "Enter Choice: " CHOICE
 case "${CHOICE}" in
 	[1])
 		echo -n "Fetching DamnSmallBSD"
-		DEST=dsbsd-01p1
-		svn checkout svn://devnulled.ath.cx/damnsmallbsd/branches/releases/0.1P1/src ${DEST} 2>/dev/null >/dev/null
+		DEST=dsbsd-0.1P1
+		svn checkout http://evoke.googlecode.com/svn/branches/releases/0.1P1/src ${DEST} 2>/dev/null >/dev/null
 		TARGETS=$(cat ${DEST}/build.sh | grep TARGETS= | cut -d \" -f 2)
 	;;
 	[dD])
 		echo -n "Fetching Evoke"
 		DEST=evoke-head
-		svn checkout svn://devnulled.ath.cx/damnsmallbsd/trunk/src ${DEST} 2>/dev/null >/dev/null
+		svn checkout http://evoke.googlecode.com/svn/trunk/src ${DEST} 2>/dev/null >/dev/null
+		TARGETS=$(cat ${DEST}/build.sh | grep TARGETS= | cut -d \" -f 2)
+	;;
+	*)
+		echo -n "Fetching Evoke"
+		DEST=evoke-0.1R1
+		svn checkout "http://evoke.googlecode.com/svn/branches/releases/0.1/R1/src" "${DEST}" 2>/dev/null >/dev/null
 		TARGETS=$(cat ${DEST}/build.sh | grep TARGETS= | cut -d \" -f 2)
 	;;
 esac
