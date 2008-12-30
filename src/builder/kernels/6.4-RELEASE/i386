@@ -21,7 +21,6 @@ options 	GEOM_GATE
 options 	GEOM_LABEL
 options 	GEOM_MBR
 options 	GEOM_MIRROR
-options 	GEOM_MULTIPATH
 options 	GEOM_NOP
 options 	GEOM_PC98
 options 	GEOM_RAID3
