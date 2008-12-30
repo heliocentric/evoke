@@ -62,6 +62,8 @@ mkdir -p ${DESTDIR}/rescue 1>&2
 mkdir -p ${DESTDIR}${BOOTPATH}/defaults
 priv make distribution 1>&2
 priv make installworld 1>&2
+mkdir -p ${DESTDIR}/boot
+cp ${DESTDIR}/usr/src/sys/${TARGET_ARCH}/conf/GENERIC.hints ${DESTDIR}/boot/device.hints
 priv make INSTKERNNAME=${KERNCONF} installkernel 1>&2
 mkdir -p ${DESTDIR}/usr/src
 echo "				[DONE]"
