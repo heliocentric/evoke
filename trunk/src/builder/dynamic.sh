@@ -93,7 +93,7 @@ if [ "${BUILD_PORTS}" != "" ] ; then
 	fi
 	
 	# For ports, uname will return the correct values
-	UNAME_m=${TARGET_ARCH} UNAME_p=${TARGET_ARCH} chroot ${DESTDIR} /portbuild.sh 1>&2
+	UNAME_r=${RELEASE} UNAME_m=${TARGET_ARCH} UNAME_p=${TARGET_ARCH} chroot ${DESTDIR} /portbuild.sh 1>&2
 	rm ${DESTDIR}/libexec/ld-elf32.so.1
 	umount ${DESTDIR}/usr/ports/distfiles
 	umount ${DESTDIR}/usr/ports
