@@ -62,6 +62,8 @@ mkdir -p ${DESTDIR}/rescue 1>&2
 mkdir -p ${DESTDIR}${BOOTPATH}/defaults
 priv make distribution 1>&2
 priv make installworld 1>&2
+mkdir -p ${DESTDIR}/boot
+cp ${DESTDIR}/usr/src/sys/${TARGET_ARCH}/conf/GENERIC.hints ${DESTDIR}${BOOTPATH}/device.hints
 priv make INSTKERNNAME=${KERNCONF} installkernel 1>&2
 mkdir -p ${DESTDIR}/usr/src
 echo "				[DONE]"
@@ -93,7 +95,7 @@ if [ "${BUILD_PORTS}" != "" ] ; then
 	fi
 	
 	# For ports, uname will return the correct values
-	UNAME_m=${TARGET_ARCH} UNAME_p=${TARGET_ARCH} chroot ${DESTDIR} /portbuild.sh 1>&2
+	UNAME_r=${RELEASE} UNAME_m=${TARGET_ARCH} UNAME_p=${TARGET_ARCH} chroot ${DESTDIR} /portbuild.sh 1>&2
 	rm ${DESTDIR}/libexec/ld-elf32.so.1
 	umount ${DESTDIR}/usr/ports/distfiles
 	umount ${DESTDIR}/usr/ports
