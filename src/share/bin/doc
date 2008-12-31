@@ -27,7 +27,7 @@
 # $Id$
 
 if [ "${EVOKE_DOCDIR}" = "" ] ; then
-	export EVOKE_DOCDIR="/system/share/lib/doc"
+	export EVOKE_DOCDIR="/system/share/doc"
 fi
 
 display_vars () {
