@@ -347,7 +347,7 @@ if [ "${MODE}" = "init" ] ; then
 
 		dhclient ${IF} >${DEVICES}/null 2>/${DEVICES}/null
 	fi
-
+	mexit ""
 	if [ "${EVOKE_MOUSED}" != "" ] ; then
 		mecho -n "Starting moused"
 		cd ${DEVICES}
