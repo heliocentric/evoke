@@ -27,6 +27,27 @@ You should set it with this command:
 Always use svn merge, like so:
 `svn merge https://evoke.googlecode.com/svn/branches/releases/0.1/R1/src https://evoke.googlecode.com/svn/trunk/src https://evoke.googlecode.com/svn/branches/releases/0.1/R1/src`
 
+=======
+`svn merge -r 300:310 https://evoke.googlecode.com/svn/trunk/src .`
+
+Where 300 is the revision of the last Merge on the *release* branch or the merge previous to the one you want to apply, and 310 is the revision you want to commit.
+
+Make sure you run svn diff, and review the changes.
+
+The log message should be formatted like so:
+
+{{{
+Merge /trunk/src r310 to /branches/releases/0.2/R1/src
+
+* Item A
+* Item B
+* Item C
+}}}
+
+Please follow this format to the letter, only changing the directories and revisions. This way any scripts will work as intended.
+
+Also, remember to duplicate the items from the commmit you are merging, and any relevant history.
+
 == Creating a new revision ==
 
 As stated earlier, you cannot commit to a revision after the binaries have been built, therefore you must do a copy, like so:
