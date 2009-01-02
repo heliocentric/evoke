@@ -32,6 +32,10 @@ unexport DESTDIR
 unexport TMPDIR
 unexport KERNCONF
 unexport ABI
+unset ABI
+unset DESTDIR
+unset TMPDIR
+unset KERNCONF
 
 LOCALBASE=/usr/local
 X11BASE=/usr/local
