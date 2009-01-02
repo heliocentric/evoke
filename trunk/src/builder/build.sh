@@ -370,10 +370,10 @@ cd ${RELEASEDIR}/ISO-IMAGES/${VERSION}
 # DO NOT TOUCH UNDER PENALTY OF DEATH.
 mkisofs -b cdboot/i386 -no-emul-boot -r -J -V EVOKE-${VERSION} -p "${ENGINEER}" -publisher "http://evoke.googlecode.com" -o evoke.iso ${BOOTDIR} 1>&2
 
-ISO_SHA256=$(sha256 -q evoke.iso)
-ISO_MD5=$(md5 -q evoke.iso)
-echo "MD5 (evoke.iso) = ${ISO_MD5}" >>CHECKSUM.MD5
-echo "SHA256 (evoke.iso) = ${ISO_SHA256}" >>CHECKSUM.SHA256
+ISO_SHA256="$(sha256 *)"
+ISO_MD5="$(md5 *)"
 
+echo "ISO_SHA256" >>CHECKSUM.SHA256
+echo "ISO_MD5" >>CHECKSUM.MD5
 echo "					[DONE]"
 
