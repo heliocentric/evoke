@@ -267,7 +267,7 @@ if [ -d "${ROOTDIR}/doc" ] ; then
 	do
 		ISDOC=$(grep ^#labels ${file} | grep Docs)
 		if [ "${ISDOC}" != "" ] ; then
-			cp ${file} ${FSDIR}/system/share/lib/doc/${file}
+			cp ${file} ${FSDIR}/system/share/doc/${file}
 		fi
  	done
 fi
@@ -369,5 +369,11 @@ cd ${RELEASEDIR}/ISO-IMAGES/${VERSION}
 
 # DO NOT TOUCH UNDER PENALTY OF DEATH.
 mkisofs -b cdboot/i386 -no-emul-boot -r -J -V EVOKE-${VERSION} -p "${ENGINEER}" -publisher "http://evoke.googlecode.com" -o evoke.iso ${BOOTDIR} 1>&2
+
+ISO_SHA256="$(sha256 *)"
+ISO_MD5="$(md5 *)"
+
+echo "ISO_SHA256" >>CHECKSUM.SHA256
+echo "ISO_MD5" >>CHECKSUM.MD5
 echo "					[DONE]"
 

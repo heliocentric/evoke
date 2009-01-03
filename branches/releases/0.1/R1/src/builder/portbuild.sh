@@ -36,6 +36,31 @@ unset ABI
 unset DESTDIR
 unset TMPDIR
 unset KERNCONF
+
+LOCALBASE=/usr/local
+X11BASE=/usr/local
+OSVERSION=`awk '/^#define __FreeBSD_version/ {print $3}' < /usr/src/sys/sys/param.h`
+OSREL=`awk 'BEGIN {FS="\""}; /^REVISION/ {print $2}' < /usr/src/sys/conf/newvers.sh`
+BRANCH=`awk 'BEGIN {FS="\""}; /^BRANCH/ {print $2}' < /usr/src/sys/conf/newvers.sh`
+ARCH=`uname -p`
+UNAME_n=tinderbox.host
+UNAME_r=${OSREL}-${BRANCH}
+UNAME_s=FreeBSD
+UNAME_v="FreeBSD ${OSREL}-${BRANCH} #0: `date`    root@tinderbox.host:/usr/src/sys/magic/kernel/path"
+#
+BATCH=1
+PACKAGE_BUILDING=1
+USA_RESIDENT=YES
+PORTOBJFORMAT=elf
+HAVE_MOTIF=1
+FTP_PASSIVE_MODE=yes
+FTP_TIMEOUT=900
+HTTP_TIMEOUT=900
+
+for i in $(set | grep = | awk -F= '{ print $1 }') ; do
+    export ${i}
+done
+
 for port in $(cat /portlist | cut -d : -f 3  | sort | uniq)
 do
 	cd /usr/ports/${port}/
