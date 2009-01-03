@@ -96,10 +96,8 @@ if [ "${BUILD_PORTS}" != "" ] ; then
 	
 	# Work around the fact that 8-CURRENT no longer has kse, by forcing 6.x to use libthr
 	if [ "${ABI}" = "6" ] ; then
-		ln -f ${DESTDIR}/usr/lib/libthr.so.2 ${DESTDIR}/usr/lib/libc_r.so.5
 		ln -f ${DESTDIR}/usr/lib/libthr.so.2 ${DESTDIR}/usr/lib/libc_r.so.6
-		ln -f ${DESTDIR}/usr/lib/libthr.so.2 ${DESTDIR}/usr/lib/libpthread.so.1
-		ln -f ${DESTDIR}/usr/lib/libthr.so.2 ${DESTDIR}/usr/lib/libpthread.so.2
+		ln -f ${DESTDIR}/usr/lib/libthr.so.2 ${DESTDIR}/lib/libpthread.so.2
 	fi
 	# For ports, uname will return the correct values
 	UNAME_r=${RELEASE} UNAME_m=${TARGET_ARCH} UNAME_p=${TARGET_ARCH} chroot ${DESTDIR} /portbuild.sh 1>&2
