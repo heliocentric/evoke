@@ -1,5 +1,5 @@
 #summary Wrapper for kernel specific mount apis
-#labels Commands, Docs
+#labels Command, Doc
 
 `mounter unmount directory`
 

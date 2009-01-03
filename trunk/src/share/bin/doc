@@ -102,7 +102,7 @@ list_docs() {
 	cd ${EVOKE_DOCDIR}
 	for name in $(ls | grep .wiki)
 	do
-		ISDOC=$(grep ^#labels ${name} | grep Docs)
+		ISDOC=$(grep ^#labels ${name} | grep Doc)
 		if [ "${ISDOC}" != "" ] ; then
 			echo ${name}
 		fi
