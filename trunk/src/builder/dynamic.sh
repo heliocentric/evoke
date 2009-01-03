@@ -96,6 +96,12 @@ if [ "${BUILD_PORTS}" != "" ] ; then
 	
 	# Work around the fact that 8-CURRENT no longer has kse, by forcing 6.x to use libthr
 	if [ "${ABI}" = "6" ] ; then
+		cat >${DESTDIR}/etc/libmap.conf << EOF
+libpthread.so.2 libthr.so.2
+libpthread.so libthr.so
+libc_r.so.6 libthr.so.2
+libc_r.so libthr.so
+EOF
 		ln -f ${DESTDIR}/usr/lib/libthr.so.2 ${DESTDIR}/usr/lib/libc_r.so.6
 		ln -f ${DESTDIR}/usr/lib/libthr.so.2 ${DESTDIR}/lib/libpthread.so.2
 	fi
