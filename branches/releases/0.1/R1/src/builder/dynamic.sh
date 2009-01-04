@@ -147,14 +147,11 @@ mount_nullfs -o union ${DESTDIR}/usr/local/bin ${DESTDIR}/mnt/bin
 mount_nullfs -o union ${DESTDIR}/usr/local/sbin ${DESTDIR}/mnt/bin
 mount_nullfs -o union ${DESTDIR}/usr/local/libexec ${DESTDIR}/mnt/bin
 mount_nullfs -o union ${DESTDIR}/usr/libexec ${DESTDIR}/mnt/bin
-mount_nullfs -o union ${DESTDIR}/lib ${DESTDIR}/mnt/lib
-mount_nullfs -o union ${DESTDIR}/usr/lib ${DESTDIR}/mnt/lib
-mount_nullfs -o union ${DESTDIR}/usr/local/lib ${DESTDIR}/mnt/lib
+mount_nullfs -o union ${DESTDIR}/lib ${DESTDIR}/mnt/bin
+mount_nullfs -o union ${DESTDIR}/usr/lib ${DESTDIR}/mnt/bin
+mount_nullfs -o union ${DESTDIR}/usr/local/lib ${DESTDIR}/mnt/bin
 
 # Clear flags and permissions.
-cd ${DESTDIR}/mnt/lib
-chflags -R noschg *
-echmod a+w *
 cd ${DESTDIR}/mnt/bin
 chflags -R noschg *
 chmod a+w *
@@ -173,7 +170,7 @@ PROGS="${PROGS} $(grep ^B ${BUILDDIR}/portlist | cut -d : -f 2)"
 resolve_libs() {
 	for file in $@
 	do
-		DEPENDENCIES=$(${CROSSTOOLSPATH}/readelf -d ${i} | grep '(NEEDED)' | cut -d [ -f 2 | cut -d ] -f 1)
+		DEPENDENCIES=$(${CROSSTOOLSPATH}/readelf -d ${file} | grep '(NEEDED)' | cut -d [ -f 2 | cut -d ] -f 1)
 		echo "${DEPENDENCIES}"
 		resolve_libs ${DEPENDENCIES}
 	done | sort | uniq
@@ -182,7 +179,7 @@ resolve_libs() {
 
 
 
-cd ${DESTDIR}/mnt/lib/
+cd ${DESTDIR}/mnt/bin/
 for lib in $(resolve_libs ${PROGS} ${DESTDIR}/mnt/lib/pam*.so.?)
 do
 	tar -cf - $(basename ${lib}) | tar -xf - -C ${FSDIR}${N_LIB}
@@ -190,7 +187,6 @@ do
 done
 
 # Strip and copy the binaries to the FSDIR
-cd ${DESTDIR}/mnt/bin
 ${CROSSTOOLSPATH}/strip --remove-section=.note --remove-section=.comment --strip-unneeded ${PROGS}
 tar -cLf - ${PROGS} | tar -xpf - -C ${FSDIR}${N_BIN}/	
 cd ${FSDIR}${N_BIN}
@@ -204,9 +200,9 @@ cd ${FSDIR}${N_LIB}
 ${CROSSTOOLSPATH}/strip --remove-section=.note --remove-section=.comment --strip-unneeded *
 
 # Remove all the nullfs mounts... nasty nasty nasty....
-umount ${DESTDIR}/mnt/lib
-umount ${DESTDIR}/mnt/lib
-umount ${DESTDIR}/mnt/lib
+umount ${DESTDIR}/mnt/bin
+umount ${DESTDIR}/mnt/bin
+umount ${DESTDIR}/mnt/bin
 umount ${DESTDIR}/mnt/bin
 umount ${DESTDIR}/mnt/bin
 umount ${DESTDIR}/mnt/bin

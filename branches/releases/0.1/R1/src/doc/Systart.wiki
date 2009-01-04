@@ -1,23 +1,9 @@
-#summary Command template
-#labels Command, Doc, Draft
+#summary System Startup program.
+#labels Command, Doc
 
-`command [optional arguments] [one optional | another optional] [...]`
+`systart [autoboot]`
 
 
 == Description ==
 
-A one paragraph short description of the command.
-
-== Feature List ==
-
- * Feature A
- * Feature B
-
-== Required Files ==
-
- * Path where the file is - port it is in and/or base
-    Long Description
-
-== Implementation ==
-
-Implementation Notes
+Initializes the system. Normally executed by an initialization binary, init on the evoke iso, and run on a normal freebsd machine.
