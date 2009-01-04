@@ -351,13 +351,13 @@ echo -n " * share = Making ISO image"
 
 mkdir -p ${BOOTDIR}/cdboot
 cp ${BOOTDIR}${BOOTPREFIX}/freebsd$(echo ${i386_ACTIVE} | cut -d "." -f 1)/$(echo ${i386_ACTIVE} | cut -d "/" -f 2)/cdboot ${BOOTDIR}/cdboot/i386
-mkdir -p ${RELEASEDIR}/ISO-IMAGES/${VERSION}
+mkdir -p ${RELEASEDIR}/ISO-IMAGES/${VERSION}/${REVISION}
 if [ -d "${BOOTOVERLAY}" ] ; then
 	cd ${BOOTOVERLAY}
 	tar -cf - --exclude ".." --exclude "." * .* | tar -xf - -C ${BOOTDIR}/
 fi
 
-cd ${RELEASEDIR}/ISO-IMAGES/${VERSION}
+cd ${RELEASEDIR}/ISO-IMAGES/${VERSION}/${REVISION}
 
 # DO NOT TOUCH UNDER PENALTY OF DEATH.
 mkisofs -b cdboot/i386 -no-emul-boot -r -J -V EVOKE-${VERSION} -p "${ENGINEER}" -publisher "http://evoke.googlecode.com" -o evoke.iso ${BOOTDIR} 1>&2
