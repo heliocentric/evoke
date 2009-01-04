@@ -1,23 +1,14 @@
-#summary Command template
-#labels Command, Doc, Draft
+#summary Menu drawing subroutine.
+#labels Command, Doc
 
-`command [optional arguments] [one optional | another optional] [...]`
+`menu "title" "list"`
 
 
 == Description ==
 
-A one paragraph short description of the command.
-
-== Feature List ==
-
- * Feature A
- * Feature B
+Menu takes a newline delimited list as the second argument, and a title as the first, and echos the entry in the list the user chooses to stdout.
 
 == Required Files ==
 
- * Path where the file is - port it is in and/or base
-    Long Description
-
-== Implementation ==
-
-Implementation Notes
+ * awk - base
+    one-true-awk

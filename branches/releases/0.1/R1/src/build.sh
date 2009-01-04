@@ -29,8 +29,8 @@
 export i386_ACTIVE="6.4-RELEASE/i386"
 
 # Evoke Version
-export VERSION="0.1R1"
-export REVISION="$(svnversion)"
+export VERSION="0.1"
+export REVISION="R1"
 
 # Release Engineer
 export ENGINEER="Dylan Cochran"
@@ -50,7 +50,7 @@ printf pwd_mkdb reboot rm route sed sh sha1 sha256 ssh ssh-keygen sshd stty
 swapon swapoff swapinfo syslogd tail tar tcsh tftp tftpd top umount 
 uniq unlink usbdevs vidcontrol whoami zcat sort pfctl du makefs 
 mount_msdosfs getextattr setextattr devinfo newfs_msdos stat dirname lsvfs
-rtsol egrep mount_cd9660 rmdir gpart gpt watchdogd
+rtsol egrep mount_cd9660 rmdir gpart gpt watchdogd tr
 "
 
 # List of kernel objects in base that will be on the image. Ports modules
