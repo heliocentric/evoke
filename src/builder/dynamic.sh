@@ -154,7 +154,7 @@ mount_nullfs -o union ${DESTDIR}/usr/local/lib ${DESTDIR}/mnt/lib
 # Clear flags and permissions.
 cd ${DESTDIR}/mnt/lib
 chflags -R noschg *
-chmod a+w *
+echmod a+w *
 cd ${DESTDIR}/mnt/bin
 chflags -R noschg *
 chmod a+w *
@@ -170,12 +170,21 @@ PROGS="${PROGS} $(grep ^B ${BUILDDIR}/portlist | cut -d : -f 2)"
 # then we consolidate all libs (so there are no duplicates). Then we feed that to another for loop, which copies the libs in question to FSDIR, while creating compatibility symlinks.
 # See? Simple. Just, slightly confusing if you aren't used to dealing with loop constructs like this.
 
-for lib in $( for i in ${PROGS} ${DESTDIR}/mnt/lib/pam*.so.?
+resolve_libs() {
+	for file in $@
 	do
-		${CROSSTOOLSPATH}/readelf -d ${i} | grep '(NEEDED)' | cut -d [ -f 2 | cut -d ] -f 1
-	done | sort | uniq ) ${DESTDIR}/mnt/lib/pam_nologin.so.? ${DESTDIR}/mnt/lib/pam_opie.so.? ${DESTDIR}/mnt/lib/pam_opieaccess.so.? ${DESTDIR}/mnt/lib/pam_permit.so.? ${DESTDIR}/mnt/lib/pam_unix.so.? ${DESTDIR}/mnt/lib/pam_login_access.so.?
+		DEPENDENCIES=$(${CROSSTOOLSPATH}/readelf -d ${i} | grep '(NEEDED)' | cut -d [ -f 2 | cut -d ] -f 1)
+		echo "${DEPENDENCIES}"
+		resolve_libs ${DEPENDENCIES}
+	done | sort | uniq
+
+}
+
+
+
+cd ${DESTDIR}/mnt/lib/
+for lib in $(resolve_libs ${PROGS} ${DESTDIR}/mnt/lib/pam*.so.?)
 do
-	cd ${DESTDIR}/mnt/lib/
 	tar -cf - $(basename ${lib}) | tar -xf - -C ${FSDIR}${N_LIB}
 	ln -s $(basename ${lib}) ${FSDIR}${N_LIB}/$(echo $(basename ${lib}) | cut -d "." -f 1-2)
 done
