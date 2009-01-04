@@ -1,5 +1,5 @@
 #summary System Configuration Utility
-#labels Commands, Docs
+#labels Command, Doc
 
 `sysconfig command GEOM [options]`
 
