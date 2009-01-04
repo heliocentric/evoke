@@ -22,17 +22,11 @@ export BOOTDIR=${OBJDIR}/bdir
 # FSDIR is the root of the root.fs image
 export FSDIR=${OBJDIR}/fsdir
 
-if [ "${VERSION}" = "HEAD" ] ; then
-	if [ "${REVISION}" != "" ] ; then
-		export RVERSION="HEAD"
-		export VERSION=r${REVISION}
-	fi
-fi
 # The prefix for this version, for BOOTDIR, so we can avoid collisions with FreeBSD.
-export BOOTPREFIX=/evoke/${VERSION}
+export BOOTPREFIX=/evoke/${VERSION}/${REVISION}
 
 # PRODUCTDIR is where the filesystem images are stored.
-export PRODUCTDIR=/evoke/${VERSION}/product
+export PRODUCTDIR=${BOOTPREFIX}/product
 
 for target in $(cat ${BUILDDIR}/targetlist | grep -v ^$ | grep -v ^#)
 do
@@ -349,8 +343,6 @@ echo -n " * share = Creating RELEASEDIR"
 mkdir -p ${RELEASEDIR}${BOOTPREFIX}
 cd ${BOOTDIR}${BOOTPREFIX}
 tar -cf - * | tar -xf - -C ${RELEASEDIR}${BOOTPREFIX}/
-rm ${RELEASEDIR}/evoke/${RVERSION}
-ln -s ${VERSION} ${RELEASEDIR}/evoke/${RVERSION}
 echo ""
 
 echo -n " * share = Making ISO image"
@@ -358,7 +350,7 @@ echo -n " * share = Making ISO image"
 # Don't ask; cdboot is the main reason why bootloader versioning was turned off for so damned long.
 
 mkdir -p ${BOOTDIR}/cdboot
-cp ${BOOTDIR}/evoke/${VERSION}/freebsd$(echo ${i386_ACTIVE} | cut -d "." -f 1)/$(echo ${i386_ACTIVE} | cut -d "/" -f 2)/cdboot ${BOOTDIR}/cdboot/i386
+cp ${BOOTDIR}${BOOTPREFIX}/freebsd$(echo ${i386_ACTIVE} | cut -d "." -f 1)/$(echo ${i386_ACTIVE} | cut -d "/" -f 2)/cdboot ${BOOTDIR}/cdboot/i386
 mkdir -p ${RELEASEDIR}/ISO-IMAGES/${VERSION}
 if [ -d "${BOOTOVERLAY}" ] ; then
 	cd ${BOOTOVERLAY}
