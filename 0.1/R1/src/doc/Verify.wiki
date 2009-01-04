@@ -1,23 +1,18 @@
-#summary Command template
-#labels Command, Doc, Draft
+#summary Verify the integrity of files.
+#labels Command, Doc
 
-`command [optional arguments] [one optional | another optional] [...]`
+`verify [-w] file1 [file2] [...]`
 
 
 == Description ==
 
-A one paragraph short description of the command.
-
-== Feature List ==
-
- * Feature A
- * Feature B
+Verify files specified against stored sha256 and md5 hashes stored in extended attributes.
 
 == Required Files ==
 
- * Path where the file is - port it is in and/or base
-    Long Description
-
-== Implementation ==
-
-Implementation Notes
+ * stat - base
+    NetBSD-like stat, which supports -f "%HT"
+ * md5 - base
+    FreeBSD-style md5 or linux md5sum (must support -q option)
+ * sha256 - base
+    FreeBSD-style sha256 (must support -q option)

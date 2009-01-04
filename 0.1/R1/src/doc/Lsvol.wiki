@@ -1,23 +1,16 @@
-#summary Command template
-#labels Command, Doc, Draft
+#summary List volumes
+#labels Command, Doc
 
-`command [optional arguments] [one optional | another optional] [...]`
+`lsvol`
 
 
 == Description ==
 
-A one paragraph short description of the command.
-
-== Feature List ==
-
- * Feature A
- * Feature B
+List volumes available, in newline delimited url format, suitable for mounter.
 
 == Required Files ==
 
- * Path where the file is - port it is in and/or base
-    Long Description
-
-== Implementation ==
-
-Implementation Notes
+ * awk - base
+    one-true-awk
+ * sysctl - base
+    sysctl, specifically sysctl -b kern.geom.conftxt
