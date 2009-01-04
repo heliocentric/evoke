@@ -265,7 +265,7 @@ if [ -d "${ROOTDIR}/doc" ] ; then
 	cd ${ROOTDIR}/doc
 	for file in $(ls)
 	do
-		ISDOC=$(grep ^#labels ${file} | grep Docs)
+		ISDOC=$(grep ^#labels ${file} | grep Doc)
 		if [ "${ISDOC}" != "" ] ; then
 			cp ${file} ${FSDIR}/system/share/doc/${file}
 		fi

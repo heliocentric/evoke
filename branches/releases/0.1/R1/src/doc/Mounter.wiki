@@ -1,5 +1,5 @@
 #summary Wrapper for kernel specific mount apis
-#labels Commands, Docs
+#labels Command, Doc
 
 `mounter unmount directory`
 
@@ -17,7 +17,7 @@
 
 == Description ==
 
-A one paragraph short description of the command.
+mounter is a way of mounting filesystems, be they remote or local, in a standard manner. Rather then burdoning the user with remembering what -o options specify the username, the password, port number; they are in a set format in mounter. We borrowed the url syntax, and adhere to it strictly. Also, we have support for automatic creation of md or ggate devices when a normal file is specified, and tearing down the md device when mounter unmount is used.
 
 == Feature List ==
 

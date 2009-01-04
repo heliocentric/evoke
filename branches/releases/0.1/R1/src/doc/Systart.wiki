@@ -1,5 +1,5 @@
 #summary Command template
-#labels Commands, Docs
+#labels Command, Doc
 
 `command [optional arguments] [one optional | another optional] [...]`
 
