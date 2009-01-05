@@ -134,7 +134,6 @@ echo "				[DONE]"
 
 echo -n " * ${target} = Populating FSDIR"
 cp ${DESTDIR}/libexec/ld-elf.so.1 ${FSDIR}${N_LIBEXEC}
-mkdir -p ${DESTDIR}/mnt/lib
 mkdir -p ${DESTDIR}/mnt/bin
 
 # Dear lord this is ugly. Still, it simplifies other things. That's my story, and I'm sticking to it.

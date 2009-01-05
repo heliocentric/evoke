@@ -365,7 +365,7 @@ mkisofs -b cdboot/i386 -no-emul-boot -r -J -V EVOKE-${VERSION}-${REVISION} -p "$
 ISO_SHA256="$(sha256 *)"
 ISO_MD5="$(md5 *)"
 
-echo "ISO_SHA256" >>CHECKSUM.SHA256
-echo "ISO_MD5" >>CHECKSUM.MD5
+echo "${ISO_SHA256}" >>CHECKSUM.SHA256
+echo "${ISO_MD5}" >>CHECKSUM.MD5
 echo "					[DONE]"
 

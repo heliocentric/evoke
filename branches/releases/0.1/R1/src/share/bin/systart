@@ -79,6 +79,11 @@ if [ "${MODE}" = "init" ] ; then
 			export MACHINE="$(machine)"
 			export ARCH="$(machine -a)"
 		;;
+		Haiku)
+			export ABI="$(uname -r)"
+			export MACHINE="$(uname -m)"
+			export ARCH="$(uname -p)"
+		;;
 		Darwin)
 			export ABI="$(sysctl -n kern.osrelease | cut -d . -f 1)"
 			export MACHINE="$(sysctl -n hw.machine)"
