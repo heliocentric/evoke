@@ -5,4 +5,5 @@
 
  * installer needs to be able to install to a thumb drive.
  * 6.4 and 7.1 for i386 need to be on the image.
- * if installer can install to the thumb drive, we need an 'update' command that can automate finding boot filesystems, installing higher revisions/versions, and activating them.
+ * If installer can install to the thumb drive, we need an 'update' command that can automate finding boot filesystems, installing higher revisions/versions, and activating them.
+ * Build.sh needs to be able to push binaries to multiple destinations, not just /release on the local machine. for example, to the evoke mirrors, any local mirrors, etc, using mounter. mounter may need a search options and URL may need to be extended to support keys.
