@@ -15,7 +15,7 @@
  * [http://code.google.com/p/evoke/w/list?q=label:Draft Incomplete documents]
 
 == Release Notes ==
- * [01.wiki O.1R1]
+ * [Release-0.1.wiki O.1R1]
 
 == Command List ==
  * [Mounter mounter]
