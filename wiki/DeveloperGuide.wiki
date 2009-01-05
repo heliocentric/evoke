@@ -29,15 +29,47 @@ Right now, only merge backs do.
 
 == Creating a Release Branch ==
 
+(All commands relevant to /, not /trunk)
+
 To initially create a release branch, always use the following steps:
 
- `svn mkdir https://evoke.googlecode.com/svn/branches/releases/0.2`
+ `svn mkdir branches/releases/0.2`
 
- `svn copy https://evoke.googlecode.com/svn/trunk https://evoke.googlecode.com/svn/branches/releases/0.2/R1`
 
- `svn copy https://evoke.googlecode.com/svn/wiki https://evoke.googlecode.com/svn/branches/releases/0.2/R1/src/doc`
+ `svn copy trunk branches/releases/0.2/R1`
 
 R1 is always the first revision.
+
+Next, add a release page:
+ `svn add wiki/Release02.wiki`
+
+There is only one release page per release, so ignore the revision.
+
+The first thing to do is fill out the release page with the todo list:
+
+{{{
+#summary 0.2 Release Notes
+
+== Todo ==
+
+ * any items that need to be done before R1
+}}}
+
+Then, we need to copy the wiki into the branch, like so:
+
+ `svn copy wiki branches/releases/0.2/R1/src/doc`
+
+Now, we commit:
+
+ `svn commit`
+
+The format of the commit message is similar to 'Merge', except the items are not commit logs that apply, rather, it is the contents of the initial Todo list.
+{{{
+Branch Release /trunk rREVISION to /branches/releases/0.2/R1 
+
+ * any items that need to be done before R1
+
+}}}
 
 == 'Setting' a release branch ==
 
