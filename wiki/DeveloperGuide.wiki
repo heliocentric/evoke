@@ -65,7 +65,7 @@ Now, we commit:
 
 The format of the commit message is similar to 'Merge', except the items are not commit logs that apply, rather, it is the contents of the initial Todo list.
 {{{
-Branch Release /trunk rREVISION to /branches/releases/0.2/R1 
+Branch /trunk rREVISION to /branches/releases/0.2/R1 
 
  * any items that need to be done before R1
 
