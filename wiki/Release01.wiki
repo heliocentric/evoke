@@ -1,6 +1,5 @@
 #summary 0.1 Release Notes
 #labels Release
-#shortname 0.1, release
 
 == Todo ==
 
