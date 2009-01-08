@@ -833,6 +833,10 @@ mounter_command () {
 		[uU][mM][oO][uU][nN][tT])
 			unmount_handler "${2}"
 		;;
+		[sS][eE][aA][rR][cC][hH])
+			shift
+			lsvol $@
+		;;
 	  	[lL][iI][sS][tT])
 	
 		# We silently drop if someone types 'mounter list', however, 
