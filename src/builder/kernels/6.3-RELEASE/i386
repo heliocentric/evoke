@@ -1,6 +1,6 @@
 include		GENERIC
 
-ident		DSBSD
+ident		EVOKE
 options         ROOTDEVNAME=\"ufs:md0\"
 options		MAC
 options		GDB
