@@ -368,7 +368,7 @@ ISO_MD5="$(md5 *)"
 echo "${ISO_SHA256}" >>CHECKSUM.SHA256
 echo "${ISO_MD5}" >>CHECKSUM.MD5
 
-if [ "${EVOKE_PUSH_MIRROR}" != ""] ; then
+if [ "${EVOKE_PUSH_MIRROR}" != "" ] ; then
 	cd ${RELEASEDIR}
 
 	MOUNTPOINT="${TMPDIR}/$(dd if=/dev/random bs=1m count=4 | sha256 -q)"
