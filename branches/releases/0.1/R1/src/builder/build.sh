@@ -367,5 +367,21 @@ ISO_MD5="$(md5 *)"
 
 echo "${ISO_SHA256}" >>CHECKSUM.SHA256
 echo "${ISO_MD5}" >>CHECKSUM.MD5
+
+if [ "${EVOKE_PUSH_MIRROR}" != "" ] ; then
+	cd ${RELEASEDIR}
+
+	MOUNTPOINT="${TMPDIR}/$(dd if=/dev/random bs=1m count=4 | sha256 -q)"
+
+	mkdir -p "${MOUNTPOINT}"
+
+	for volume in $(mounter search tag=evoke-mirror)
+	do
+		mounter "${volume}" "${MOUNTPOINT}"
+		tar -cf - "evoke/${VERSION}/${REVISION}" "ISO-IMAGES/${VERSION}/${REVISION}" | tar -xvpf - -C "${MOUNTPOINT}"
+		mounter umount "${MOUNTPOINT}"	
+	done
+fi
+
 echo "					[DONE]"
 
