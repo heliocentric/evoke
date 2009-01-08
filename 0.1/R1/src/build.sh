@@ -67,7 +67,7 @@ if [ "${OBJDIR}" = "" ] ; then
 	mkdir -p ${OBJDIR}
 fi
 if [ "${TMPDIR}" = "" ] ; then
-	export TMPDIR="${ROOTDIR}/obj/tmp"
+	export TMPDIR="/tmp/buildenv"
 	mkdir -p ${TMPDIR}
 fi
 if [ "${NDISTDIR}" = "" ] ; then
@@ -113,3 +113,4 @@ fi
 if [ "${OBJENV}" != "" ] ; then 
 	mounter umount ${NDISTDIR} 2>>${ERRFILE}
 fi
+

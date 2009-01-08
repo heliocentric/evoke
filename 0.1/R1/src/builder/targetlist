@@ -33,6 +33,6 @@
 # Field 6:	The subversion revision number
 # Field 7:	The platform (ie, pc98)
 
-FreeBSD:6:i386:6.4:releng/6.4:186731
-#FreeBSD:7:i386:7.1:releng/7.1:186731
-#FreeBSD:8:i386:8:head:186731
+FreeBSD:6:i386:6.4:releng/6.4:186916
+#FreeBSD:7:i386:7.1:releng/7.1:186916
+#FreeBSD:8:i386:8:head:186916
