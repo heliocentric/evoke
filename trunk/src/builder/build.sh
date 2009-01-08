@@ -378,7 +378,7 @@ if [ "${EVOKE_PUSH_MIRROR}" != "" ] ; then
 	for volume in $(mounter search tag=evoke-mirror)
 	do
 		mounter "${volume}" "${MOUNTPOINT}"
-		tar -cf - "${VERSION}/${REVISION}" "ISO-IMAGES/${VERSION}/${REVISION}" | tar -xvpf - -C "${MOUNTPOINT}"
+		tar -cf - "evoke/${VERSION}/${REVISION}" "ISO-IMAGES/${VERSION}/${REVISION}" | tar -xvpf - -C "${MOUNTPOINT}"
 		mounter umount "${MOUNTPOINT}"	
 	done
 fi
