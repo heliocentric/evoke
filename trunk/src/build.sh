@@ -113,3 +113,4 @@ fi
 if [ "${OBJENV}" != "" ] ; then 
 	mounter umount ${NDISTDIR} 2>>${ERRFILE}
 fi
+
