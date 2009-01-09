@@ -26,7 +26,7 @@
 # $Id$
 
 # Our build targets for the root.fs image.
-export i386_ACTIVE="6.4-RELEASE/i386"
+export i386_ACTIVE="7.1-RELEASE/i386"
 
 # Evoke Version
 export VERSION="0.1"
