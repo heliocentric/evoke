@@ -26,7 +26,6 @@
 
 # $Id$
 
-svn up
 END="$(svnversion)"
 BEGIN="$(svn log -l 1 --xml | grep revision | cut -d \" -f 2)"
 ORIGPATH="$(pwd)"
@@ -34,13 +33,9 @@ MAINPATH="$(cd ../../../../../ && pwd)"
 NUMBER="$((${END} - ${BEGIN}))"
 
 cd "${MAINPATH}"
+svn up
+
 if [ "${NUMBER}" != "0" ] ; then
+	LOGMESSAGE="$(svn log -l 1 --xml | awk '/<msg>/, /<\/msg>/' | sed 's_<msg>__g' | sed 's_</msg>__g' | grep -v ^$)"
 fi
-svn log -l "${NUMBER}"
-
-echo "${BEGIN}"
-echo "${END}"
-echo "${NUMBER}"
-echo "${ORIGPATH}"
-echo "${MAINPATH}"
-
+echo "${LOGMESSAGE}"
