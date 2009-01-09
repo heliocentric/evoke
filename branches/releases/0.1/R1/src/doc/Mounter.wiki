@@ -21,8 +21,8 @@ mounter is a way of mounting filesystems, be they remote or local, in a standard
 
 == Feature List ==
 
- * Feature A
- * Feature B
+ * Uses an extended URL format.
+ * Supports searching for volumes to mount, currently only via tag.
 
 == Required Files ==
 
@@ -32,3 +32,9 @@ mounter is a way of mounting filesystems, be they remote or local, in a standard
 == Implementation ==
 
 Implementation Notes
+
+== Bugs ==
+
+mounter does not handle the case where one of the special url characters: /, :, @, [, and ] appear in a field. For example, a username such as blah@whatever.org, which is common in some hosting services.
+
+The proper way to handle this would be to support \ to escape the characters when they aren't to be used as deliminators. Anyone is free to implement this.
