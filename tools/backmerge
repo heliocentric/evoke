@@ -26,16 +26,21 @@
 
 # $Id$
 
-END="$(svnversion)"
+svn up 2>&1 >/dev/null
+
+END="$(svnversion | sed s_M__g)"
 BEGIN="$(svn log -l 1 --xml | grep revision | cut -d \" -f 2)"
 ORIGPATH="$(pwd)"
 MAINPATH="$(cd ../../../../../ && pwd)"
 NUMBER="$((${END} - ${BEGIN}))"
-
+TARGETPATH="$(echo ${ORIGPATH} | sed "s_${MAINPATH}__g")"
 cd "${MAINPATH}"
-svn up
+svn up 2>&1 >/dev/null
 
 if [ "${NUMBER}" != "0" ] ; then
-	LOGMESSAGE="$(svn log -l 1 --xml | awk '/<msg>/, /<\/msg>/' | sed 's_<msg>__g' | sed 's_</msg>__g' | grep -v ^$)"
+	LOGMESSAGE="$(echo "Merge /trunk/src r${END} to ${TARGETPATH}"; svn log -l ${NUMBER} --xml | awk '/<msg>/, /<\/msg>/' | sed 's_<msg>__g' | sed 's_</msg>__g' | grep -v ^$ | awk '{ print "\n" $0; }')"
+	cd "${ORIGPATH}"
+	svn merge -r ${BEGIN}:${END} https://evoke.googlecode.com/svn/trunk/src .
+	svn merge -r ${BEGIN}:${END} https://evoke.googlecode.com/svn/wiki doc
+	svn commit -m "${LOGMESSAGE}"
 fi
-echo "${LOGMESSAGE}"
