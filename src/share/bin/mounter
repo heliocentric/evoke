@@ -637,6 +637,9 @@ ssh_mount () {
 				local HOST="${HOST}${M_FILE}"
 			fi
 			sshfs ${SSHFS_OPTIONS} ${HOST} ${M_DESTINATION}
+			# sshfs can throw bad file descripter in some cases, if it's accessed to early.
+			# Add a 5 second sleep
+			sleep 5
 		else
 			mexit 7
 		fi
