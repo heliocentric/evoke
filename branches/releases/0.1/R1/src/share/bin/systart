@@ -157,24 +157,6 @@ if [ "${MODE}" = "init" ] ; then
 
 	mecho ""
 
-	mecho -n "Adding swap, dump,  and entropy"
-
-	for swap in $(mounter list swap)
-	do
-#		mounter swap:${swap} enc
-	done
-
-	for entropy in $(mounter list entropy)
-	do
-#		mounter entropy:${entropy}
-	done
-
-	DUMPDEV=$(mounter list dump | awk '{ print $1 }')
-
-#	mounter dump:${DUMPDEV}
-
-	mecho ""
-
 fi
 
 mecho -n "Creating /mem"
@@ -262,6 +244,25 @@ fi
 
 
 if [ "${MODE}" = "init" ] ; then
+
+	mecho -n "Adding swap, dump,  and entropy"
+
+	for swap in $(mounter list swap)
+	do
+#		mounter swap:${swap} enc
+	done
+
+	for entropy in $(mounter list entropy)
+	do
+#		mounter entropy:${entropy}
+	done
+
+	DUMPDEV=$(mounter list dump | awk '{ print $1 }')
+
+#	mounter dump:${DUMPDEV}
+
+	mecho ""
+
 	mecho -n "Starting system daemons"
 	# Always start powerd if available, some machines do not have proper heat management
 	# and it can be an issue. 
@@ -271,7 +272,6 @@ if [ "${MODE}" = "init" ] ; then
 	watchdogd -I/mem/pid/watchdogd.pid
 	mecho ""
 fi
-
 mecho -n "Generating passwd files"
 RPASSWD='$1$1QgK4Xsg$.PInGIAb4c0nznxpRkUPk.'
 
