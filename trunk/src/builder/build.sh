@@ -152,7 +152,7 @@ do
 	echo ""
 
 	# We use TMPDIR so that it can be different then the OBJDIR, as TMPDIR is write heavy.
-	export MAKEOBJDIRPREFIX=${TMPDIR}/${TARGET_HASH}
+	export MAKEOBJDIRPREFIX=${OBJDIR}/obj/${TARGET_HASH}
 	mkdir -p ${MAKEOBJDIRPREFIX}
 
 
