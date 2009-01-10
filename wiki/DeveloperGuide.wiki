@@ -5,6 +5,12 @@
 
 = Using the SVN Repo =
 
+== Checkout ==
+
+It is highly recommended that you at least check out the tools, and add them to your PATH, before any other paths.
+
+ `svn https://evoke.googlecode.com/svn/tools evoke-tools`
+
 == Commit Log format ==
 
 {{{
