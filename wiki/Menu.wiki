@@ -1,5 +1,10 @@
 #summary Menu drawing subroutine.
 #labels Command, Doc
+<wiki:comment>
+	type: command
+	name: menu
+	language: sh
+</wiki:comment>
 
 `menu "title" "list"`
 
