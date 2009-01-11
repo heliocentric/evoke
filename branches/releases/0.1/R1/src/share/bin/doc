@@ -56,15 +56,37 @@ getlist() {
 	do
 		case "${1}" in
 			wiki)
-				find_matching_wiki
+				if [ "${EVOKE_NEWSEARCH}" = "yes" ] ; then
+					find_matching_wiki2
+				else
+					find_matching_wiki
+				fi
 			;;
 		esac
 		shift
 	done
 }
 
+find_matching_wiki2() {
+	for filename in $(list_docs)
+	do
+		shortname="$(echo "${filename}" | cut -d . -f 1)"
+		contents="$(cat ${EVOKE_DOCDIR}/${filename} | awk '/<wiki:comment>/, /<\/wiki:comment>/' | sed 's_<wiki:comment>__g' | sed 's_</wiki:comment>__g' | grep -v ^$)"
+		eval HEADER_${shortname}=\"\$\{contents\}\"
+	done
+	for var in $(list_headers)
+	do
+		eval echo \"\$\{${var}\}\"
+	done
+}
+
+list_headers() {
+	set | grep ^HEADER_ | cut -d = -f 1
+}
+
 find_matching_wiki() {
 	# first pass, lets get ones that match the name.
+
 	if [ "${DOC_NAME}" != "" ] ; then
 		for name in ${DOC_NAME}
 		do
