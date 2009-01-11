@@ -1,5 +1,13 @@
 #summary Verify the integrity of files.
 #labels Command, Doc
+<wiki:comment>
+	type: command
+	name: verify
+	language: sh
+	svnid: $Id$
+	svnauthor: $Author$
+	svnrevision: $Revision$
+</wiki:comment>
 
 `verify [-w] file1 [file2] [...]`
 

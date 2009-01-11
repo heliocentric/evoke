@@ -1,5 +1,13 @@
 #summary Command template
 #labels Command, Doc, Draft
+<wiki:comment>
+	type: command
+	name: command
+	language: sh
+	svnid: $Id$
+	svnauthor: $Author$
+	svnrevision: $Revision$
+</wiki:comment>
 
 `command [optional arguments] [one optional | another optional] [...]`
 
