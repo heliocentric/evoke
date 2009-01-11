@@ -81,7 +81,26 @@ find_matching_wiki2() {
 		eval HEADER_${shortname}=\"\$\{contents\}\"
 	done
 	if [ "${DOC_NAME}" != "" ] ; then
-
+		for name in ${DOC_NAME}
+		do
+			for var in $(list_headers)
+			do
+				if [ "$(eval echo \"\$\{${var}\}\" | egrep "^[[:blank:]]+name:" | cut -d : -f 2-100 | grep ${name})" = "" ] ; then
+					unset ${var}
+				fi
+			done
+		done
+	fi
+	if [ "${DOC_TYPE}" != "" ] ; then
+		for type in ${DOC_TYPE}
+		do
+			for var in $(list_headers)
+			do
+				if [ "$(eval echo \"\$\{${var}\}\" | egrep "^[[:blank:]]+type:" | cut -d : -f 2-100 | grep ${type})" = "" ] ; then
+					unset ${var}
+				fi
+			done
+		done
 	fi
 	for var in $(list_headers)
 	do
@@ -143,7 +162,14 @@ list_docs() {
 }
 
 wiki_display () {
-	grep -v ^# "${1}" | less
+	case "${DOC_OUTPUT}" in
+		[tT][tT][yY])
+			grep -v ^# "${1}" | less
+		;;
+		[bB][aA][tT][cC][hH])
+			grep -v ^# "${1}"
+		;;
+	esac
 }
 
 
@@ -218,6 +244,9 @@ doc() {
 					;;
 				esac
 			done
+		;;
+		[bB][aA][tT][cC][hH])
+			display_page "$(getlist ${DOC_DOCTYPE})"
 		;;
 	esac
 }
