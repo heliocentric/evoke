@@ -92,6 +92,28 @@ find_matching_wiki2() {
 			done
 		done
 	fi
+	if [ "${DOC_PROGLANG}" != "" ] ; then
+		for proglang in ${DOC_PROGLANG}
+		do
+			for var in $(list_headers)
+			do
+				if [ "$(eval echo \"\$\{${var}\}\" | egrep "^[[:blank:]]+programming-language:" | cut -d : -f 2-100 | grep ${proglang})" = "" ] ; then
+					unset ${var}
+				fi
+			done
+		done
+	fi
+	if [ "${DOC_AUTHOR}" != "" ] ; then
+		for author in ${DOC_AUTHOR}
+		do
+			for var in $(list_headers)
+			do
+				if [ "$(eval echo \"\$\{${var}\}\" | egrep "^[[:blank:]]+svnauthor:" | cut -d : -f 2-100 | grep ${author})" = "" ] ; then
+					unset ${var}
+				fi
+			done
+		done
+	fi
 	if [ "${DOC_TYPE}" != "" ] ; then
 		for type in ${DOC_TYPE}
 		do
@@ -212,6 +234,14 @@ doc() {
 			[tT][yY][pP][eE])
 				DOC_VALUE=$(echo "${DOC_VALUE}" | tr "[:upper:]" "[:lower:]")
 				DOC_TYPE=$(printf "${DOC_TYPE}\n${DOC_VALUE}")
+			;;
+			[pP][rR][oO][gG][lL][aA][nN][gG])
+				DOC_VALUE=$(echo "${DOC_VALUE}" | tr "[:upper:]" "[:lower:]")
+				DOC_PROGLANG=$(printf "${DOC_PROGLANG}\n${DOC_VALUE}")
+			;;
+			[aA][uU][tT][hH][oO][rR])
+				DOC_VALUE=$(echo "${DOC_VALUE}" | tr "[:upper:]" "[:lower:]")
+				DOC_AUTHOR=$(printf "${DOC_AUTHOR}\n${DOC_VALUE}")
 			;;
 			[dD][oO][cC][tT][yY][pP][eE])
 				DOC_VALUE=$(echo "${DOC_VALUE}" | tr "[:upper:]" "[:lower:]")

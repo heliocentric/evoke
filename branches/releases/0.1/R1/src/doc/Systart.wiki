@@ -2,8 +2,9 @@
 #labels Command, Doc
 <wiki:comment>
 	type: command
+author: heliocentric
 	name: systart
-	language: sh
+	programming-language: sh
 	svnid: $Id$
 	svnauthor: $Author$
 	svnrevision: $Revision$

@@ -23,8 +23,9 @@ A one paragraph short description of the command.
 Implementation Notes
 <wiki:comment>
 	type: command
+author: heliocentric
 	name: command
-	language: sh
+	programming-language: sh
 	svnid: $Id$
 	svnauthor: $Author$
 	svnrevision: $Revision$
