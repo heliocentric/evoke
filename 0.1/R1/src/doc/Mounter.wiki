@@ -1,5 +1,13 @@
 #summary Wrapper for kernel specific mount apis
 #labels Command, Doc, Draft
+<wiki:comment>
+	type: command
+	name: mounter
+	language: sh
+	svnid: $Id$
+	svnauthor: $Author$
+	svnrevision: $Revision$
+</wiki:comment>
 
 `mounter unmount directory`
 

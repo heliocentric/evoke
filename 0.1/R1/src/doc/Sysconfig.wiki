@@ -1,5 +1,13 @@
 #summary System Configuration Utility
 #labels Command, Doc
+<wiki:comment>
+	type: command
+	name: sysconfig
+	language: sh
+	svnid: $Id$
+	svnauthor: $Author$
+	svnrevision: $Revision$
+</wiki:comment>
 
 `sysconfig command GEOM [options]`
 

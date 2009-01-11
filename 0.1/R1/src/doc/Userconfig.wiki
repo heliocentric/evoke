@@ -1,5 +1,13 @@
 #summary User configuration utility
 #labels Command, Doc
+<wiki:comment>
+	type: command
+	name: userconfig
+	language: sh
+	svnid: $Id$
+	svnauthor: $Author$
+	svnrevision: $Revision$
+</wiki:comment>
 
 `userconfig [commnd]`
 
