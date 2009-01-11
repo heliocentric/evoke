@@ -40,10 +40,33 @@ type_check() {
 		MIME="$(file -b --mime-type "${1}" | cut -d , -f 1)"
 		setextattr -q user mime_type "${MIME}" "${1}"
 	fi
-	echo "${1}:" "${MIME}"
+	if [ "${ECHO_FILE}" != "no" ] ; then
+		echo "${1}:" "${MIME}"
+	else
+		echo "${MIME}"
+	fi
 }
 
 filetype () {
+	if [ "${OPTIONS}" != "" ] ; then
+		for option in ${OPTIONS}
+		do
+			case "${option}" in
+				norecurse)
+					EVOKE_FTRECURSE="no"
+				;;
+				recurse)
+					EVOKE_FTRECURSE="yes"
+				;;
+				seperatemount)
+					EVOKE_MOUNTPOINTTYPE="yes"
+				;;
+				quiet)
+					ECHO_FILE="no"
+				;;
+			esac
+		done
+	fi
 	while [ "${1}" != "" ]
 	do
 		case "${1}" in
@@ -57,12 +80,14 @@ filetype () {
 						else
 							type_check "${1}" "inode/directory"
 						fi
-						for entry in $(ls -a "${1}")
-						do
-							if [ "${entry}" != "." -a "${entry}" != ".." ] ; then
-								filetype "${1}/${entry}"
-							fi
-						done
+						if [ "${EVOKE_FTRECURSE}" != "no" ] ; then
+							for entry in $(ls -a "${1}")
+							do
+									if [ "${entry}" != "." -a "${entry}" != ".." ] ; then
+									filetype "${1}/${entry}"
+								fi
+							done
+						fi
 	
 					;;
 					"Socket")
