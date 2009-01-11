@@ -149,8 +149,11 @@ do
 
 	# we don't have a real /etc, so point init to systart.
 	sed -i .bak "s_\"/etc/rc_\"${N_SHAREBIN}/systart_g" ${WORKDIR}/usr/src/sbin/init/pathnames.h 1>&2
-	echo ""
 
+	# Patch for lib/libmagic's build-tools target.
+	sed -i .bak "s_usr/sbin usr/share/misc_usr/sbin usr/share/misc config_g" ${WORKDIR}/usr/src/Makefile.inc1 1>&2
+
+	echo ""
 	# We use TMPDIR so that it can be different then the OBJDIR, as TMPDIR is write heavy.
 	export MAKEOBJDIRPREFIX=${OBJDIR}/obj/${TARGET_HASH}
 	mkdir -p ${MAKEOBJDIRPREFIX}
