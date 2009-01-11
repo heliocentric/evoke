@@ -34,6 +34,7 @@ fi
 
 FORFS="
 "
+
 display_vars () {
 	if [ "${DEBUG}" = "yes" ] ; then
 		local IFS="${FORFS}"
@@ -164,15 +165,17 @@ list_docs() {
 wiki_display () {
 	case "${DOC_OUTPUT}" in
 		[tT][tT][yY])
-			grep -v ^# "${1}" | less
+			strip_wiki "${1}" | less
 		;;
 		[bB][aA][tT][cC][hH])
-			grep -v ^# "${1}"
+			strip_wiki "${1}"
 		;;
 	esac
 }
 
-
+strip_wiki () {
+	grep -v ^# "${1}" | awk '/<wiki:comment>/, /<\/wiki:comment>/ { next; } { print }'
+}
 display_page() {
 	SPEC="$(echo ${1} | cut -d - -f 1)"
 	NAME="$(echo ${SPEC} | cut -d "(" -f 1 | awk '{ print $1 }')"
