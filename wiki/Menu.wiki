@@ -4,6 +4,9 @@
 	type: command
 	name: menu
 	language: sh
+	svnid: $Id$
+	svnauthor: $Author$
+	svnrevision: $Revision$
 </wiki:comment>
 
 `menu "title" "list"`
