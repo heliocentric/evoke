@@ -194,6 +194,12 @@ wiki_display () {
 		[bB][aA][tT][cC][hH])
 			strip_wiki "${1}"
 		;;
+		[fF][iI][lL][eE][lL][iI][sS][Tt])
+			echo "${1}"
+		;;
+		[nN][aA][mM][eE][lL][iI][sS][Tt])
+			echo "${2}"
+		;;
 	esac
 }
 
@@ -207,7 +213,7 @@ display_page() {
 	TYPE="$(echo ${SPEC} | cut -d "(" -f 2 | cut -d ")" -f 1)"
 	case "${TYPE}" in
 		wiki)
-			wiki_display "${EVOKE_DOCDIR}/${NAME}.wiki"
+			wiki_display "${EVOKE_DOCDIR}/${NAME}.wiki" "${NAME}"
 		;;
 	esac
 }
@@ -281,8 +287,12 @@ doc() {
 				esac
 			done
 		;;
-		[bB][aA][tT][cC][hH])
-			display_page "$(getlist ${DOC_DOCTYPE})"
+		*)
+			local IFS="${FORFS}"
+			for name in $(getlist ${DOC_DOCTYPE})
+			do
+				display_page "${name}"
+			done
 		;;
 	esac
 }
