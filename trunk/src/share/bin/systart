@@ -208,7 +208,7 @@ export EVOKE_LIBDIR=${EVOKE_MEMDIR}/lib
 mkdir -p ${EVOKE_LIBDIR}
 
 mount_nullfs -o union,ro /system/share/lib/ /config/
-mount_nullfs -o union,ro /mem/lib/ /config/
+mount_nullfs -o union /mem/lib/ /config/
 export EVOKE_CFGDIR=/config
 
 export EVOKE_SCDIR=/mem/sysconfig
@@ -272,7 +272,7 @@ if [ "${MODE}" = "init" ] ; then
 	watchdogd -I/mem/pid/watchdogd.pid
 	mecho ""
 fi
-mecho -n "Generating passwd files"
+mecho -n "Generating files"
 RPASSWD='$1$1QgK4Xsg$.PInGIAb4c0nznxpRkUPk.'
 
 export HOME=${EVOKE_MEMDIR}/home
@@ -288,6 +288,7 @@ cap_mkdb -f ${EVOKE_LIBDIR}/login.conf.db ${EVOKE_CFGDIR}/login.conf
 echo "/bin/tcsh" >>${EVOKE_LIBDIR}/shells
 echo "/bin/csh" >>${EVOKE_LIBDIR}/shells
 echo "/bin/sh" >>${EVOKE_LIBDIR}/shells
+file -C -i -m /config/magic.mime
 
 mecho ""
 
