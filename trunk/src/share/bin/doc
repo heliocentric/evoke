@@ -71,10 +71,13 @@ find_matching_wiki2() {
 	for filename in $(list_docs)
 	do
 		shortname="$(echo "${filename}" | cut -d . -f 1)"
-		contents="$(cat ${EVOKE_DOCDIR}/${filename} | awk '/<wiki:comment>/, /<\/wiki:comment>/')"
+		contents="$(cat ${EVOKE_DOCDIR}/${filename} | awk '/<wiki:comment>/, /<\/wiki:comment>/' | sed 's_<wiki:comment>__g' | sed 's_</wiki:comment>__g' | grep -v ^$)"
 		eval HEADER_${shortname}=\"\$\{contents\}\"
 	done
-	list_headers
+	for var in $(list_headers)
+	do
+		eval echo \"\$\{${var}\}\"
+	done
 }
 
 list_headers() {
