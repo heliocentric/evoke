@@ -29,39 +29,58 @@ FORFS="
 "
 
 type_check() {
-	ATTRIBUTE="$(getextattr -q user mime_type "${1}")"
-	if [ "${ATTRIBUTE}" = "" -o "${FORCE_WRITE_MIME}" = "yes" ] ; then
+	MIME="$(getextattr -q user mime_type "${1}")"
+	if [ "${2}" != "" ] ; then
+		MIME="${2}"
+	fi
+	if [ "${MIME}" = "" -o "${FORCE_WRITE_MIME}" = "yes" ] ; then
 		if [ "${WARNING}" = "yes" ] ; then
 			echo "WARNING: 1 ${1}"
 		fi
-		if [ "${2}" = "" ] ; then
-			MIME="$(file -b --mime-type "${1}" | cut -d , -f 1)"
-		else
-			MIME="${2}"
-		fi
+		MIME="$(file -b --mime-type "${1}" | cut -d , -f 1)"
 		setextattr -q user mime_type "${MIME}" "${1}"
-		echo "${1}:" "${MIME}"
-	else
-		echo "${1}:" "${ATTRIBUTE}"
 	fi
+	echo "${1}:" "${MIME}"
 }
 
 filetype () {
 	while [ "${1}" != "" ]
 	do
-		local STAT_TYPE="$(stat -f %HT ${1})"
-		case "${STAT_TYPE}" in
-			Directory)
-				type_check "${1}" "inode/directory"
-				for entry in $(ls -a "${1}")
-				do
-					if [ "${entry}" != "." -a "${entry}" != ".." ] ; then
-						filetype "${1}/${entry}"
-					fi
-				done
-			;;
-			"Regular File")
-				type_check "${1}"
+		case "${1}" in
+			*)
+				eval local $(stat -f "STAT_DEV=%d STAT_TYPE=\"%HT\"" "${1}")
+				case "${STAT_TYPE}" in
+					Directory)
+						local STAT_NDEV=$(stat -f "%d" "$(dirname ${1})")
+						if [ "${STAT_NDEV}" != "${STAT_DEV}" -a "${EVOKE_MOUNTPOINTTYPE}" = "yes" ] ; then
+							type_check "${1}" "inode/mount-point"
+						else
+							type_check "${1}" "inode/directory"
+						fi
+						for entry in $(ls -a "${1}")
+						do
+							if [ "${entry}" != "." -a "${entry}" != ".." ] ; then
+								filetype "${1}/${entry}"
+							fi
+						done
+	
+					;;
+					"Socket")
+						type_check "${1}" "inode/socket"
+					;;
+					"Fifo File")
+						type_check "${1}" "inode/fifo"
+					;;
+					"Character Device")
+						type_check "${1}" "inode/chardevice"
+					;;
+					"Symbolic Link")
+						type_check "${1}" "inode/symlink"
+					;;
+					"Regular File")
+						type_check "${1}"
+					;;
+				esac
 			;;
 		esac
 		shift
