@@ -62,10 +62,10 @@ getlist() {
 	do
 		case "${1}" in
 			wiki)
-				if [ "${EVOKE_NEWSEARCH}" = "yes" ] ; then
-					find_matching_wiki2
-				else
+				if [ "${EVOKE_NEWSEARCH}" = "no" ] ; then
 					find_matching_wiki
+				else
+					find_matching_wiki2
 				fi
 			;;
 		esac
