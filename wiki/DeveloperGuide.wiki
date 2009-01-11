@@ -3,6 +3,28 @@
 
 <wiki:toc max_depth="3" />
 
+= The Evoke Platform =
+
+== Evoke program guide ==
+
+=== Command based programs ===
+Example:
+  * [Userconfig userconfig]
+  * [Sysconfig sysconfig]
+  * [Mounter mounter]
+
+=== Search UI programs ===
+
+Example:
+  * [Doc doc]
+
+=== File operation based programs ===
+
+Example:
+  * [Verify verify]
+  * [Filetype filetype]
+  * [Consolidate consolidate]
+
 = Using the SVN Repo =
 
 == Checkout ==
