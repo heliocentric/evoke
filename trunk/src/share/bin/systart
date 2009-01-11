@@ -288,7 +288,8 @@ cap_mkdb -f ${EVOKE_LIBDIR}/login.conf.db ${EVOKE_CFGDIR}/login.conf
 echo "/bin/tcsh" >>${EVOKE_LIBDIR}/shells
 echo "/bin/csh" >>${EVOKE_LIBDIR}/shells
 echo "/bin/sh" >>${EVOKE_LIBDIR}/shells
-file -C -i -m /config/magic.mime
+cd /config
+file -C -i -m magic.mime
 
 mecho ""
 
