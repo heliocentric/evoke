@@ -2,8 +2,9 @@
 #labels Command, Doc, Draft
 <wiki:comment>
 	type: command
+author: heliocentric
 	name: installer
-	language: sh
+	programming-language: sh
 	svnid: $Id$
 	svnauthor: $Author$
 	svnrevision: $Revision$

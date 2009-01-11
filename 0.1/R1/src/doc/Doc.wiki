@@ -2,8 +2,9 @@
 #labels Command, Doc
 <wiki:comment>
 	type: command
+author: heliocentric
 	name: doc
-	language: sh
+	programming-language: sh
 	svnid: $Id$
 	svnauthor: $Author$
 	svnrevision: $Revision$
@@ -31,5 +32,7 @@ Ex.
 
  * name - the logical name of the command, function call, etc.
  * type - the type, useful if you have conflicting names, for example, read can be a sh builtin, a libc call, or a function in another language.
+ * proglang - the programming language the program or library call is written in.
+ * author - author of the program, library call.
  * doctype - man, wiki, useful to force a scope. Default is all doc types
  * output - currently only tty is supported, in the future, html; pdf, etc may be supported.
