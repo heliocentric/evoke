@@ -1,5 +1,15 @@
 #summary Command template
 #labels Command, Doc, Draft
+<wiki:comment>
+	type: command
+	author: heliocentric
+	program-class fileop
+	name: command
+	programming-language: sh
+	svnid: $Id$
+	svnauthor: $Author$
+	svnrevision: $Revision$
+</wiki:comment>
 
 `command [optional arguments] [one optional | another optional] [...]`
 
@@ -21,12 +31,3 @@ A one paragraph short description of the command.
 == Implementation ==
 
 Implementation Notes
-<wiki:comment>
-	type: command
-author: heliocentric
-	name: command
-	programming-language: sh
-	svnid: $Id$
-	svnauthor: $Author$
-	svnrevision: $Revision$
-</wiki:comment>

@@ -1,6 +1,61 @@
 #summary Guide for new developers.
 #labels Developer
 
+=======
+<wiki:toc max_depth="3" />
+
+= The Evoke Platform =
+
+== Evoke program guide ==
+
+=== Command based programs ===
+Example:
+  * [Userconfig userconfig]
+  * [Sysconfig sysconfig]
+  * [Mounter mounter]
+
+=== Search UI programs ===
+
+Example:
+  * [Doc doc]
+
+=== File operation based programs ===
+
+Example:
+  * [Verify verify]
+  * [Filetype filetype]
+  * [Consolidate consolidate]
+
+= Using the SVN Repo =
+
+== Checkout ==
+
+It is highly recommended that you at least check out the tools, and add them to your PATH, before any other paths.
+
+ `svn https://evoke.googlecode.com/svn/tools evoke-tools`
+
+== Commit Log format ==
+
+{{{
+* Item A
+* Item B
+* Item C
+}}}
+
+For certain commits, a short description line is necessary, like so.
+
+{{{
+Description
+
+* Item A
+* Item B
+* Item C
+}}}
+
+Right now, only merge backs do.
+
+= Release Engineering Guide =
+
 == Creating a Release Branch ==
 
 (All commands relevant to /, not /trunk)
