@@ -78,7 +78,7 @@ find_matching_wiki2() {
 	for filename in $(list_docs)
 	do
 		shortname="$(echo "${filename}" | cut -d . -f 1)"
-		contents="$( (cat ${EVOKE_DOCDIR}/${filename} | grep ^#summary ); ( cat ${EVOKE_DOCDIR}/${filename} | awk '/<wiki:comment>/, /<\/wiki:comment>/' | sed 's_<wiki:comment>__g' | sed 's_</wiki:comment>__g' | grep -v ^$) )"
+		contents="$( (cat ${EVOKE_DOCDIR}/${filename} | grep ^#summary );(cat ${EVOKE_DOCDIR}/${filename} | grep ^#labels ); ( cat ${EVOKE_DOCDIR}/${filename} | awk '/<wiki:comment>/, /<\/wiki:comment>/' | sed 's_<wiki:comment>__g' | sed 's_</wiki:comment>__g' | grep -v ^$) )"
 		eval HEADER_${shortname}=\"\$\{contents\}\"
 	done
 	if [ "${DOC_NAME}" != "" ] ; then
@@ -97,7 +97,9 @@ find_matching_wiki2() {
 		do
 			for var in $(list_headers)
 			do
-				if [ "$(eval echo \"\$\{${var}\}\" | egrep "^[[:blank:]]+type:" | cut -d : -f 2-100 | grep ${type})" = "" ] ; then
+				COMMENT_TYPE="$(eval echo \"\$\{${var}\}\" | egrep "^[[:blank:]]+type:" | cut -d : -f 2-100 | grep ${type})"
+				LABEL_TYPE="$(eval echo \"\$\{${var}\}\" | grep ${type})"
+				if [ "${COMMENT_TYPE}" = "" -a "${LABEL_TYPE}" = "" ] ; then
 					unset ${var}
 				fi
 			done
@@ -174,8 +176,9 @@ wiki_display () {
 }
 
 strip_wiki () {
-	grep -v ^# "${1}" | awk '/<wiki:comment>/, /<\/wiki:comment>/ { next; } { print }'
+	grep -v ^#summary "${1}" | grep -v ^#labels | grep -v ^#sidebar | awk '/<wiki:comment>/, /<\/wiki:comment>/ { next; } { print }'
 }
+
 display_page() {
 	SPEC="$(echo ${1} | cut -d - -f 1)"
 	NAME="$(echo ${SPEC} | cut -d "(" -f 1 | awk '{ print $1 }')"
