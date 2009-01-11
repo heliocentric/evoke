@@ -1,5 +1,5 @@
 #summary Document viewer.
-#labels Command, Doc
+#labels Command,Doc
 <wiki:comment>
 	type: command
 author: heliocentric
@@ -26,7 +26,7 @@ Ex.
  * `doc name=mounter` - get the normal doc wiki for mounter.
  * `doc name=close type=libc` - get the close function call definition, as it applies to libc.
  * `doc name=read type=libc doctype=man` - get the read call, and force it to be a typical man page.
- * `doc sh` - equivalent to `man name=sh`
+ * `doc sh` - equivalent to `doc name=sh`
 
 == Search options ==
 
