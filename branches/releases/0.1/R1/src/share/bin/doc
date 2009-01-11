@@ -30,8 +30,14 @@ if [ "${EVOKE_DOCDIR}" = "" ] ; then
 	export EVOKE_DOCDIR="/system/share/doc"
 fi
 
+# the for field specifier, so call for like so: local IFS="${FORFS}" \n for blah in blah
+
+FORFS="
+"
+
 display_vars () {
 	if [ "${DEBUG}" = "yes" ] ; then
+		local IFS="${FORFS}"
 		for i in ${DOC_NAME}
 		do
 			echo -n "name="
@@ -56,10 +62,10 @@ getlist() {
 	do
 		case "${1}" in
 			wiki)
-				if [ "${EVOKE_NEWSEARCH}" = "yes" ] ; then
-					find_matching_wiki2
-				else
+				if [ "${EVOKE_NEWSEARCH}" = "no" ] ; then
 					find_matching_wiki
+				else
+					find_matching_wiki2
 				fi
 			;;
 		esac
@@ -68,15 +74,40 @@ getlist() {
 }
 
 find_matching_wiki2() {
+	local IFS="${FORFS}"
 	for filename in $(list_docs)
 	do
 		shortname="$(echo "${filename}" | cut -d . -f 1)"
-		contents="$(cat ${EVOKE_DOCDIR}/${filename} | awk '/<wiki:comment>/, /<\/wiki:comment>/' | sed 's_<wiki:comment>__g' | sed 's_</wiki:comment>__g' | grep -v ^$)"
+		contents="$( (cat ${EVOKE_DOCDIR}/${filename} | grep ^#summary );(cat ${EVOKE_DOCDIR}/${filename} | grep ^#labels ); ( cat ${EVOKE_DOCDIR}/${filename} | awk '/<wiki:comment>/, /<\/wiki:comment>/' | sed 's_<wiki:comment>__g' | sed 's_</wiki:comment>__g' | grep -v ^$) )"
 		eval HEADER_${shortname}=\"\$\{contents\}\"
 	done
+	if [ "${DOC_NAME}" != "" ] ; then
+		for name in ${DOC_NAME}
+		do
+			for var in $(list_headers)
+			do
+				if [ "$(eval echo \"\$\{${var}\}\" | egrep "^[[:blank:]]+name:" | cut -d : -f 2-100 | grep ${name})" = "" ] ; then
+					unset ${var}
+				fi
+			done
+		done
+	fi
+	if [ "${DOC_TYPE}" != "" ] ; then
+		for type in ${DOC_TYPE}
+		do
+			for var in $(list_headers)
+			do
+				COMMENT_TYPE="$(eval echo \"\$\{${var}\}\" | egrep "^[[:blank:]]+type:" | cut -d : -f 2-100 | grep ${type})"
+				LABEL_TYPE="$(eval echo \"\$\{${var}\}\" | grep ${type})"
+				if [ "${COMMENT_TYPE}" = "" -a "${LABEL_TYPE}" = "" ] ; then
+					unset ${var}
+				fi
+			done
+		done
+	fi
 	for var in $(list_headers)
 	do
-		eval echo \"\$\{${var}\}\"
+		echo "$(echo "${var}" | cut -d _ -f 2-100)" "(wiki) -" "$(eval echo \"\$\{${var}\}\" | grep ^#summary | awk '{ print $2 " " $3 " " $4 " " $5 " " $6 " " $7 " " $8 " " $9 " " $10 " " $11; }' )" 
 	done
 }
 
@@ -88,6 +119,7 @@ find_matching_wiki() {
 	# first pass, lets get ones that match the name.
 
 	if [ "${DOC_NAME}" != "" ] ; then
+		local IFS="${FORFS}"
 		for name in ${DOC_NAME}
 		do
 			PAGELIST_NAME=$(printf "${PAGELIST_NAME}\n$(list_docs | grep -i ${name})")
@@ -122,6 +154,7 @@ find_matching_wiki() {
 
 list_docs() {
 	cd ${EVOKE_DOCDIR}
+	local IFS="${FORFS}"
 	for name in $(ls | grep .wiki)
 	do
 		ISDOC=$(grep ^#labels ${name} | grep Doc)
@@ -132,9 +165,19 @@ list_docs() {
 }
 
 wiki_display () {
-	grep -v ^# "${1}" | less
+	case "${DOC_OUTPUT}" in
+		[tT][tT][yY])
+			strip_wiki "${1}" | less
+		;;
+		[bB][aA][tT][cC][hH])
+			strip_wiki "${1}"
+		;;
+	esac
 }
 
+strip_wiki () {
+	grep -v ^#summary "${1}" | grep -v ^#labels | grep -v ^#sidebar | awk '/<wiki:comment>/, /<\/wiki:comment>/ { next; } { print }'
+}
 
 display_page() {
 	SPEC="$(echo ${1} | cut -d - -f 1)"
@@ -207,6 +250,9 @@ doc() {
 					;;
 				esac
 			done
+		;;
+		[bB][aA][tT][cC][hH])
+			display_page "$(getlist ${DOC_DOCTYPE})"
 		;;
 	esac
 }

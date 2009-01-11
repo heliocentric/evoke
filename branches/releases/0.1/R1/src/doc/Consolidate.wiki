@@ -21,3 +21,11 @@ A one paragraph short description of the command.
 == Implementation ==
 
 Implementation Notes
+<wiki:comment>
+	type: command
+	name: command
+	language: sh
+	svnid: $Id$
+	svnauthor: $Author$
+	svnrevision: $Revision$
+</wiki:comment>

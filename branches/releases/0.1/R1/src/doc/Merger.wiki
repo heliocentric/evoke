@@ -1,5 +1,13 @@
 #summary Merge target specific files into the global system paths
 #labels Command, Doc
+<wiki:comment>
+	type: command
+	name: merger
+	language: sh
+	svnid: $Id$
+	svnauthor: $Author$
+	svnrevision: $Revision$
+</wiki:comment>
 
 `merger [sourcedirectory] [targetdirectory]`
 
