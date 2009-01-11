@@ -2,7 +2,8 @@
 #labels Command, Doc
 <wiki:comment>
 	type: command
-author: heliocentric
+	author: heliocentric
+	program-class fileop
 	name: verify
 	programming-language: sh
 	svnid: $Id$
