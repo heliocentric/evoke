@@ -289,7 +289,7 @@ echo "/bin/tcsh" >>${EVOKE_LIBDIR}/shells
 echo "/bin/csh" >>${EVOKE_LIBDIR}/shells
 echo "/bin/sh" >>${EVOKE_LIBDIR}/shells
 cd /config
-file -C -i -m magic.mime
+file -C -i -m magic
 
 mecho ""
 
