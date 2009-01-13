@@ -25,18 +25,12 @@
 
 # $Id$
 
-export WRKDIRPREFIX=/usr/obj
-export PACKAGES=/packages
-mkdir ${PACKAGES}
-unexport DESTDIR
-unexport TMPDIR
-unexport KERNCONF
-unexport ABI
-unset ABI
-unset DESTDIR
-unset TMPDIR
-unset KERNCONF
+for i in $(set | grep = | awk -F= '{ print $1 }') ; do
+    unset ${i}
+done
 
+WRKDIRPREFIX=/usr/obj
+PACKAGES=/packages
 LOCALBASE=/usr/local
 X11BASE=/usr/local
 OSVERSION=`awk '/^#define __FreeBSD_version/ {print $3}' < /usr/src/sys/sys/param.h`
@@ -60,6 +54,8 @@ HTTP_TIMEOUT=900
 for i in $(set | grep = | awk -F= '{ print $1 }') ; do
     export ${i}
 done
+
+mkdir ${PACKAGES}
 
 for port in $(cat /portlist | cut -d : -f 3  | sort | uniq)
 do
