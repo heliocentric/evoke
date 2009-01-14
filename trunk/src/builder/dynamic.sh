@@ -73,6 +73,7 @@ echo -n " * ${target} = Building Ports "
 if [ "${BUILD_PORTS}" != "" ] ; then
 	# Since we chroot, we need these files in the target root.
 	cp ${BUILDDIR}/portbuild.sh ${DESTDIR}/
+	cp ${BUILDDIR}/varlist ${DESTDIR}/
 	cp ${BUILDDIR}/portlist ${DESTDIR}/
 	cp /etc/resolv.conf ${DESTDIR}/etc/
 

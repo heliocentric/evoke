@@ -25,6 +25,16 @@
 
 # $Id$
 
+
+
+IFS="
+"
+
+for i in $(cat /varlist)
+do
+	unset ${i}
+done
+
 WRKDIRPREFIX=/usr/obj
 PACKAGES=/packages
 LOCALBASE=/usr/local
