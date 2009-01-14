@@ -25,10 +25,6 @@
 
 # $Id$
 
-for i in $(set | grep = | awk -F= '{ print $1 }') ; do
-    unset ${i}
-done
-
 WRKDIRPREFIX=/usr/obj
 PACKAGES=/packages
 LOCALBASE=/usr/local
@@ -42,6 +38,8 @@ UNAME_r=${OSREL}-${BRANCH}
 UNAME_s=FreeBSD
 UNAME_v="FreeBSD ${OSREL}-${BRANCH} #0: `date`    root@tinderbox.host:/usr/src/sys/magic/kernel/path"
 BATCH=1
+NO_IGNORE=1
+FORCE_PKG_REGISTER=1
 PACKAGE_BUILDING=1
 USA_RESIDENT=YES
 PORTOBJFORMAT=elf
@@ -50,7 +48,8 @@ FTP_PASSIVE_MODE=yes
 FTP_TIMEOUT=900
 HTTP_TIMEOUT=900
 
-for i in $(set | grep = | awk -F= '{ print $1 }') ; do
+for i in $(set | grep = | awk -F= '{ print $1 }')
+do
     export ${i}
 done
 
@@ -59,5 +58,5 @@ mkdir ${PACKAGES}
 for port in $(cat /portlist | cut -d : -f 3  | sort | uniq)
 do
 	cd /usr/ports/${port}/
-	make -DFORCE_PKG_REGISTER -DNO_IGNORE -DBATCH package-recursive
+	make package-recursive
 done
