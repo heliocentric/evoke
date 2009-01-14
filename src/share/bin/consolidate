@@ -53,21 +53,17 @@ merge_links () {
 consolidate_loop () {
 	while [ "${1}" != "" ]
 	do
-		local STAT_DEV="$(stat -f %d ${1})"
-		local STAT_TYPE="$(stat -f %HT ${1})"
+		local STAT_TYPE="$(OPTIONS="quiet norecurse" filetype "${1}")"
 		case "${STAT_TYPE}" in
-			Directory)
-				local STAT_NDEV=$(stat -f "%d" "$(dirname ${1})")
-				if [ "${STAT_NDEV}" = "${STAT_DEV}" ] ; then
-					for entry in $(ls -a "${1}")
-					do
-						if [ "${entry}" != "." -a "${entry}" != ".." ] ; then
-							consolidate_loop "${1}/${entry}"
-						fi
-					done
-				fi
+			inode/directory)
+				for entry in $(ls -a "${1}")
+				do
+					if [ "${entry}" != "." -a "${entry}" != ".." ] ; then
+						consolidate_loop "${1}/${entry}"
+					fi
+				done
 			;;
-			Regular*)
+			*)
 				merge_links "${1}"
 			;;
 		esac

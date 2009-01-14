@@ -49,6 +49,21 @@ if [ ! -d "${PREFIX}" ] ; then
 	unset PREFIX
 fi
 
+dircheck() {
+	if [ "${NO_RECURSE}" != "" -a "${1}" = "inode/mount-point" ] ; then
+		echo "error 2 ${2}"
+	else
+		# We replaced the ${BIN} ${2}/* with this for loop,
+		# as it works around sh's restriction.
+		for entry in $(ls -a ${2})
+		do
+			if [ "${entry}" != "." -a "${entry}" != ".." ] ; then
+				verify_loop ${2}/${entry}
+			fi
+		done
+	fi
+}
+
 verify_loop() {
 	while [ "${1}" != "" ]
 	do
@@ -58,27 +73,15 @@ verify_loop() {
 			export WRITE="yes"
 
 		else 
-			export $(stat -f "STAT_DEV=%d STAT_TYPE=%HT" "${1}")
-			case "${STAT_TYPE}" in	
-				Directory)
-					export STAT_NDEV=$(stat -f "%d" "$(dirname ${1})")
-					if [ "${NO_RECURSE}" != "" -a "${STAT_NDEV}" != "${STAT_DEV}" ] ; then
-						echo "error 2 ${1}"
-					else
-						# We replaced the ${BIN} ${1}/* with this for loop,
-						# as it works around sh's restriction.
-						for entry in $(ls -a ${1})
-						do
-							if [ "${entry}" != "." -a "${entry}" != ".." ] ; then
-								verify_loop ${1}/${entry}
-							fi
-						done
-					fi
+			export MIME_TYPE="$(OPTIONS="quiet norecurse" filetype "${1}")"
+			case "${MIME_TYPE}" in	
+				inode/directory)
+					dircheck "${MIME_TYPE}" "${1}"
 				;;
-				Symbolic*)
-					verify_loop ${1}
+				inode/mount-point)
+					dircheck "${MIME_TYPE}" "${1}"
 				;;
-				Regular)
+				*)
 					for type in ${TYPES}
 					do
 						# We always need the file's hash from the contents, so keep it out

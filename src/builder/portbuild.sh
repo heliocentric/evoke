@@ -41,7 +41,6 @@ UNAME_n=tinderbox.host
 UNAME_r=${OSREL}-${BRANCH}
 UNAME_s=FreeBSD
 UNAME_v="FreeBSD ${OSREL}-${BRANCH} #0: `date`    root@tinderbox.host:/usr/src/sys/magic/kernel/path"
-#
 BATCH=1
 PACKAGE_BUILDING=1
 USA_RESIDENT=YES
