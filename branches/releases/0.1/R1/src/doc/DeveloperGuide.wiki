@@ -8,6 +8,14 @@
 
 == Evoke program guide ==
 
+Default OPTIONS values:
+
+ * recurse - if a directory is specified, walk it.
+ * norecurse - opposite of recurse
+ * quiet - only return the absolutely necessary output.
+ * verbose - opposite of quiet
+ * seperatemount - Restrict operations to this filesystem only, if a mountpoint is discovered, ignore it.
+
 === Command based programs ===
 Example:
   * [Userconfig userconfig]
@@ -20,6 +28,8 @@ Example:
   * [Doc doc]
 
 === File operation based programs ===
+
+File operation programs must take a list of files as their argument list, each file in a seperate argv[] entry in the array. All options are based via OPTIONS.
 
 Example:
   * [Verify verify]
