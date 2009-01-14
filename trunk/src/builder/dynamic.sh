@@ -102,8 +102,6 @@ libpthread.so libthr.so
 libc_r.so.6 libthr.so.2
 libc_r.so libthr.so
 EOF
-		ln -f ${DESTDIR}/usr/lib/libthr.so.2 ${DESTDIR}/usr/lib/libc_r.so.6
-		ln -f ${DESTDIR}/usr/lib/libthr.so.2 ${DESTDIR}/lib/libpthread.so.2
 	fi
 	# For ports, uname will return the correct values
 	UNAME_r=${RELEASE} UNAME_m=${TARGET_ARCH} UNAME_p=${TARGET_ARCH} chroot ${DESTDIR} /portbuild.sh 1>&2
