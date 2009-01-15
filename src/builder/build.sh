@@ -366,7 +366,7 @@ if [ -d "${BOOTOVERLAY}" ] ; then
 	tar -cf - --exclude ".." --exclude "." * .* | tar -xf - -C ${BOOTDIR}/
 fi
 
-cd ${RELEASEDIR}/ISO-IMAGES/${VERSION}/${REVISION}
+cd ${RELEASEDIR}/evoke/ISO-IMAGES/${VERSION}/${REVISION}
 
 # DO NOT TOUCH UNDER PENALTY OF DEATH.
 mkisofs -b cdboot/i386 -no-emul-boot -r -J -V EVOKE-${VERSION}-${REVISION} -p "${ENGINEER}" -publisher "http://evoke.googlecode.com" -o evoke.iso ${BOOTDIR} 1>&2
@@ -378,7 +378,7 @@ echo "${ISO_SHA256}" >>CHECKSUM.SHA256
 echo "${ISO_MD5}" >>CHECKSUM.MD5
 
 if [ "${EVOKE_PUSH_MIRROR}" != "" ] ; then
-	cd ${RELEASEDIR}
+	cd ${RELEASEDIR}/evoke
 
 	MOUNTPOINT="${TMPDIR}/$(dd if=/dev/random bs=1m count=4 | sha256 -q)"
 
@@ -387,8 +387,9 @@ if [ "${EVOKE_PUSH_MIRROR}" != "" ] ; then
 	for volume in $(mounter search tag=evoke-mirror)
 	do
 		mounter "${volume}" "${MOUNTPOINT}"
-		tar -cf - "evoke/${VERSION}/${REVISION}" "ISO-IMAGES/${VERSION}/${REVISION}" | tar -xvpf - -C "${MOUNTPOINT}"
-		mounter umount "${MOUNTPOINT}"	
+		mkdir -p "${MOUNTPOINT}/evoke"
+		tar -cf - "${VERSION}/${REVISION}" "ISO-IMAGES/${VERSION}/${REVISION}" | tar -xvpf - -C "${MOUNTPOINT}/evoke/"
+		mounter umount "${MOUNTPOINT}"
 	done
 fi
 
