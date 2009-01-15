@@ -230,16 +230,16 @@ mkdir -p ${FSDIR}/libexec
 mkdir -p ${FSDIR}/boot
 mkdir -p ${FSDIR}/dev
 mkdir -p ${FSDIR}/mem
-mkdir -p ${FSDIR}/config
+mkdir -p ${FSDIR}/cfg
 
 # Compat scaffolding; Be patched out eventually. However, as all it does is make things look worse, it isn't that bad.
 
 # This is needed for tcsh
 mkdir -p ${FSDIR}/usr/share/misc
-ln -s /config/termcap ${FSDIR}/usr/share/misc/
+ln -s /cfg/termcap ${FSDIR}/usr/share/misc/
 ln -s /lib ${FSDIR}/usr/lib
 mkdir -p ${FSDIR}/home/root
-ln -s /config  ${FSDIR}/etc
+ln -s /cfg  ${FSDIR}/etc
 ln -s /mem  ${FSDIR}/var
 ln -s /mem/scratch ${FSDIR}/tmp
 ln -s /bin ${FSDIR}/sbin
