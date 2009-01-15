@@ -151,7 +151,7 @@ do
 	sed -i .bak "s_\"/etc/rc_\"${N_SHAREBIN}/systart_g" ${WORKDIR}/usr/src/sbin/init/pathnames.h 1>&2
 
 	# Patch for lib/libmagic's build-tools target.
-	sed -i .bak "s_usr/sbin usr/share/misc_usr/sbin usr/share/misc config_g" ${WORKDIR}/usr/src/Makefile.inc1 1>&2
+	sed -i .bak "s_usr/sbin usr/share/misc_usr/sbin usr/share/misc cfg_g" ${WORKDIR}/usr/src/Makefile.inc1 1>&2
 
 	echo ""
 	# We use TMPDIR so that it can be different then the OBJDIR, as TMPDIR is write heavy.
