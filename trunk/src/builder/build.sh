@@ -331,7 +331,8 @@ echo "					[DONE]"
 
 echo -n " * share = Creating trackfile"
 # The trackfile serves two purposes. To make the system verifyable, and to allow us to safely tftp install. Yay!
-cd ${BOOTDIR}
+cd ${BOOTDIR}${BOOTPREFIX}
+
 for file in $( find ./ -not -type d | cut -b 3-200)
 do
 	echo "F:/${file}:$(sha256 -q ${file}):$(stat -f '%z')" >>${TRACKFILE}
