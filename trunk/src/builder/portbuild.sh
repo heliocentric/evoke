@@ -29,13 +29,15 @@
 
 FORFS="
 "
-OLDFS="${IFS}"
+OLDFS=" 	
+"
+
 IFS="${FORFS}"
 for i in $(cat /varlist)
 do
 	unset ${i}
 done
-IFS="${OLDFS}"
+export IFS="${OLDFS}"
 
 WRKDIRPREFIX=/usr/obj
 PACKAGES=/packages
