@@ -201,7 +201,7 @@ do
 	rm -r *.ko
 	# Yes, this is all wasteful. But this bug will be fixed eventually, and when it does, this line can be removed.
 #	gunzip *.gz
-	for file in $(ls *.ka)
+	for file in $(grep ^M ${BUILDDIR}/portlist | cut -d : -f 2) ${MODULES}
 	do
 		mv ${file}.ka ${file}.ko
 	done
@@ -287,7 +287,7 @@ MDDEVICE=$(priv mdconfig -af evoke.fs)
 # Trust me, this is necessary; sha256 the file returns a different hash then the device node
 FINGERPRINT=$(sha256 -q /dev/${MDDEVICE})
 priv mdconfig -d -u $(echo ${MDDEVICE} | cut -c 3-100)
-gzip -9nc evoke.fs >evoke.fs.gz	1>&2
+gzip -9nc evoke.fs >evoke.fs.gz
 rm evoke.fs 1>&2
 
 # Add all MODULES and port modules to loader.conf
@@ -360,13 +360,15 @@ echo -n " * share = Making ISO image"
 
 mkdir -p ${BOOTDIR}/cdboot
 cp ${BOOTDIR}${BOOTPREFIX}/freebsd$(echo ${i386_ACTIVE} | cut -d "." -f 1)/$(echo ${i386_ACTIVE} | cut -d "/" -f 2)/cdboot ${BOOTDIR}/cdboot/i386
-mkdir -p ${RELEASEDIR}/ISO-IMAGES/${VERSION}/${REVISION}
+
+mkdir -p ${RELEASEDIR}/evoke/ISO-IMAGES/${VERSION}/${REVISION}
+
 if [ -d "${BOOTOVERLAY}" ] ; then
 	cd ${BOOTOVERLAY}
 	tar -cf - --exclude ".." --exclude "." * .* | tar -xf - -C ${BOOTDIR}/
 fi
 
-cd ${RELEASEDIR}/ISO-IMAGES/${VERSION}/${REVISION}
+cd ${RELEASEDIR}/evoke/ISO-IMAGES/${VERSION}/${REVISION}
 
 # DO NOT TOUCH UNDER PENALTY OF DEATH.
 mkisofs -b cdboot/i386 -no-emul-boot -r -J -V EVOKE-${VERSION}-${REVISION} -p "${ENGINEER}" -publisher "http://evoke.googlecode.com" -o evoke.iso ${BOOTDIR} 1>&2
@@ -378,7 +380,7 @@ echo "${ISO_SHA256}" >>CHECKSUM.SHA256
 echo "${ISO_MD5}" >>CHECKSUM.MD5
 
 if [ "${EVOKE_PUSH_MIRROR}" != "" ] ; then
-	cd ${RELEASEDIR}
+	cd ${RELEASEDIR}/evoke
 
 	MOUNTPOINT="${TMPDIR}/$(dd if=/dev/random bs=1m count=4 | sha256 -q)"
 
@@ -387,8 +389,9 @@ if [ "${EVOKE_PUSH_MIRROR}" != "" ] ; then
 	for volume in $(mounter search tag=evoke-mirror)
 	do
 		mounter "${volume}" "${MOUNTPOINT}"
-		tar -cf - "evoke/${VERSION}/${REVISION}" "ISO-IMAGES/${VERSION}/${REVISION}" | tar -xvpf - -C "${MOUNTPOINT}"
-		mounter umount "${MOUNTPOINT}"	
+		mkdir -p "${MOUNTPOINT}/evoke"
+		tar -cf - "${VERSION}/${REVISION}" "ISO-IMAGES/${VERSION}/${REVISION}" | tar -xvpf - -C "${MOUNTPOINT}/evoke/"
+		mounter umount "${MOUNTPOINT}"
 	done
 fi
 
