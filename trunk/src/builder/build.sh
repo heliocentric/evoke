@@ -334,7 +334,7 @@ echo -n " * share = Creating trackfile"
 cd ${BOOTDIR}
 for file in $( find ./ -not -type d | cut -b 3-200)
 do
-	echo "F:/${file}:$(sha256 -q ${file})" >>${TRACKFILE}
+	echo "F:/${file}:$(sha256 -q ${file}):$(stat -f '%z')" >>${TRACKFILE}
 done
 echo -n "# " >>${TRACKFILE}
 
