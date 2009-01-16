@@ -151,7 +151,7 @@ do
 	sed -i .bak "s_\"/etc/rc_\"${N_SHAREBIN}/systart_g" ${WORKDIR}/usr/src/sbin/init/pathnames.h 1>&2
 
 	# Patch for lib/libmagic's build-tools target.
-	sed -i .bak "s_usr/sbin usr/share/misc_usr/sbin usr/share/misc cfg_g" ${WORKDIR}/usr/src/Makefile.inc1 1>&2
+	sed -i .bak "s_usr/sbin usr/share/misc_usr/sbin usr/share/misc config_g" ${WORKDIR}/usr/src/Makefile.inc1 1>&2
 
 	echo ""
 	# We use TMPDIR so that it can be different then the OBJDIR, as TMPDIR is write heavy.
@@ -230,16 +230,16 @@ mkdir -p ${FSDIR}/libexec
 mkdir -p ${FSDIR}/boot
 mkdir -p ${FSDIR}/dev
 mkdir -p ${FSDIR}/mem
-mkdir -p ${FSDIR}/cfg
+mkdir -p ${FSDIR}/config
 
 # Compat scaffolding; Be patched out eventually. However, as all it does is make things look worse, it isn't that bad.
 
 # This is needed for tcsh
 mkdir -p ${FSDIR}/usr/share/misc
-ln -s /cfg/termcap ${FSDIR}/usr/share/misc/
+ln -s /config/termcap ${FSDIR}/usr/share/misc/
 ln -s /lib ${FSDIR}/usr/lib
 mkdir -p ${FSDIR}/home/root
-ln -s /cfg  ${FSDIR}/etc
+ln -s /config  ${FSDIR}/etc
 ln -s /mem  ${FSDIR}/var
 ln -s /mem/scratch ${FSDIR}/tmp
 ln -s /bin ${FSDIR}/sbin
@@ -360,7 +360,9 @@ echo -n " * share = Making ISO image"
 
 mkdir -p ${BOOTDIR}/cdboot
 cp ${BOOTDIR}${BOOTPREFIX}/freebsd$(echo ${i386_ACTIVE} | cut -d "." -f 1)/$(echo ${i386_ACTIVE} | cut -d "/" -f 2)/cdboot ${BOOTDIR}/cdboot/i386
-mkdir -p ${RELEASEDIR}/ISO-IMAGES/${VERSION}/${REVISION}
+
+mkdir -p ${RELEASEDIR}/evoke/ISO-IMAGES/${VERSION}/${REVISION}
+
 if [ -d "${BOOTOVERLAY}" ] ; then
 	cd ${BOOTOVERLAY}
 	tar -cf - --exclude ".." --exclude "." * .* | tar -xf - -C ${BOOTDIR}/

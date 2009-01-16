@@ -44,7 +44,7 @@ fi
 cd ${WORKDIR}/usr/src/
 if [ "${NO_BUILD_WORLD}" = "" ] ; then
 	echo -n " * ${target} = Building World "
-	make -DLOADER_TFTP_SUPPORT LOCAL_DIRS="nsrc" MAGICPATH="/cfg" buildworld 1>&2
+	make -DLOADER_TFTP_SUPPORT LOCAL_DIRS="nsrc" MAGICPATH="/config" buildworld 1>&2
 	echo ""
 fi
 if [ "${NO_BUILD_KERNEL}" = "" ] ; then
