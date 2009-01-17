@@ -66,6 +66,7 @@ shift
 while [ "${1}" != "" ] 
 do
 	SOURCE="${1}"
+	echo "${SOURCE}"
 	SOURCEDIR="${RELEASEDIR}/evoke/${SOURCE}"
 	if [ ! -f "${SOURCEDIR}/trackfile" ] ; then
 		echo "Source does not exist"
