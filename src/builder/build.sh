@@ -399,7 +399,7 @@ if [ "${EVOKE_PUSH_MIRROR}" != "" ] ; then
 
 	mkdir -p "${MOUNTPOINT}"
 
-	for volume in $(mounter search tag=evoke-mirror)
+	for volume in $(mounter search "tag=${EVOKE_PUSH_MIRROR}")
 	do
 		mounter "${volume}" "${MOUNTPOINT}"
 		mkdir -p "${MOUNTPOINT}/evoke"
