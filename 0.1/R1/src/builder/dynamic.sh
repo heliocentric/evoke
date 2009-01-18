@@ -218,4 +218,7 @@ cp -r ${DESTDIR}/lib/geom ${FSDIR}${N_LIB}
 cd ${WORKDIR}/rescue
 tar -cf - * | tar -xf - -C ${FSDIR}${N_BIN}/ 1>&2
 
+# Grab the bootloader files, and place them in ${FSDIR}${N_BOOT}/
+cd ${DESTDIR/boot
+tar -cf - boot mbr gptboot pmbr boot0 boot2 | tar -xvpf -C ${FSDIR}${N_BOOT}/
 echo "				[DONE]"
