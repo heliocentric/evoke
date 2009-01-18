@@ -12,6 +12,10 @@ priv () {
 	fi
 }
 
+FORFS="
+"
+OLDIFS=" 	
+"
 
 # This is the location of the trackfile.
 export TRACKFILE=${OBJDIR}/trackfile
@@ -350,9 +354,17 @@ mdconfig -d -u $(echo ${DEVICE} | cut -b 3-7)
 echo "					[DONE]"
 
 echo -n " * share = Creating RELEASEDIR"
+
+# grab a list of already installed versions for create-updates.
+VERSIONLIST="$(cd /releases/evoke && find . -not -path "./BIN-UPDATES*" -not -path "./ISO-IMAGES*" -depth 2 | cut -b 3-300 | paste - - - - - - - - - - - - - - - - - - - - - - -)"
+
 mkdir -p ${RELEASEDIR}${BOOTPREFIX}
 cd ${BOOTDIR}${BOOTPREFIX}
 tar -cf - * | tar -xf - -C ${RELEASEDIR}${BOOTPREFIX}/
+echo ""
+
+echo -n " * share = Generating Binary Diffs"
+${BUILDDIR}/create-updates "${VERSION}/${REVISION}" "${BOOTDIR}${BOOTPREFIX}" ${VERSIONLIST} 1>&2
 echo ""
 
 echo -n " * share = Making ISO image"
@@ -387,7 +399,7 @@ if [ "${EVOKE_PUSH_MIRROR}" != "" ] ; then
 
 	mkdir -p "${MOUNTPOINT}"
 
-	for volume in $(mounter search tag=evoke-mirror)
+	for volume in $(mounter search "tag=${EVOKE_PUSH_MIRROR}")
 	do
 		mounter "${volume}" "${MOUNTPOINT}"
 		mkdir -p "${MOUNTPOINT}/evoke"
