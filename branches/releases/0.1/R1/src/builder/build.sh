@@ -403,7 +403,7 @@ if [ "${EVOKE_PUSH_MIRROR}" != "" ] ; then
 	do
 		mounter "${volume}" "${MOUNTPOINT}"
 		mkdir -p "${MOUNTPOINT}/evoke"
-		tar -cf - "${VERSION}/${REVISION}" "ISO-IMAGES/${VERSION}/${REVISION}" "BIN-UPDATES/${VERSION}/${REVISION} | tar -xvpf - -C "${MOUNTPOINT}/evoke/"
+		tar -cf - "${VERSION}/${REVISION}" "ISO-IMAGES/${VERSION}/${REVISION}" "BIN-UPDATES/${VERSION}/${REVISION}" | tar -xvpf - -C "${MOUNTPOINT}/evoke/"
 		mounter umount "${MOUNTPOINT}"
 	done
 fi
