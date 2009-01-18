@@ -364,7 +364,7 @@ tar -cf - * | tar -xf - -C ${RELEASEDIR}${BOOTPREFIX}/
 echo ""
 
 echo -n " * share = Generating Binary Diffs"
-${BUILDDIR}/create-updates "${VERSION}/${REVISION}" "${BOOTDIR}${BOOTPREFIX}" "${VERSIONLIST}" 1>&2
+${BUILDDIR}/create-updates "${VERSION}/${REVISION}" "${BOOTDIR}${BOOTPREFIX}" ${VERSIONLIST} 1>&2
 echo ""
 
 echo -n " * share = Making ISO image"
