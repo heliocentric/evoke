@@ -52,6 +52,10 @@ DECOMDIR="${STAGEDIR}/decom"
 TESTDIR="${STAGEDIR}/test"
 PATCHDIR="${STAGEDIR}/patch"
 
+if [ -d "${PATCHDIR}" ] ; then
+	rm -r "${PATCHDIR}"
+fi
+
 if [ ! -f "${DESTDIR}/trackfile" ] ; then
 	echo "Destination does not exist"
 	exit 3
