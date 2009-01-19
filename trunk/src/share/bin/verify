@@ -41,8 +41,8 @@ fi
 
 # This works whether TRACKFILE is a device node, or a regular file.
 
-if [ ! -r "${TRACKFILE}" -o -d "${TRACKFILE}" ] ; then
-	unset TRACKFILE
+if [ -r "${TRACKFILE}" -o -d "${TRACKFILE}" ] ; then
+	RTRACKFILE="${TRACKFILE}"
 fi
 
 if [ ! -d "${PREFIX}" ] ; then
@@ -68,7 +68,6 @@ dircheck() {
 }
 
 verify_loop() {
-	TYPES="sha256 md5"
 
 	while [ "${1}" != "" ]
 	do
@@ -81,30 +80,31 @@ verify_loop() {
 				dircheck "${MIME_TYPE}" "${1}"
 			;;
 			*)
-				echo "${1}"
+
 				for type in ${TYPES}
 				do
 					# We always need the file's hash from the contents, so keep it out
 					# of the conditional
 					RHASH=$(${type} -q "${1}" 2>${DEVICES}/null)
-					if [ "${WRITE}" = "yes" ] ; then
-						setextattr system ${type} ${RHASH} "${1}" 2>${DEVICES}/null
-					else
-						unset FHASH
-						if [ "${FHASH}" = "" ] ; then
-							FHASH=$(getextattr -q system ${type} "${1}" 2>${DEVICES}/null)
-						fi
-						if [ "${RHASH}" != "${FHASH}" ] ; then
-							echo "${type} fail ${1}"					
+					if [ "${RTRACKFILE}" = "" ] ; then
+						if [ "${WRITE}" = "yes" ] ; then
+							setextattr system ${type} ${RHASH} "${1}" 2>${DEVICES}/null
 						else
-							echo "${type} pass ${1}"
-						fi	
+							unset FHASH
+							if [ "${FHASH}" = "" ] ; then
+								FHASH=$(getextattr -q system ${type} "${1}" 2>${DEVICES}/null)
+							fi
+							if [ "${RHASH}" != "${FHASH}" ] ; then
+								echo "${type} fail ${1}"					
+							else
+								echo "${type} pass ${1}"
+							fi	
+						fi
+					else
+						echo "F:${1}:${RHASH}:$(stat -f '%z' "${1}")"
 					fi
 				done
-			;;
-			*)
-				echo "error 1 ${1}"
-			;;
+			;;	
 		esac
 		shift
 	done
@@ -113,18 +113,23 @@ verify_loop() {
 verify() {
 	SCRATCHDIR="${TMPDIR}/scratch/$(dd if=/dev/random bs=4m count=1 2>/dev/null | sha256 -q)"
 	mkdir -p "${SCRATCHDIR}"
+	TYPES="sha256 md5"
 
-	verify_loop $@
+	if [ "${RTRACKFILE}" != "" ] ; then
+		TYPES="sha256"
+		TRACKDATA="$(verify_loop $@)"
+		echo "${TRACKDATA}"
+	else
+		verify_loop $@
+	fi
+
+
 }
 
 blah() {
 	# The trackfile serves two purposes. To make the system verifyable, and to allow us to safely tftp install. Yay!
 	cd ${BOOTDIR}${BOOTPREFIX}
 
-	for file in $( find ./ -not -type d | cut -b 3-200)
-	do
-		echo "F:${file}:$(sha256 -q ${file}):$(stat -f '%z')" >>${TRACKFILE}
-	done
 	echo -n "# " >>${TRACKFILE}
 
 	# Why? We add a trailer to the trackfile, and create a label in it; this way it always comes up as /dev/label/trackfile, and the kernel can always find it.
@@ -136,5 +141,5 @@ blah() {
 	geom label label trackfile /dev/${DEVICE}
 	mdconfig -d -u $(echo ${DEVICE} | cut -b 3-7)
 }
-
 verify $@
+
