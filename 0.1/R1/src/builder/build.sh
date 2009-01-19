@@ -17,8 +17,6 @@ FORFS="
 OLDIFS=" 	
 "
 
-# This is the location of the trackfile.
-export TRACKFILE=${OBJDIR}/trackfile
 
 # BOOTDIR is the 'boot' directory; it's the root of the cd image
 export BOOTDIR=${OBJDIR}/bdir
@@ -335,22 +333,14 @@ echo "					[DONE]"
 
 echo -n " * share = Creating trackfile"
 # The trackfile serves two purposes. To make the system verifyable, and to allow us to safely tftp install. Yay!
+
+# This is the location of the trackfile.
+export TRACKFILE=${BOOTDIR}${BOOTPREFIX}/trackfile
+
 cd ${BOOTDIR}${BOOTPREFIX}
 
-for file in $( find ./ -not -type d | cut -b 3-200)
-do
-	echo "F:${file}:$(sha256 -q ${file}):$(stat -f '%z')" >>${TRACKFILE}
-done
-echo -n "# " >>${TRACKFILE}
+verify *
 
-# Why? We add a trailer to the trackfile, and create a label in it; this way it always comes up as /dev/label/trackfile, and the kernel can always find it.
-dd if=${TRACKFILE} bs=512 fillchar=" " conv=sync of=/tmp/trackfile.head 
-dd if=/dev/zero bs=512 count=1 of=/tmp/trackfile.tail
-cat /tmp/trackfile.head /tmp/trackfile.tail >${BOOTDIR}${BOOTPREFIX}/trackfile
-DEVICE=$(mdconfig -af ${BOOTDIR}${BOOTPREFIX}/trackfile)
-geom label load
-geom label label trackfile /dev/${DEVICE}
-mdconfig -d -u $(echo ${DEVICE} | cut -b 3-7)
 echo "					[DONE]"
 
 echo -n " * share = Creating RELEASEDIR"
