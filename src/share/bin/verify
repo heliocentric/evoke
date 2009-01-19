@@ -41,7 +41,7 @@ fi
 
 # This works whether TRACKFILE is a device node, or a regular file.
 
-if [ -r "${TRACKFILE}" -o -d "${TRACKFILE}" ] ; then
+if [ "${TRACKFILE}" != "" ] ; then
 	RTRACKFILE="${TRACKFILE}"
 fi
 
