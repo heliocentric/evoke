@@ -65,49 +65,48 @@ dircheck() {
 }
 
 verify_loop() {
+	TYPES="sha256 md5"
 	while [ "${1}" != "" ]
 	do
-		TYPES="sha256 md5"
-		if [ "${1}" = "-w" ] ; then
-			# We export this so that the recursion portion will be able to write as well
-			export WRITE="yes"
-
-		else 
-			export MIME_TYPE="$(OPTIONS="quiet norecurse" filetype "${1}")"
-			case "${MIME_TYPE}" in	
-				inode/directory)
-					dircheck "${MIME_TYPE}" "${1}"
-				;;
-				inode/mount-point)
-					dircheck "${MIME_TYPE}" "${1}"
-				;;
-				*)
-					for type in ${TYPES}
-					do
-						# We always need the file's hash from the contents, so keep it out
-						# of the conditional
-						RHASH=$(${type} -q "${1}" 2>${DEVICES}/null)
-						if [ "${WRITE}" = "yes" ] ; then
-							setextattr system ${type} ${RHASH} "${1}" 2>${DEVICES}/null
-						else
-							unset FHASH
-							if [ "${FHASH}" = "" ] ; then
-								FHASH=$(getextattr -q system ${type} "${1}" 2>${DEVICES}/null)
-							fi
-							if [ "${RHASH}" != "${FHASH}" ] ; then
-								echo "${type} fail ${1}"					
-							else
-								echo "${type} pass ${1}"
-							fi	
+		export MIME_TYPE="$(OPTIONS="quiet norecurse" filetype "${1}")"
+		case "${MIME_TYPE}" in	
+			inode/directory)
+				dircheck "${MIME_TYPE}" "${1}"
+			;;
+			inode/mount-point)
+				dircheck "${MIME_TYPE}" "${1}"
+			;;
+			*)
+				for type in ${TYPES}
+				do
+					# We always need the file's hash from the contents, so keep it out
+					# of the conditional
+					RHASH=$(${type} -q "${1}" 2>${DEVICES}/null)
+					if [ "${WRITE}" = "yes" ] ; then
+						setextattr system ${type} ${RHASH} "${1}" 2>${DEVICES}/null
+					else
+						unset FHASH
+						if [ "${FHASH}" = "" ] ; then
+							FHASH=$(getextattr -q system ${type} "${1}" 2>${DEVICES}/null)
 						fi
-					done
-				;;
-				*)
-					echo "error 1 ${1}"
-				;;
-			esac
-		fi
+						if [ "${RHASH}" != "${FHASH}" ] ; then
+							echo "${type} fail ${1}"					
+						else
+							echo "${type} pass ${1}"
+						fi	
+					fi
+				done
+			;;
+			*)
+				echo "error 1 ${1}"
+			;;
+		esac
 		shift
 	done
 }
-verify_loop $@
+
+verify() {
+	verify_loop $@
+}
+
+verify $@
