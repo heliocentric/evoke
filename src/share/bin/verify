@@ -111,14 +111,22 @@ verify_loop() {
 }
 
 verify() {
-	SCRATCHDIR="${TMPDIR}/scratch/$(dd if=/dev/random bs=4m count=1 2>/dev/null | sha256 -q)"
+	SCRATCHDIR="${TMPDIR}/verify/$(dd if=/dev/random bs=4m count=1 2>/dev/null | sha256 -q)"
 	mkdir -p "${SCRATCHDIR}"
 	TYPES="sha256 md5"
 
 	if [ "${RTRACKFILE}" != "" ] ; then
 		TYPES="sha256"
 		TRACKDATA="$(verify_loop $@)"
-		echo "${TRACKDATA}"
+		TRACKDATA="$(printf "${TRACKDATA}\n#")"
+		echo "${TRACKDATA}" | dd bs=512 fillchar=" " conv=sync "of=${SCRATCHDIR}/head" 2>${DEVICES}/null
+		dd if=/dev/zero bs=512 count=1 "of=${SCRATCHDIR}/tail" 2>${DEVICES}/null
+		cat "${SCRATCHDIR}/head" "${SCRATCHDIR}/tail" >"${SCRATCHDIR}/trackfile"
+		DEVICE="$(mdconfig -af ${SCRATCHDIR}/trackfile)"
+		geom label load
+		geom label label trackfile /dev/${DEVICE}
+		mdconfig -d -u $(echo ${DEVICE} | cut -b 3-7)
+		cp "${SCRATCHDIR}/trackfile" "${TRACKFILE}"
 	else
 		verify_loop $@
 	fi
@@ -126,20 +134,5 @@ verify() {
 
 }
 
-blah() {
-	# The trackfile serves two purposes. To make the system verifyable, and to allow us to safely tftp install. Yay!
-	cd ${BOOTDIR}${BOOTPREFIX}
-
-	echo -n "# " >>${TRACKFILE}
-
-	# Why? We add a trailer to the trackfile, and create a label in it; this way it always comes up as /dev/label/trackfile, and the kernel can always find it.
-	dd if=${TRACKFILE} bs=512 fillchar=" " conv=sync of=/tmp/trackfile.head 
-	dd if=/dev/zero bs=512 count=1 of=/tmp/trackfile.tail
-	cat /tmp/trackfile.head /tmp/trackfile.tail >${BOOTDIR}${BOOTPREFIX}/trackfile
-	DEVICE=$(mdconfig -af ${BOOTDIR}${BOOTPREFIX}/trackfile)
-	geom label load
-	geom label label trackfile /dev/${DEVICE}
-	mdconfig -d -u $(echo ${DEVICE} | cut -b 3-7)
-}
 verify $@
 
