@@ -48,6 +48,9 @@ fi
 if [ ! -d "${PREFIX}" ] ; then
 	unset PREFIX
 fi
+if [ ! -d "${TMPDIR}" ] ; then
+	TMPDIR="/tmp"
+fi
 
 dircheck() {
 	if [ "${NO_RECURSE}" != "" -a "${1}" = "inode/mount-point" ] ; then
@@ -65,49 +68,73 @@ dircheck() {
 }
 
 verify_loop() {
+	TYPES="sha256 md5"
+
 	while [ "${1}" != "" ]
 	do
-		TYPES="sha256 md5"
-		if [ "${1}" = "-w" ] ; then
-			# We export this so that the recursion portion will be able to write as well
-			export WRITE="yes"
-
-		else 
-			export MIME_TYPE="$(OPTIONS="quiet norecurse" filetype "${1}")"
-			case "${MIME_TYPE}" in	
-				inode/directory)
-					dircheck "${MIME_TYPE}" "${1}"
-				;;
-				inode/mount-point)
-					dircheck "${MIME_TYPE}" "${1}"
-				;;
-				*)
-					for type in ${TYPES}
-					do
-						# We always need the file's hash from the contents, so keep it out
-						# of the conditional
-						RHASH=$(${type} -q "${1}" 2>${DEVICES}/null)
-						if [ "${WRITE}" = "yes" ] ; then
-							setextattr system ${type} ${RHASH} "${1}" 2>${DEVICES}/null
-						else
-							unset FHASH
-							if [ "${FHASH}" = "" ] ; then
-								FHASH=$(getextattr -q system ${type} "${1}" 2>${DEVICES}/null)
-							fi
-							if [ "${RHASH}" != "${FHASH}" ] ; then
-								echo "${type} fail ${1}"					
-							else
-								echo "${type} pass ${1}"
-							fi	
+		export MIME_TYPE="$(OPTIONS="quiet norecurse" filetype "${1}")"
+		case "${MIME_TYPE}" in	
+			inode/directory)
+				dircheck "${MIME_TYPE}" "${1}"
+			;;
+			inode/mount-point)
+				dircheck "${MIME_TYPE}" "${1}"
+			;;
+			*)
+				echo "${1}"
+				for type in ${TYPES}
+				do
+					# We always need the file's hash from the contents, so keep it out
+					# of the conditional
+					RHASH=$(${type} -q "${1}" 2>${DEVICES}/null)
+					if [ "${WRITE}" = "yes" ] ; then
+						setextattr system ${type} ${RHASH} "${1}" 2>${DEVICES}/null
+					else
+						unset FHASH
+						if [ "${FHASH}" = "" ] ; then
+							FHASH=$(getextattr -q system ${type} "${1}" 2>${DEVICES}/null)
 						fi
-					done
-				;;
-				*)
-					echo "error 1 ${1}"
-				;;
-			esac
-		fi
+						if [ "${RHASH}" != "${FHASH}" ] ; then
+							echo "${type} fail ${1}"					
+						else
+							echo "${type} pass ${1}"
+						fi	
+					fi
+				done
+			;;
+			*)
+				echo "error 1 ${1}"
+			;;
+		esac
 		shift
 	done
 }
-verify_loop $@
+
+verify() {
+	SCRATCHDIR="${TMPDIR}/scratch/$(dd if=/dev/random bs=4m count=1 2>/dev/null | sha256 -q)"
+	mkdir -p "${SCRATCHDIR}"
+
+	verify_loop $@
+}
+
+blah() {
+	# The trackfile serves two purposes. To make the system verifyable, and to allow us to safely tftp install. Yay!
+	cd ${BOOTDIR}${BOOTPREFIX}
+
+	for file in $( find ./ -not -type d | cut -b 3-200)
+	do
+		echo "F:${file}:$(sha256 -q ${file}):$(stat -f '%z')" >>${TRACKFILE}
+	done
+	echo -n "# " >>${TRACKFILE}
+
+	# Why? We add a trailer to the trackfile, and create a label in it; this way it always comes up as /dev/label/trackfile, and the kernel can always find it.
+	dd if=${TRACKFILE} bs=512 fillchar=" " conv=sync of=/tmp/trackfile.head 
+	dd if=/dev/zero bs=512 count=1 of=/tmp/trackfile.tail
+	cat /tmp/trackfile.head /tmp/trackfile.tail >${BOOTDIR}${BOOTPREFIX}/trackfile
+	DEVICE=$(mdconfig -af ${BOOTDIR}${BOOTPREFIX}/trackfile)
+	geom label load
+	geom label label trackfile /dev/${DEVICE}
+	mdconfig -d -u $(echo ${DEVICE} | cut -b 3-7)
+}
+
+verify $@
