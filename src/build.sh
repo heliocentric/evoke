@@ -80,7 +80,7 @@ if [ "${RELEASEDIR}" = "" ] ; then
 	mkdir -p ${RELEASEDIR}
 fi
 
-export PATH="${PATH}:${ROOTDIR}/share/bin"
+export PATH="${ROOTDIR}/share/bin:/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin"
 
 unset WRKDIRPREFIX
 export ERRFILE=${ROOTDIR}/logs/$(date +%Y%m%d%H%M%S).log
