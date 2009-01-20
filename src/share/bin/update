@@ -50,13 +50,13 @@ if [ ! -d "${TMPDIR}" ] ; then
 fi
 
 real_update() {
-	if [ -d "${2}" ] ; then
-		DESTDIR="${2}"
+	if [ -d "${1}" ] ; then
+		DESTDIR="${1}"
 	else
 		echo "Destination directory not found."
 		exit 65
 	fi
-	phttpget "${SERVER}" "${FILESPEC}/${1}/trackfile" 2>${DEVICES}/null
+	phttpget "${SERVER}" "${FILESPEC}/${2}/trackfile" 2>${DEVICES}/null
 	if [ -r "${TEMPDIR}/trackfile" ] ; then
 		DEST_TRACKFILE="$(grep -a ^F: ${TEMPDIR}/trackfile)"
 	fi
@@ -93,7 +93,7 @@ update() {
 
 	case "${1}" in
 		install)
-			if [ "${2}" != "" ] ; then
+			if [ "${3}" != "" ] ; then
 				real_update "${2}" "${3}"
 			fi
 		;;
