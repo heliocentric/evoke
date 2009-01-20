@@ -181,7 +181,6 @@ verify() {
 			TRACKDATA="$(verify_loop $@)"
 			TRACKDATA="$(printf "I:1.1::${SIGNATURE_BYTES}\n${TRACKDATA}\n#")"
 			echo "${TRACKDATA}" | dd bs=512 fillchar=" " conv=sync "of=${SCRATCHDIR}/head" 2>${DEVICES}/null
-			dd if=/dev/zero bs=512 count=1 "of=${SCRATCHDIR}/tail" 2>${DEVICES}/null
 			
 			if [ -r "${TRACKFILE_PRIVATE_KEY}" ] ; then
 				sha256 -q "${SCRATCHDIR}/head" | openssl rsautl -sign -inkey "${TRACKFILE_PRIVATE_KEY}" -out "${SCRATCHDIR}/sign" 2>${DEVICES}/null
@@ -194,7 +193,7 @@ verify() {
 				fi
 			fi
 
-			cat "${SCRATCHDIR}/head" "${SCRATCHDIR}/sign" "${SCRATCHDIR}/tail" >"${SCRATCHDIR}/trackfile"
+			cat "${SCRATCHDIR}/head" "${SCRATCHDIR}/sign" >"${SCRATCHDIR}/trackfile"
 			cp "${SCRATCHDIR}/trackfile" "${TRACKFILE}"
 		else
 			SIGNATURE_BYTES="$(grep -a ^I: ${RTRACKFILE} | cut -d : -f 4)"

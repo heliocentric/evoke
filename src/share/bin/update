@@ -63,9 +63,9 @@ create_updates() {
 
 
 	BINUPDIR="${RELEASEDIR}/evoke/BIN-UPDATES"
-	DECOMDIR="${STAGEDIR}/decom"
-	TESTDIR="${STAGEDIR}/test"
-	PATCHDIR="${STAGEDIR}/patch"
+	DECOMDIR="${SCRATCHDIR}/decom"
+	TESTDIR="${SCRATCHDIR}/test"
+	PATCHDIR="${SCRATCHDIR}/patch"
 
 	if [ -d "${PATCHDIR}" ] ; then
 		rm -r "${PATCHDIR}"
@@ -183,7 +183,14 @@ real_update() {
 	fi
 	phttpget "${SERVER}" "${FILESPEC}/${2}/trackfile" 2>${DEVICES}/null
 	if [ -r "${TEMPDIR}/trackfile" ] ; then
-		DEST_TRACKFILE="$(grep -a ^F: ${TEMPDIR}/trackfile)"
+		TRACKFILE="${TEMPDIR}/trackfile" verify
+		ERRORCODE="$?"
+		if [ "${ERRORCODE}" = 0 ] ; then
+			DEST_TRACKFILE="$(grep -a ^F: ${TEMPDIR}/trackfile)"
+		else
+			echo "Trackfile is corrupted"
+			exit "${ERRORCODE}"
+		fi
 	fi
 	cd "${DESTDIR}/evoke/"
 	VERSIONLIST="$(for version in $(echo */*) 
