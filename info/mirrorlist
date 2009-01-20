@@ -1,4 +1,3 @@
-#!/bin/sh
 # Copyright 2007-2009 Dylan Cochran
 # All rights reserved
 #
@@ -25,13 +24,4 @@
 
 
 # $Id$
-
-# the for field specifier, so call for like so: local IFS="${FORFS}" \n for blah in blah
-
-FORFS="
-"
-
-OLDFS=" 	
-"
-
-mounter
+http://damnsmallbsd.org/pub/
