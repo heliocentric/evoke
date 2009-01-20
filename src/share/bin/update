@@ -49,6 +49,131 @@ if [ ! -d "${TMPDIR}" ] ; then
 	TMPDIR="/tmp"
 fi
 
+create_updates() {
+	if [ "${1}" = "" ] ; then
+		echo "Error: No version set"
+		exit 5
+	fi
+
+	DESTDIR="${1}"
+
+	shift
+
+	DEST="${1}"
+
+
+	BINUPDIR="${RELEASEDIR}/evoke/BIN-UPDATES"
+	DECOMDIR="${STAGEDIR}/decom"
+	TESTDIR="${STAGEDIR}/test"
+	PATCHDIR="${STAGEDIR}/patch"
+
+	if [ -d "${PATCHDIR}" ] ; then
+		rm -r "${PATCHDIR}"
+	fi
+
+	if [ ! -f "${DESTDIR}/trackfile" ] ; then
+		echo "Destination does not exist"
+		exit 3
+	else
+		TRACKFILE="${DESTDIR}/trackfile" verify
+		ERRORCODE=$?
+		if [ "${ERRORCODE}" != "0" ] ; then
+			DEST_TRACKFILE="$(grep -a ^F: ${DESTDIR}/trackfile)"
+		else
+			echo "Destination Integrity check failed"
+			exit 3
+		fi
+	fi
+
+	IFS="${FORFS}"
+
+
+	shift
+	while [ "${1}" != "" ] 
+	do
+		SOURCE="${1}"
+		echo "${SOURCE}"
+		SOURCEDIR="${RELEASEDIR}/evoke/${SOURCE}"
+		if [ ! -f "${SOURCEDIR}/trackfile" ] ; then
+			echo "Source does not exist"
+		else
+			TRACKFILE="${SOURCEDIR}/trackfile" verify
+			ERRORCODE=$?
+			if [ "${ERRORCODE}" != "0" ] ; then
+				SOURCE_TRACKFILE="$(grep -a ^F: ${SOURCEDIR}/trackfile)"
+			else
+				echo "Source Integrity check failed"
+				break
+			fi
+			for filespec in ${DEST_TRACKFILE}
+			do
+				FILENAME="$(echo "${filespec}" | cut -d : -f 2)"
+				DESTHASH="$(echo "${filespec}" | cut -d : -f 3)"
+				SOURCEFILE="${SOURCEDIR}/${FILENAME}"
+				DESTFILE="${DESTDIR}/${FILENAME}"
+				if [ -f "${SOURCEFILE}" ] ; then
+					SOURCEHASH="$(echo "${SOURCE_TRACKFILE}" | grep ${FILENAME} | cut -d : -f 3)"
+					REALHASH="$(sha256 -q "${SOURCEFILE}")"
+					if [ "${REALHASH}" = "${SOURCEHASH}" ] ; then
+						if [ "${SOURCEHASH}" != "${DESTHASH}" ] ; then
+							case "${SOURCEFILE}" in
+								*.gz)
+									mkdir -p "${DECOMDIR}"
+									gunzip -9nc "${SOURCEFILE}" >"${DECOMDIR}/${SOURCEHASH}"
+									RFILE="${DECOMDIR}/${SOURCEHASH}"
+								;;
+								*)
+									RFILE="${SOURCEFILE}"
+								;;
+							esac
+	
+							case "${DESTFILE}" in
+								*.gz)
+									mkdir -p "${DECOMDIR}"
+									gunzip -9nc "${DESTFILE}" >"${DECOMDIR}/${DESTHASH}"
+									DFILE="${DECOMDIR}/${DESTHASH}"
+								;;
+								*)
+									DFILE="${DESTFILE}"
+								;;
+							esac
+
+							PATCHFILE="${PATCHDIR}/${DESTHASH}/${SOURCEHASH}"
+							mkdir -p ${PATCHDIR}/${DESTHASH}/
+							bsdiff "${RFILE}" "${DFILE}" "${PATCHFILE}"
+							mkdir -p "${TESTDIR}"
+							bspatch "${RFILE}" "${TESTDIR}/${DESTHASH}" "${PATCHFILE}"
+							case "${DESTFILE}" in
+								*.gz)
+									mkdir -p "${DECOMDIR}"
+									rm "${TESTDIR}/${DESTHASH}.gz" 2>/dev/null 1>/dev/null
+									gzip -9nc "${TESTDIR}/${DESTHASH}" >"${TESTDIR}/${DESTHASH}.gz"
+									mv "${TESTDIR}/${DESTHASH}.gz" "${TESTDIR}/${DESTHASH}"
+								;;
+								*.bz2)
+								;;
+								*)
+									RFILE="${FILENAME}"
+								;;
+							esac
+							REALHASH="$(sha256 -q "${TESTDIR}/${DESTHASH}")"
+							if [ "${REALHASH}" != "${DESTHASH}" ] ; then
+								echo "Patch failed"
+								exit 4
+							fi
+						fi
+					fi
+				fi
+			done
+		fi
+		shift
+	done
+
+	mkdir -p "${BINUPDIR}/${DEST}"
+
+	cd "${PATCHDIR}" && tar -cf - * | tar -xvpf - -C "${BINUPDIR}/${DEST}" 2>/dev/null >/dev/null
+}
+
 real_update() {
 	if [ -d "${1}" ] ; then
 		DESTDIR="${1}"
@@ -61,7 +186,7 @@ real_update() {
 		DEST_TRACKFILE="$(grep -a ^F: ${TEMPDIR}/trackfile)"
 	fi
 	cd "${DESTDIR}/evoke/"
-	for version in $(echo */*) 
+	VERSIONLIST="$(for version in $(echo */*) 
 	do
 		case "${version}" in
 			BIN-UPDATES/*)
@@ -69,10 +194,9 @@ real_update() {
 			ISO-IMAGES/*)
 			;;
 			*)
-				echo "${version}"
 			;;
 		esac
-	done
+	done)"
 }
 
 update() {
@@ -101,3 +225,4 @@ update() {
 }
 
 update $@
+
