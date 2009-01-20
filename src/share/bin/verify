@@ -184,14 +184,17 @@ verify() {
 			dd if=/dev/zero bs=512 count=1 "of=${SCRATCHDIR}/tail" 2>${DEVICES}/null
 			
 			if [ -r "${TRACKFILE_PRIVATE_KEY}" ] ; then
-				PADSIZE="$((512 - (${SIGNATURE_BYTES} % 512)))"
-				if [ "${PADSIZE}" != "0" ] ; then
-					dd if=/dev/zero bs=${PADSIZE} count=1 of=${SCRATCHDIR}/pad 2>${DEVICES}/null
-				fi
 				sha256 -q "${SCRATCHDIR}/head" | openssl rsautl -sign -inkey "${TRACKFILE_PRIVATE_KEY}" -out "${SCRATCHDIR}/sign" 2>${DEVICES}/null
+				PADSIZE="$(( ${SIGNATURE_BYTES} % 512 ))"
+				if [ "${PADSIZE}" != "0" ] ; then
+					PADSIZE="$(( 512 - (${SIGNATURE_BYTES} % 512) ))"
+					dd if=/dev/zero bs=${PADSIZE} count=1 of=${SCRATCHDIR}/pad 2>${DEVICES}/null
+					cat ${SCRATCHDIR}/pad ${SCRATCHDIR}/sign >${SCRATCHDIR}/realsign
+					mv ${SCRATCHDIR}/realsign ${SCRATCHDIR}/sign
+				fi
 			fi
 
-			cat "${SCRATCHDIR}/head" "${SCRATCHDIR}/pad" "${SCRATCHDIR}/sign" "${SCRATCHDIR}/tail" >"${SCRATCHDIR}/trackfile"
+			cat "${SCRATCHDIR}/head" "${SCRATCHDIR}/sign" "${SCRATCHDIR}/tail" >"${SCRATCHDIR}/trackfile"
 			DEVICE="$(mdconfig -af ${SCRATCHDIR}/trackfile)"
 			geom label load
 			geom label label trackfile /dev/${DEVICE}
@@ -206,7 +209,7 @@ verify() {
 					SIGSIZE="$(( (512 - ${PAD}) / 512 ))"
 					SIZE="$(($( stat -f '%z' ${RTRACKFILE}) / 512))"
 					OFFSET="$(( ${SIZE} - ${SIGSIZE} - 1))"
-					dd if=${RTRACKFILE} bs=512 count=$((${OFFSET} - 1)) "of=${SCRATCHDIR}/head" 2>${DEVICES}/null
+					dd if=${RTRACKFILE} bs=512 count=$((${OFFSET})) "of=${SCRATCHDIR}/head" 2>${DEVICES}/null
 					dd if=${RTRACKFILE} bs=512 skip=${OFFSET} count=${SIGSIZE} 2>${DEVICES}/null | dd bs=1 skip="${PAD}" "of=${SCRATCHDIR}/sig" 2>${DEVICES}/null
 					RTRACKFILE="${SCRATCHDIR}/head"
 					RHASH="$(sha256 -q "${RTRACKFILE}")"
