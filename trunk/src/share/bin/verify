@@ -199,11 +199,28 @@ verify() {
 			cp "${SCRATCHDIR}/trackfile" "${TRACKFILE}"
 		else
 			SIGNATURE_BYTES="$(grep -a ^I: ${RTRACKFILE} | cut -d : -f 4)"
+
 			if [ "${SIGNATURE_BYTES}" != "" ] ; then
 				if [ "${SIGNATURE_BYTES}" != "0" ] ; then
-					SIGSIZE="$(( (512 - (${SIGNATURE_BYTES} % 512)) / 512 ))"
-					OFFSET="$(( ($(stat -f '%z' ${RTRACKFILE}) / 512) - ${SIGSIZE} - 1))"
-					dd if=${TRACKFILE} bs=512 seek=${OFFSET} count=${SIGSIZE} >${SCRATCHDIR}/sig
+					PAD="$(( "${SIGNATURE_BYTES}" % 512 ))"
+					SIGSIZE="$(( (512 - ${PAD}) / 512 ))"
+					SIZE="$(($( stat -f '%z' ${RTRACKFILE}) / 512))"
+					OFFSET="$(( ${SIZE} - ${SIGSIZE} - 1))"
+					dd if=${RTRACKFILE} bs=512 count=$((${OFFSET} - 1)) "of=${SCRATCHDIR}/head" 2>${DEVICES}/null
+					dd if=${RTRACKFILE} bs=512 skip=${OFFSET} count=${SIGSIZE} 2>${DEVICES}/null | dd bs=1 skip="${PAD}" "of=${SCRATCHDIR}/sig" 2>${DEVICES}/null
+					RTRACKFILE="${SCRATCHDIR}/head"
+					RHASH="$(sha256 -q "${RTRACKFILE}")"
+					SHASH="$(openssl rsautl -verify -pubin -inkey "${TRACKFILE_PUBLIC_KEY}" -in "${SCRATCHDIR}/sig" 2>${DEVICES}/null)"
+					if [ "${RHASH}" = "${SHASH}" ] ; then
+						if [ "${QUIET}" = "no" ] ; then
+							echo "RSA Verification Passed"
+						fi
+					else
+						if [ "${QUIET}" = "no" ] ; then
+							echo "RSA Verification Failed"
+							ERRORCODE="65"
+						fi
+					fi
 				fi
 			fi
 
@@ -212,7 +229,7 @@ verify() {
 	else
 		verify_loop $@
 	fi
-	rm -r "${SCRATCHDIR}"
+#	rm -r "${SCRATCHDIR}"
 	exit "${ERRORCODE}"
 }
 
