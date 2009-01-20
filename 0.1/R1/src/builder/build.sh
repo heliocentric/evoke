@@ -263,6 +263,8 @@ do
 	chmod a+rx ${FSDIR}/system/${file}
 done
 
+cp "${EVOKE_BUILDER_PUBLIC}" "${FSDIR}/system/lib/evoke_public.rsa"
+
 mkdir -p ${FSDIR}/system/share/doc
 
 if [ -d "${ROOTDIR}/doc" ] ; then
@@ -336,10 +338,11 @@ echo -n " * share = Creating trackfile"
 
 # This is the location of the trackfile.
 export TRACKFILE=${BOOTDIR}${BOOTPREFIX}/trackfile
+export TRACKFILE_PRIVATE_KEY="${EVOKE_BUILDER_PRIVATE}"
 
 cd ${BOOTDIR}${BOOTPREFIX}
 
-verify *
+OPTIONS="write quiet" verify *
 
 echo "					[DONE]"
 

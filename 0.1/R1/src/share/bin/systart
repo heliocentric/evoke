@@ -210,6 +210,7 @@ mkdir -p ${EVOKE_LIBDIR}
 mount_nullfs -o union,ro /system/share/lib/ /config/
 mount_nullfs -o union /mem/lib/ /config/
 export EVOKE_CFGDIR=/config
+export TRACKFILE_PUBLIC_KEY=/config/evoke_public.rsa
 
 export EVOKE_SCDIR=/mem/sysconfig
 mkdir -p ${EVOKE_SCDIR}
