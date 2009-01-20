@@ -34,4 +34,46 @@ FORFS="
 OLDFS=" 	
 "
 
-mounter
+PATH="${PATH}:/usr/libexec"
+
+if [ ! -d "${RELEASEDIR}" ] ; then
+	RELEASEDIR="/releases"
+fi
+
+if [ ! -c "${DEVICES}/null" ] ; then
+	if [ -c "/dev/null" ] ; then
+		DEVICES=/dev
+	else
+		echo "Error, no device nodes found"
+		exit 1
+	fi
+fi
+
+if [ ! -d "${TMPDIR}" ] ; then
+	TMPDIR="/tmp"
+fi
+
+update() {
+	SCRATCHDIR="${TMPDIR}/update/$(dd if=/dev/random bs=4m count=1 2>${DEVICES}/null | sha256 -q)"
+	mkdir -p "${SCRATCHDIR}"
+
+	cd "${SCRATCHDIR}"
+
+	if [ "${EVOKE_UPDATE_MIRROR}" = "" ] ; then
+		phttpget evoke.googlecode.com /svn/info/mirrorlist 2>${DEVICES}/null
+		EVOKE_UPDATE_MIRROR="$(grep -v ^# ${SCRATCHDIR}/mirrorlist | grep -v ^$ | grep ^http:// | head -n 1)"
+	fi
+
+	SERVER="$(echo "${EVOKE_UPDATE_MIRROR}" | sed 's_http://__g' | cut -d "/" -f 1)"
+	FILESPEC="/$(echo "${EVOKE_UPDATE_MIRROR}" | sed 's_http://__g' | cut -d "/" -f 2)/evoke"
+
+	case "${1}" in
+		fetch)
+			if [ "${2}" != "" ] ; then
+				phttpget "${SERVER}" "${FILESPEC}/${2}/trackfile" 2>${DEVICES}/null
+			fi
+		;;
+	esac
+}
+
+update $@
