@@ -167,18 +167,30 @@ verify() {
 	if [ "${RTRACKFILE}" != "" ] ; then
 		TYPES="sha256"
 		if [ "${WRITE}" = "yes" ] ; then
-			TRACKDATA="$(verify_loop $@)"
-			TRACKDATA="$(printf "${TRACKDATA}\n#")"
-			echo "${TRACKDATA}" | dd bs=512 fillchar=" " conv=sync "of=${SCRATCHDIR}/head" 2>${DEVICES}/null
-			dd if=/dev/zero bs=512 count=1 "of=${SCRATCHDIR}/tail" 2>${DEVICES}/null
 
+			# Test the openssl signing abilities, to figure out the size of the resulting signature.
 			if [ -r "${TRACKFILE_PRIVATE_KEY}" ] ; then
-				sha256 -q "${SCRATCHDIR}/head" | openssl rsautl -sign -inkey "${TRACKFILE_PRIVATE_KEY}" -out "${SCRATCHDIR}/sign" 2>${DEVICES}/null
+				sha256 -qs "test" | openssl rsautl -sign -inkey "${TRACKFILE_PRIVATE_KEY}" -out "${SCRATCHDIR}/testsign" 2>${DEVICES}/null
+				SIGNATURE_BYTES="$(stat -f '%z' ${SCRATCHDIR}/testsign)"
+				rm ${SCRATCHDIR}/testsign 2>${DEVICES}/null
 			else
-				dd if=/dev/zero bs=512 count=1 "of=${SCRATCHDIR}/sign" 2>${DEVICES}/null
+				SIGNATURE_BYTES="0"
 			fi
 
-			cat "${SCRATCHDIR}/head" "${SCRATCHDIR}/sign" "${SCRATCHDIR}/tail" >"${SCRATCHDIR}/trackfile"
+			TRACKDATA="$(verify_loop $@)"
+			TRACKDATA="$(printf "I:1.0::${SIGNATURE_BYTES}\n${TRACKDATA}\n#")"
+			echo "${TRACKDATA}" | dd bs=512 fillchar=" " conv=sync "of=${SCRATCHDIR}/head" 2>${DEVICES}/null
+			dd if=/dev/zero bs=512 count=1 "of=${SCRATCHDIR}/tail" 2>${DEVICES}/null
+			
+			if [ -r "${TRACKFILE_PRIVATE_KEY}" ] ; then
+				PADSIZE="$((512 - (${SIGNATURE_BYTES} % 512)))"
+				if [ "${PADSIZE}" != "0" ] ; then
+					dd if=/dev/zero bs=${PADSIZE} count=1 of=${SCRATCHDIR}/pad 2>${DEVICES}/null
+				fi
+				sha256 -q "${SCRATCHDIR}/head" | openssl rsautl -sign -inkey "${TRACKFILE_PRIVATE_KEY}" -out "${SCRATCHDIR}/sign" 2>${DEVICES}/null
+			fi
+
+			cat "${SCRATCHDIR}/head" "${SCRATCHDIR}/pad" "${SCRATCHDIR}/sign" "${SCRATCHDIR}/tail" >"${SCRATCHDIR}/trackfile"
 			DEVICE="$(mdconfig -af ${SCRATCHDIR}/trackfile)"
 			geom label load
 			geom label label trackfile /dev/${DEVICE}
