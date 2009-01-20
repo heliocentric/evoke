@@ -36,10 +36,6 @@ OLDFS="
 
 PATH="${PATH}:/usr/libexec"
 
-if [ ! -d "${RELEASEDIR}" ] ; then
-	RELEASEDIR="/releases"
-fi
-
 if [ ! -c "${DEVICES}/null" ] ; then
 	if [ -c "/dev/null" ] ; then
 		DEVICES=/dev
@@ -53,12 +49,30 @@ if [ ! -d "${TMPDIR}" ] ; then
 	TMPDIR="/tmp"
 fi
 
-update_fetch() {
+real_update() {
+	if [ -d "${2}" ] ; then
+		DESTDIR="${2}"
+	else
+		echo "Destination directory not found."
+		exit 65
+	fi
 	phttpget "${SERVER}" "${FILESPEC}/${1}/trackfile" 2>${DEVICES}/null
 	if [ -r "${TEMPDIR}/trackfile" ] ; then
 		DEST_TRACKFILE="$(grep -a ^F: ${TEMPDIR}/trackfile)"
-		echo "${DEST_TRACKFILE}"
 	fi
+	cd "${DESTDIR}/evoke/"
+	for version in $(echo */*) 
+	do
+		case "${version}" in
+			BIN-UPDATES/*)
+			;;
+			ISO-IMAGES/*)
+			;;
+			*)
+				echo "${version}"
+			;;
+		esac
+	done
 }
 
 update() {
@@ -78,9 +92,9 @@ update() {
 	FILESPEC="/$(echo "${EVOKE_UPDATE_MIRROR}" | sed 's_http://__g' | cut -d "/" -f 2)/evoke"
 
 	case "${1}" in
-		fetch)
+		install)
 			if [ "${2}" != "" ] ; then
-				update_fetch "${2}"
+				real_update "${2}" "${3}"
 			fi
 		;;
 	esac
