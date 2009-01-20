@@ -179,7 +179,7 @@ verify() {
 			fi
 
 			TRACKDATA="$(verify_loop $@)"
-			TRACKDATA="$(printf "I:1.0::${SIGNATURE_BYTES}\n${TRACKDATA}\n#")"
+			TRACKDATA="$(printf "I:1.1::${SIGNATURE_BYTES}\n${TRACKDATA}\n#")"
 			echo "${TRACKDATA}" | dd bs=512 fillchar=" " conv=sync "of=${SCRATCHDIR}/head" 2>${DEVICES}/null
 			dd if=/dev/zero bs=512 count=1 "of=${SCRATCHDIR}/tail" 2>${DEVICES}/null
 			
@@ -195,10 +195,6 @@ verify() {
 			fi
 
 			cat "${SCRATCHDIR}/head" "${SCRATCHDIR}/sign" "${SCRATCHDIR}/tail" >"${SCRATCHDIR}/trackfile"
-			DEVICE="$(mdconfig -af ${SCRATCHDIR}/trackfile)"
-			geom label load
-			geom label label trackfile /dev/${DEVICE}
-			mdconfig -d -u $(echo ${DEVICE} | cut -b 3-7)
 			cp "${SCRATCHDIR}/trackfile" "${TRACKFILE}"
 		else
 			SIGNATURE_BYTES="$(grep -a ^I: ${RTRACKFILE} | cut -d : -f 4)"
@@ -208,7 +204,7 @@ verify() {
 					PAD="$(( "${SIGNATURE_BYTES}" % 512 ))"
 					SIGSIZE="$(( (512 - ${PAD}) / 512 ))"
 					SIZE="$(($( stat -f '%z' ${RTRACKFILE}) / 512))"
-					OFFSET="$(( ${SIZE} - ${SIGSIZE} - 1))"
+					OFFSET="$(( ${SIZE} - ${SIGSIZE}))"
 					dd if=${RTRACKFILE} bs=512 count=$((${OFFSET})) "of=${SCRATCHDIR}/head" 2>${DEVICES}/null
 					dd if=${RTRACKFILE} bs=512 skip=${OFFSET} count=${SIGSIZE} 2>${DEVICES}/null | dd bs=1 skip="${PAD}" "of=${SCRATCHDIR}/sig" 2>${DEVICES}/null
 					RTRACKFILE="${SCRATCHDIR}/head"
