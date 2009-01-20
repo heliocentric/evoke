@@ -86,22 +86,40 @@ verify_loop() {
 					# We always need the file's hash from the contents, so keep it out
 					# of the conditional
 					RHASH=$(${type} -q "${1}" 2>${DEVICES}/null)
-					if [ "${RTRACKFILE}" = "" ] ; then
+					if [ "${RTRACKFILE}" != "" ]; then
+						if [ "${WRITE}" = "yes" ] ; then
+							echo "F:${1}:${RHASH}:$(stat -f '%z' "${1}")"							
+						else
+							unset FHASH
+							FHASH=$(grep -a ^F: "${RTRACKFILE}" | awk -v FILENAME="${1}" -F ":" '{ if ($2 == FILENAME) { print $3; } }' 2>${DEVICES}/null)
+							if [ "${RHASH}" != "${FHASH}" ] ; then
+								if [ "${QUIET}" = "no" ] ; then
+									echo "${type} fail ${1}"
+								fi
+								ERRORCODE="65"
+							else
+								if [ "${QUIET}" = "no" ] ; then
+									echo "${type} pass ${1}"
+								fi
+							fi	
+						fi
+					else
 						if [ "${WRITE}" = "yes" ] ; then
 							setextattr system ${type} ${RHASH} "${1}" 2>${DEVICES}/null
 						else
 							unset FHASH
-							if [ "${FHASH}" = "" ] ; then
-								FHASH=$(getextattr -q system ${type} "${1}" 2>${DEVICES}/null)
-							fi
+							FHASH=$(getextattr -q system ${type} "${1}" 2>${DEVICES}/null)
 							if [ "${RHASH}" != "${FHASH}" ] ; then
-								echo "${type} fail ${1}"					
+								if [ "${QUIET}" = "no" ] ; then
+									echo "${type} fail ${1}"
+								fi
+								ERRORCODE="65"
 							else
-								echo "${type} pass ${1}"
+								if [ "${QUIET}" = "no" ] ; then
+									echo "${type} pass ${1}"
+								fi
 							fi	
 						fi
-					else
-						echo "F:${1}:${RHASH}:$(stat -f '%z' "${1}")"
 					fi
 				done
 			;;	
@@ -111,34 +129,111 @@ verify_loop() {
 }
 
 verify() {
+	ERRORCODE="0"
+	QUIET="no"
+	WRITE="no"
+	RECURSE="yes"
+
+	if [ "${OPTIONS}" != "" ] ; then
+		for option in ${OPTIONS}
+		do
+			case "${option}" in
+				norecurse)
+					RECURSE="no"
+				;;
+				recurse)
+					RECURSE="yes"
+				;;
+				quiet)
+					QUIET="yes"
+				;;
+				verbose)
+					QUIET="no"
+				;;
+				write)
+					WRITE="yes"
+				;;
+				nowrite)
+					WRITE="no"
+				;;
+			esac
+		done
+	fi
+
 	SCRATCHDIR="${TMPDIR}/verify/$(dd if=/dev/random bs=4m count=1 2>/dev/null | sha256 -q)"
 	mkdir -p "${SCRATCHDIR}"
 	TYPES="sha256 md5"
 
 	if [ "${RTRACKFILE}" != "" ] ; then
 		TYPES="sha256"
-		TRACKDATA="$(verify_loop $@)"
-		TRACKDATA="$(printf "${TRACKDATA}\n#")"
-		echo "${TRACKDATA}" | dd bs=512 fillchar=" " conv=sync "of=${SCRATCHDIR}/head" 2>${DEVICES}/null
-		dd if=/dev/zero bs=512 count=1 "of=${SCRATCHDIR}/tail" 2>${DEVICES}/null
 
-		if [ -r "${TRACKFILE_PRIVATE_KEY}" ] ; then
-			sha256 -q "${SCRATCHDIR}/head" | openssl rsautl -sign -inkey "${TRACKFILE_PRIVATE_KEY}" -out "${SCRATCHDIR}/sign" 2>${DEVICES}/null
+		if [ "${WRITE}" = "yes" ] ; then
+
+			# Test the openssl signing abilities, to figure out the size of the resulting signature.
+			if [ -r "${TRACKFILE_PRIVATE_KEY}" ] ; then
+				sha256 -qs "test" | openssl rsautl -sign -inkey "${TRACKFILE_PRIVATE_KEY}" -out "${SCRATCHDIR}/testsign" 2>${DEVICES}/null
+				SIGNATURE_BYTES="$(stat -f '%z' ${SCRATCHDIR}/testsign)"
+				rm ${SCRATCHDIR}/testsign 2>${DEVICES}/null
+			else
+				SIGNATURE_BYTES="0"
+			fi
+
+			TRACKDATA="$(verify_loop $@)"
+			TRACKDATA="$(printf "I:1.0::${SIGNATURE_BYTES}\n${TRACKDATA}\n#")"
+			echo "${TRACKDATA}" | dd bs=512 fillchar=" " conv=sync "of=${SCRATCHDIR}/head" 2>${DEVICES}/null
+			dd if=/dev/zero bs=512 count=1 "of=${SCRATCHDIR}/tail" 2>${DEVICES}/null
+			
+			if [ -r "${TRACKFILE_PRIVATE_KEY}" ] ; then
+				sha256 -q "${SCRATCHDIR}/head" | openssl rsautl -sign -inkey "${TRACKFILE_PRIVATE_KEY}" -out "${SCRATCHDIR}/sign" 2>${DEVICES}/null
+				PADSIZE="$(( ${SIGNATURE_BYTES} % 512 ))"
+				if [ "${PADSIZE}" != "0" ] ; then
+					PADSIZE="$(( 512 - (${SIGNATURE_BYTES} % 512) ))"
+					dd if=/dev/zero bs=${PADSIZE} count=1 of=${SCRATCHDIR}/pad 2>${DEVICES}/null
+					cat ${SCRATCHDIR}/pad ${SCRATCHDIR}/sign >${SCRATCHDIR}/realsign
+					mv ${SCRATCHDIR}/realsign ${SCRATCHDIR}/sign
+				fi
+			fi
+
+			cat "${SCRATCHDIR}/head" "${SCRATCHDIR}/sign" "${SCRATCHDIR}/tail" >"${SCRATCHDIR}/trackfile"
+			DEVICE="$(mdconfig -af ${SCRATCHDIR}/trackfile)"
+			geom label load
+			geom label label trackfile /dev/${DEVICE}
+			mdconfig -d -u $(echo ${DEVICE} | cut -b 3-7)
+			cp "${SCRATCHDIR}/trackfile" "${TRACKFILE}"
 		else
-			dd if=/dev/zero bs=512 count=1 "of=${SCRATCHDIR}/sign" 2>${DEVICES}/null
-		fi
+			SIGNATURE_BYTES="$(grep -a ^I: ${RTRACKFILE} | cut -d : -f 4)"
 
-		cat "${SCRATCHDIR}/head" "${SCRATCHDIR}/sign" "${SCRATCHDIR}/tail" >"${SCRATCHDIR}/trackfile"
-		DEVICE="$(mdconfig -af ${SCRATCHDIR}/trackfile)"
-		geom label load
-		geom label label trackfile /dev/${DEVICE}
-		mdconfig -d -u $(echo ${DEVICE} | cut -b 3-7)
-		cp "${SCRATCHDIR}/trackfile" "${TRACKFILE}"
+			if [ "${SIGNATURE_BYTES}" != "" ] ; then
+				if [ "${SIGNATURE_BYTES}" != "0" ] ; then
+					PAD="$(( "${SIGNATURE_BYTES}" % 512 ))"
+					SIGSIZE="$(( (512 - ${PAD}) / 512 ))"
+					SIZE="$(($( stat -f '%z' ${RTRACKFILE}) / 512))"
+					OFFSET="$(( ${SIZE} - ${SIGSIZE} - 1))"
+					dd if=${RTRACKFILE} bs=512 count=$((${OFFSET})) "of=${SCRATCHDIR}/head" 2>${DEVICES}/null
+					dd if=${RTRACKFILE} bs=512 skip=${OFFSET} count=${SIGSIZE} 2>${DEVICES}/null | dd bs=1 skip="${PAD}" "of=${SCRATCHDIR}/sig" 2>${DEVICES}/null
+					RTRACKFILE="${SCRATCHDIR}/head"
+					RHASH="$(sha256 -q "${RTRACKFILE}")"
+					SHASH="$(openssl rsautl -verify -pubin -inkey "${TRACKFILE_PUBLIC_KEY}" -in "${SCRATCHDIR}/sig" 2>${DEVICES}/null)"
+					if [ "${RHASH}" = "${SHASH}" ] ; then
+						if [ "${QUIET}" = "no" ] ; then
+							echo "RSA Verification Passed"
+						fi
+					else
+						if [ "${QUIET}" = "no" ] ; then
+							echo "RSA Verification Failed"
+							ERRORCODE="65"
+						fi
+					fi
+				fi
+			fi
+
+			verify_loop $@
+		fi
 	else
 		verify_loop $@
 	fi
-
-
+#	rm -r "${SCRATCHDIR}"
+	exit "${ERRORCODE}"
 }
 
 verify $@
