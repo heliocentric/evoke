@@ -339,7 +339,7 @@ export TRACKFILE=${BOOTDIR}${BOOTPREFIX}/trackfile
 
 cd ${BOOTDIR}${BOOTPREFIX}
 
-verify *
+OPTIONS="write quiet" verify *
 
 echo "					[DONE]"
 
