@@ -105,10 +105,10 @@ verify_loop() {
 						fi
 					else
 						if [ "${WRITE}" = "yes" ] ; then
-							setextattr system ${type} ${RHASH} "${1}" 2>${DEVICES}/null
+							setextattr user ${type} ${RHASH} "${1}" 2>${DEVICES}/null
 						else
 							unset FHASH
-							FHASH=$(getextattr -q system ${type} "${1}" 2>${DEVICES}/null)
+							FHASH=$(getextattr -q user ${type} "${1}" 2>${DEVICES}/null)
 							if [ "${RHASH}" != "${FHASH}" ] ; then
 								if [ "${QUIET}" = "no" ] ; then
 									echo "${type} fail ${1}"
