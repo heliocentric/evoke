@@ -28,6 +28,7 @@
  * [Lsvol lsvol]
  * [Menu menu]
  * [Merger merger]
+ * [Update update] 
  * [Userconfig userconfig] 
  * [Verify verify]
 
