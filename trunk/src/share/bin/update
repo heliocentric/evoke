@@ -75,7 +75,7 @@ create_updates() {
 		echo "Destination does not exist"
 		exit 3
 	else
-		TRACKFILE="${DESTDIR}/trackfile" verify
+		TRACKFILE="${DESTDIR}/trackfile" OPTIONS="quiet" verify
 		ERRORCODE=$?
 		if [ "${ERRORCODE}" != "0" ] ; then
 			DEST_TRACKFILE="$(grep -a ^F: ${DESTDIR}/trackfile)"
@@ -97,7 +97,7 @@ create_updates() {
 		if [ ! -f "${SOURCEDIR}/trackfile" ] ; then
 			echo "Source does not exist"
 		else
-			TRACKFILE="${SOURCEDIR}/trackfile" verify
+			TRACKFILE="${SOURCEDIR}/trackfile" OPTIONS="quiet" verify
 			ERRORCODE=$?
 			if [ "${ERRORCODE}" != "0" ] ; then
 				SOURCE_TRACKFILE="$(grep -a ^F: ${SOURCEDIR}/trackfile)"
@@ -181,9 +181,11 @@ real_update() {
 		echo "Destination directory not found."
 		exit 65
 	fi
+
 	phttpget "${SERVER}" "${FILESPEC}/${2}/trackfile" 2>${DEVICES}/null
+
 	if [ -r "${TEMPDIR}/trackfile" ] ; then
-		TRACKFILE="${TEMPDIR}/trackfile" verify
+		TRACKFILE="${TEMPDIR}/trackfile" OPTIONS="quiet" verify
 		ERRORCODE="$?"
 		if [ "${ERRORCODE}" = 0 ] ; then
 			DEST_TRACKFILE="$(grep -a ^F: ${TEMPDIR}/trackfile)"
@@ -192,8 +194,10 @@ real_update() {
 			exit "${ERRORCODE}"
 		fi
 	fi
+
 	cd "${DESTDIR}/evoke/"
-	VERSIONLIST="$(for version in $(echo */*) 
+
+	VERSIONLIST="$(for version in $(echo */*/trackfile) 
 	do
 		case "${version}" in
 			BIN-UPDATES/*)
@@ -201,9 +205,31 @@ real_update() {
 			ISO-IMAGES/*)
 			;;
 			*)
+				echo "$(stat -f '%m' "${version}"):$(dirname ${version})"
 			;;
 		esac
-	done)"
+	done | sort | cut -d : -f 2)"
+
+	# Let's find out how many bytes we have to download.
+	BYTECOUNT="$(echo "${DEST_TRACKFILE}" | awk -F ":" '{ SUM += $4; } END { print SUM; }')"
+	MB="$((${BYTECOUNT} / 1000 / 1000))"
+	echo "Continuing will download ${BYTECOUNT} bytes (~ ${MB}MB)"
+	read -p "Continue? [Y/n]: " PROMPT
+	case "${PROMPT}" in
+		[nN])
+		;;
+		*)
+			if [ "${VERSIONLIST}" != "" ] ; then
+			
+			else
+				# No reference points? Just fetch!
+				for filespec in ${DEST_TRACKFILE}
+				do
+				
+				done
+			fi
+		;;
+	esac
 }
 
 update() {
