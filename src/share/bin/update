@@ -64,8 +64,8 @@ create_updates() {
 
 	BINUPDIR="${RELEASEDIR}/evoke/BIN-UPDATES"
 	DECOMDIR="${SCRATCHDIR}/decom"
-	TESTDIR="${SCRATCHDIR}/test"
-	PATCHDIR="${SCRATCHDIR}/patch"
+	export TESTDIR="${SCRATCHDIR}/test"
+	export PATCHDIR="${SCRATCHDIR}/patch"
 
 	if [ -d "${PATCHDIR}" ] ; then
 		rm -r "${PATCHDIR}"
@@ -190,31 +190,27 @@ apply_patch() {
 			RFILE="${SOURCEFILE}"
 		;;
 	esac
-	case "${DESTFILE}" in
-		*.gz)
-			DFILE="${TEMPDIR}/${DESTHASH}"
-		;;
-		*)
-			DFILE="${DESTFILE}"
-		;;
-	esac
+	DFILE="${TEMPDIR}/${DESTHASH}"
 
 	bspatch "${RFILE}" "${DFILE}" "${PATCHFILE}"
 
 	case "${DESTFILE}" in
 		*.gz)
-			rm "${TESTDIR}/${DESTHASH}.gz" 2>/dev/null 1>/dev/null
-			gzip -9nc "${TESTDIR}/${DESTHASH}" >"${TESTDIR}/${DESTHASH}.gz"
-			mv "${TESTDIR}/${DESTHASH}.gz" "${TESTDIR}/${DESTHASH}"
+			rm "${TEMPDIR}/${DESTHASH}.gz" 2>/dev/null 1>/dev/null
+			gzip -9nc "${TEMPDIR}/${DESTHASH}" >"${TEMPDIR}/${DESTHASH}.gz"
+			mv "${TEMPDIR}/${DESTHASH}.gz" "${TEMPDIR}/${DESTHASH}"
 		;;
 		*.bz2)
 		;;
 	esac
-	REALHASH="$(sha256 -q "${TESTDIR}/${DESTHASH}")"
+
+	REALHASH="$(sha256 -q "${TEMPDIR}/${DESTHASH}")"
+
 	if [ "${REALHASH}" != "${DESTHASH}" ] ; then
 		echo "4"
 	else
-		mv "${TESTDIR}/${DESTHASH}" "${DESTFILE}"
+		echo "0"
+		mv "${TEMPDIR}/${DESTHASH}" "${DESTFILE}"
 	fi
 }
 
@@ -259,8 +255,8 @@ real_update() {
 	# Let's find out how many bytes we have to download.
 	BYTECOUNT="$(echo "${DEST_TRACKFILE}" | awk -F ":" '{ SUM += $4; } END { print SUM; }')"
 	MB="$((${BYTECOUNT} / 1000 / 1000))"
-	echo "The update utility will attempt to keep the size of the files it has to download low."
-	echo "However, for various reasons, this doesn't always work."
+	echo "The update utility will attempt to keep the total size of files downloaded to a minimum, "
+	echo "where possible."
 	echo ""
 	echo "In the worst case, update will download ${BYTECOUNT} bytes (~ ${MB}MB)"
 	read -p "Continue? [Y/n]: " PROMPT
@@ -272,6 +268,7 @@ real_update() {
 			for filespec in ${DEST_TRACKFILE}
 			do
 
+				cd "${DESTDIR}/evoke/"
 				# let's see if HASH matches any already existing file.
 
 				HASH="$(echo "${filespec}" | cut -d ":" -f 3)"
@@ -279,8 +276,10 @@ real_update() {
 				PDESTDIR="${STAGEDIR}/$(dirname ${FILENAME})"
 				BASENAME="$(basename ${FILENAME})"
 				PPATCHDIR="${PATCHDIR}/${HASH}"
+				PDOWNDIR="${SCRATCHDIR}/download/${HASH}"
 				mkdir -p "${PPATCHDIR}"
 				mkdir -p "${PDESTDIR}"
+				mkdir -p "${PDOWNDIR}"
 
 				for version in ${VERSIONLIST}
 				do
@@ -288,13 +287,20 @@ real_update() {
 					if [ "${MATCHED_LINE}" != "" ] ; then
 						SFILENAME="$(echo ${MATCHED_LINE} | cut -d ":" -f 2)"
 						cp "${DESTDIR}/evoke/${version}/${SFILENAME}" "${STAGEDIR}/${FILENAME}"
-						sh -c "cd ${STAGEDIR} && TRACKFILE="${TEMPDIR}/trackfile" verify "${FILENAME}""
+						sh -c "cd ${STAGEDIR} && TRACKFILE="${TEMPDIR}/trackfile" OPTIONS="quiet" verify "${FILENAME}""
 						RETVAL=$?
 						if [ "${RETVAL}" = "0" ] ; then
 							break
 						fi
 					fi
 				done
+
+				if [ "${RETVAL}" = "0" ] ; then
+					unset RETVAL
+					continue
+				else
+					unset RETVAL
+				fi
 
 				HASHLIST="$(for version in ${VERSIONLIST}
 				do
@@ -314,11 +320,58 @@ real_update() {
 						for foundfile in ${FOUNDFILES}
 						do
 							FILE="$(grep -Ha ^F: ${DESTDIR}/evoke/*/*/trackfile | grep ${foundfile} | awk -F : '{ FILENAME=$3; "dirname " $1 | getline; print $0 "/" FILENAME; }' | head -n 1)"
-							echo apply_patch "${foundfile}" "${FILE}" "${PDESTDIR}/${BASENAME}"
+							RETVAL="$(apply_patch "${foundfile}" "${FILE}" "${PDESTDIR}/${BASENAME}" "${foundfile}" "${HASH}")"
+							if [ "${RETVAL}" = "0" ] ; then
+								break
+							fi
 						done
 					fi
+
+				fi
+
+				if [ "${RETVAL}" = "0" ] ; then
+					unset RETVAL
+					continue
+				else
+					unset RETVAL
+				fi
+
+				# Ok, fall back on grabbing the file.
+				cd "${PDOWNDIR}"
+				phttpget "${SERVER}" "${FILESPEC}/${VERSION}/${FILENAME}" 2>${DEVICES}/null
+				cp "${BASENAME}" "${PDESTDIR}/"
+				cd "${STAGEDIR}"
+				TRACKFILE="${TEMPDIR}/trackfile" OPTIONS="quiet" verify "${FILENAME}"
+				RETVAL=$?
+				if [ "${RETVAL}" != "0" ] ; then
+					unset RETVAL
+					echo "File corrupted in transit, bailing out"
+					exit 65
+				else
+					unset RETVAL
 				fi
 			done
+
+			cd "${STAGEDIR}"
+
+			FILELIST="$(echo ${DEST_TRACKFILE} | cut -d : -f 2)"
+			mv "${TEMPDIR}/trackfile" "${STAGEDIR}/"
+			TRACKFILE="${STAGEDIR}/trackfile" OPTIONS="quiet" verify ${FILELIST}
+			RETVAL=$?
+			if [ "${RETVAL}" != "0" ] ; then
+				unset RETVAL
+				echo "The trackfile is incomplete"
+				exit 65
+			else
+				unset RETVAL
+			fi
+			mkdir -p "${DESTDIR}/evoke/${VERSION}"
+			tar -cf - * | tar -xpf - -C "${DESTDIR}/evoke/${VERSION}" 2>${DEVICES}/null
+			PATCHSIZE="$(du -hd 0 ${PATCHDIR} | awk '{ print $1 }')"
+			DOWNLOADSIZE="$(du -hd 0 ${SCRATCHDIR}/download | awk '{ print $1 }')"
+			echo "Size of complete files downloaded: ${DOWNLOADSIZE}B"
+			echo "Size of patch files downloaded: ${PATCHSIZE}B"
+			echo "Total Size of the release: ${MB}MB"
 		;;
 	esac
 }
@@ -350,6 +403,7 @@ update() {
 			fi
 		;;
 	esac
+	rm -r ${SCRATCHDIR}
 }
 
 update $@
