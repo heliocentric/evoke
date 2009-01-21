@@ -213,7 +213,10 @@ real_update() {
 	# Let's find out how many bytes we have to download.
 	BYTECOUNT="$(echo "${DEST_TRACKFILE}" | awk -F ":" '{ SUM += $4; } END { print SUM; }')"
 	MB="$((${BYTECOUNT} / 1000 / 1000))"
-	echo "Continuing will download ${BYTECOUNT} bytes (~ ${MB}MB)"
+	echo "The update utility will attempt to keep the size of the files it has to download low."
+	echo "However, for various reasons, this doesn't always work."
+	echo ""
+	echo "In the worst case, update will download ${BYTECOUNT} bytes (~ ${MB}MB)"
 	read -p "Continue? [Y/n]: " PROMPT
 	case "${PROMPT}" in
 		[nN])
