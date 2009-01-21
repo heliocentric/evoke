@@ -367,6 +367,10 @@ real_update() {
 			fi
 			mkdir -p "${DESTDIR}/evoke/${VERSION}"
 			tar -cf - * | tar -xpf - -C "${DESTDIR}/evoke/${VERSION}" 2>${DEVICES}/null
+			# run verify, but this time, let it write the extended attribute out.
+			cd "${DESTDIR}/evoke/${VERSION}"
+			unset TRACKFILE
+			OPTIONS="write" verify *
 			PATCHSIZE="$(du -hd 0 ${PATCHDIR} | awk '{ print $1 }')"
 			DOWNLOADSIZE="$(du -hd 0 ${SCRATCHDIR}/download | awk '{ print $1 }')"
 			echo "Size of complete files downloaded: ${DOWNLOADSIZE}B"
