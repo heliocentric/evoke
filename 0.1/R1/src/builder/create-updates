@@ -60,7 +60,14 @@ if [ ! -f "${DESTDIR}/trackfile" ] ; then
 	echo "Destination does not exist"
 	exit 3
 else
-	DEST_TRACKFILE="$(grep -a ^F: ${DESTDIR}/trackfile)"
+	TRACKFILE="${DESTDIR}/trackfile" verify
+	ERRORCODE=$?
+	if [ "${ERRORCODE}" != "0" ] ; then
+		DEST_TRACKFILE="$(grep -a ^F: ${DESTDIR}/trackfile)"
+	else
+		echo "Destination Integrity check failed"
+		exit 3
+	fi
 fi
 
 IFS="${FORFS}"
@@ -75,7 +82,14 @@ do
 	if [ ! -f "${SOURCEDIR}/trackfile" ] ; then
 		echo "Source does not exist"
 	else
-		SOURCE_TRACKFILE="$(grep -a ^F: ${SOURCEDIR}/trackfile)"
+		TRACKFILE="${SOURCEDIR}/trackfile" verify
+		ERRORCODE=$?
+		if [ "${ERRORCODE}" != "0" ] ; then
+			SOURCE_TRACKFILE="$(grep -a ^F: ${SOURCEDIR}/trackfile)"
+		else
+			echo "Source Integrity check failed"
+			break
+		fi
 		for filespec in ${DEST_TRACKFILE}
 		do
 			FILENAME="$(echo "${filespec}" | cut -d : -f 2)"

@@ -30,5 +30,381 @@
 
 FORFS="
 "
+
 OLDFS=" 	
 "
+
+PATH="${PATH}:/usr/libexec"
+
+if [ ! -c "${DEVICES}/null" ] ; then
+	if [ -c "/dev/null" ] ; then
+		DEVICES=/dev
+	else
+		echo "Error, no device nodes found"
+		exit 1
+	fi
+fi
+
+if [ ! -d "${TMPDIR}" ] ; then
+	TMPDIR="/tmp"
+fi
+
+create_updates() {
+	if [ "${1}" = "" ] ; then
+		echo "Error: No version set"
+		exit 5
+	fi
+
+	DESTDIR="${1}"
+
+	shift
+
+	DEST="${1}"
+
+
+	BINUPDIR="${RELEASEDIR}/evoke/BIN-UPDATES"
+	DECOMDIR="${SCRATCHDIR}/decom"
+	export TESTDIR="${SCRATCHDIR}/test"
+	export PATCHDIR="${SCRATCHDIR}/patch"
+
+	if [ -d "${PATCHDIR}" ] ; then
+		rm -r "${PATCHDIR}"
+	fi
+
+	if [ ! -f "${DESTDIR}/trackfile" ] ; then
+		echo "Destination does not exist"
+		exit 3
+	else
+		TRACKFILE="${DESTDIR}/trackfile" OPTIONS="quiet" verify
+		ERRORCODE=$?
+		if [ "${ERRORCODE}" != "0" ] ; then
+			DEST_TRACKFILE="$(grep -a ^F: ${DESTDIR}/trackfile)"
+		else
+			echo "Destination Integrity check failed"
+			exit 3
+		fi
+	fi
+
+	IFS="${FORFS}"
+
+
+	shift
+	while [ "${1}" != "" ] 
+	do
+		SOURCE="${1}"
+		echo "${SOURCE}"
+		SOURCEDIR="${RELEASEDIR}/evoke/${SOURCE}"
+		if [ ! -f "${SOURCEDIR}/trackfile" ] ; then
+			echo "Source does not exist"
+		else
+			TRACKFILE="${SOURCEDIR}/trackfile" OPTIONS="quiet" verify
+			ERRORCODE=$?
+			if [ "${ERRORCODE}" != "0" ] ; then
+				SOURCE_TRACKFILE="$(grep -a ^F: ${SOURCEDIR}/trackfile)"
+			else
+				echo "Source Integrity check failed"
+				break
+			fi
+			for filespec in ${DEST_TRACKFILE}
+			do
+				FILENAME="$(echo "${filespec}" | cut -d : -f 2)"
+				DESTHASH="$(echo "${filespec}" | cut -d : -f 3)"
+				SOURCEFILE="${SOURCEDIR}/${FILENAME}"
+				DESTFILE="${DESTDIR}/${FILENAME}"
+				if [ -f "${SOURCEFILE}" ] ; then
+					SOURCEHASH="$(echo "${SOURCE_TRACKFILE}" | grep ${FILENAME} | cut -d : -f 3)"
+					REALHASH="$(sha256 -q "${SOURCEFILE}")"
+					if [ "${REALHASH}" = "${SOURCEHASH}" ] ; then
+						if [ "${SOURCEHASH}" != "${DESTHASH}" ] ; then
+							case "${SOURCEFILE}" in
+								*.gz)
+									mkdir -p "${DECOMDIR}"
+									gunzip -9nc "${SOURCEFILE}" >"${DECOMDIR}/${SOURCEHASH}"
+									RFILE="${DECOMDIR}/${SOURCEHASH}"
+								;;
+								*)
+									RFILE="${SOURCEFILE}"
+								;;
+							esac
+	
+							case "${DESTFILE}" in
+								*.gz)
+									mkdir -p "${DECOMDIR}"
+									gunzip -9nc "${DESTFILE}" >"${DECOMDIR}/${DESTHASH}"
+									DFILE="${DECOMDIR}/${DESTHASH}"
+								;;
+								*)
+									DFILE="${DESTFILE}"
+								;;
+							esac
+
+							PATCHFILE="${PATCHDIR}/${DESTHASH}/${SOURCEHASH}"
+							mkdir -p ${PATCHDIR}/${DESTHASH}/
+							bsdiff "${RFILE}" "${DFILE}" "${PATCHFILE}"
+							mkdir -p "${TESTDIR}"
+							bspatch "${RFILE}" "${TESTDIR}/${DESTHASH}" "${PATCHFILE}"
+							case "${DESTFILE}" in
+								*.gz)
+									mkdir -p "${DECOMDIR}"
+									rm "${TESTDIR}/${DESTHASH}.gz" 2>/dev/null 1>/dev/null
+									gzip -9nc "${TESTDIR}/${DESTHASH}" >"${TESTDIR}/${DESTHASH}.gz"
+									mv "${TESTDIR}/${DESTHASH}.gz" "${TESTDIR}/${DESTHASH}"
+								;;
+								*.bz2)
+								;;
+								*)
+									RFILE="${FILENAME}"
+								;;
+							esac
+							REALHASH="$(sha256 -q "${TESTDIR}/${DESTHASH}")"
+							if [ "${REALHASH}" != "${DESTHASH}" ] ; then
+								echo "Patch failed"
+								exit 4
+							fi
+						fi
+					fi
+				fi
+			done
+		fi
+		shift
+	done
+
+	mkdir -p "${BINUPDIR}/${DEST}"
+
+	cd "${PATCHDIR}" && tar -cf - * | tar -xvpf - -C "${BINUPDIR}/${DEST}" 2>/dev/null >/dev/null
+}
+
+apply_patch() {
+	PATCHFILE="${1}"
+	SOURCEFILE="${2}"
+	DESTFILE="${3}"
+	SOURCEHASH="${4}"
+	DESTHASH="${5}"
+
+	case "${SOURCEFILE}" in
+		*.gz)
+			gunzip -9nc "${SOURCEFILE}" >"${TEMPDIR}/${SOURCEHASH}"
+			RFILE="${TEMPDIR}/${SOURCEHASH}"
+		;;
+		*)
+			RFILE="${SOURCEFILE}"
+		;;
+	esac
+	DFILE="${TEMPDIR}/${DESTHASH}"
+
+	bspatch "${RFILE}" "${DFILE}" "${PATCHFILE}"
+
+	case "${DESTFILE}" in
+		*.gz)
+			rm "${TEMPDIR}/${DESTHASH}.gz" 2>/dev/null 1>/dev/null
+			gzip -9nc "${TEMPDIR}/${DESTHASH}" >"${TEMPDIR}/${DESTHASH}.gz"
+			mv "${TEMPDIR}/${DESTHASH}.gz" "${TEMPDIR}/${DESTHASH}"
+		;;
+		*.bz2)
+		;;
+	esac
+
+	REALHASH="$(sha256 -q "${TEMPDIR}/${DESTHASH}")"
+
+	if [ "${REALHASH}" != "${DESTHASH}" ] ; then
+		echo "4"
+	else
+		echo "0"
+		mv "${TEMPDIR}/${DESTHASH}" "${DESTFILE}"
+	fi
+}
+
+real_update() {
+	if [ -d "${1}" ] ; then
+		DESTDIR="${1}"
+	else
+		echo "Destination directory not found."
+		exit 65
+	fi
+
+	VERSION="${2}"
+	phttpget "${SERVER}" "${FILESPEC}/${VERSION}/trackfile" 2>${DEVICES}/null
+
+	if [ -r "${TEMPDIR}/trackfile" ] ; then
+		TRACKFILE="${TEMPDIR}/trackfile" OPTIONS="quiet" verify
+		ERRORCODE="$?"
+		if [ "${ERRORCODE}" = 0 ] ; then
+			DEST_TRACKFILE="$(grep -a ^F: ${TEMPDIR}/trackfile)"
+		else
+			echo "Trackfile is corrupted"
+			exit "${ERRORCODE}"
+		fi
+	fi
+
+	cd "${DESTDIR}/evoke/"
+
+	VERSIONLIST="$(for version in $(echo */*/trackfile) 
+
+	do
+		case "${version}" in
+			BIN-UPDATES/*)
+			;;
+			ISO-IMAGES/*)
+			;;
+			*)
+				echo "$(stat -f '%m' "${version}"):$(dirname ${version})"
+			;;
+		esac
+	done | sort | cut -d : -f 2)"
+
+	# Let's find out how many bytes we have to download.
+	BYTECOUNT="$(echo "${DEST_TRACKFILE}" | awk -F ":" '{ SUM += $4; } END { print SUM; }')"
+	MB="$((${BYTECOUNT} / 1000 / 1000))"
+	echo "The update utility will attempt to keep the total size of files downloaded to a minimum, "
+	echo "where possible."
+	echo ""
+	echo "In the worst case, update will download ${BYTECOUNT} bytes (~ ${MB}MB)"
+	read -p "Continue? [Y/n]: " PROMPT
+	case "${PROMPT}" in
+		[nN])
+		;;
+		*)
+			# No reference points? Just fetch!
+			for filespec in ${DEST_TRACKFILE}
+			do
+
+				cd "${DESTDIR}/evoke/"
+				# let's see if HASH matches any already existing file.
+
+				HASH="$(echo "${filespec}" | cut -d ":" -f 3)"
+				FILENAME="$(echo "${filespec}" | cut -d ":" -f 2)"
+				PDESTDIR="${STAGEDIR}/$(dirname ${FILENAME})"
+				BASENAME="$(basename ${FILENAME})"
+				PPATCHDIR="${PATCHDIR}/${HASH}"
+				PDOWNDIR="${SCRATCHDIR}/download/${HASH}"
+				mkdir -p "${PPATCHDIR}"
+				mkdir -p "${PDESTDIR}"
+				mkdir -p "${PDOWNDIR}"
+
+				for version in ${VERSIONLIST}
+				do
+					MATCHED_LINE="$(grep -a ^F: "${DESTDIR}/evoke/${version}/trackfile" | grep ${HASH})"
+					if [ "${MATCHED_LINE}" != "" ] ; then
+						SFILENAME="$(echo ${MATCHED_LINE} | cut -d ":" -f 2)"
+						cp "${DESTDIR}/evoke/${version}/${SFILENAME}" "${STAGEDIR}/${FILENAME}"
+						sh -c "cd ${STAGEDIR} && TRACKFILE="${TEMPDIR}/trackfile" OPTIONS="quiet" verify "${FILENAME}""
+						RETVAL=$?
+						if [ "${RETVAL}" = "0" ] ; then
+							break
+						fi
+					fi
+				done
+
+				if [ "${RETVAL}" = "0" ] ; then
+					unset RETVAL
+					continue
+				else
+					unset RETVAL
+				fi
+
+				HASHLIST="$(for version in ${VERSIONLIST}
+				do
+					FILEHASH="$(grep -a ^F: ${DESTDIR}/evoke/${version}/trackfile | cut -d : -f 3)"
+					if [ "${FILEHASH}" != "" ] ; then
+						for filehash in ${FILEHASH}
+						do
+							echo "${FILESPEC}/BIN-UPDATES/${VERSION}/${HASH}/${filehash}" 
+						done
+					fi
+				done)"
+				if [ "${HASHLIST}" != "" ] ; then
+					cd "${PPATCHDIR}"
+					phttpget "${SERVER}" ${HASHLIST} 2>${DEVICES}/null
+					FOUNDFILES="$(echo *)"
+					if [ "${FOUNDFILES}" != "*" ] ; then
+						for foundfile in ${FOUNDFILES}
+						do
+							FILE="$(grep -Ha ^F: ${DESTDIR}/evoke/*/*/trackfile | grep ${foundfile} | awk -F : '{ FILENAME=$3; "dirname " $1 | getline; print $0 "/" FILENAME; }' | head -n 1)"
+							RETVAL="$(apply_patch "${foundfile}" "${FILE}" "${PDESTDIR}/${BASENAME}" "${foundfile}" "${HASH}")"
+							if [ "${RETVAL}" = "0" ] ; then
+								break
+							fi
+						done
+					fi
+
+				fi
+
+				if [ "${RETVAL}" = "0" ] ; then
+					unset RETVAL
+					continue
+				else
+					unset RETVAL
+				fi
+
+				# Ok, fall back on grabbing the file.
+				cd "${PDOWNDIR}"
+				phttpget "${SERVER}" "${FILESPEC}/${VERSION}/${FILENAME}" 2>${DEVICES}/null
+				cp "${BASENAME}" "${PDESTDIR}/"
+				cd "${STAGEDIR}"
+				TRACKFILE="${TEMPDIR}/trackfile" OPTIONS="quiet" verify "${FILENAME}"
+				RETVAL=$?
+				if [ "${RETVAL}" != "0" ] ; then
+					unset RETVAL
+					echo "File corrupted in transit, bailing out"
+					exit 65
+				else
+					unset RETVAL
+				fi
+			done
+
+			cd "${STAGEDIR}"
+
+			FILELIST="$(echo ${DEST_TRACKFILE} | cut -d : -f 2)"
+			mv "${TEMPDIR}/trackfile" "${STAGEDIR}/"
+			TRACKFILE="${STAGEDIR}/trackfile" OPTIONS="quiet" verify ${FILELIST}
+			RETVAL=$?
+			if [ "${RETVAL}" != "0" ] ; then
+				unset RETVAL
+				echo "The trackfile is incomplete"
+				exit 65
+			else
+				unset RETVAL
+			fi
+			mkdir -p "${DESTDIR}/evoke/${VERSION}"
+			tar -cf - * | tar -xpf - -C "${DESTDIR}/evoke/${VERSION}" 2>${DEVICES}/null
+			PATCHSIZE="$(du -hd 0 ${PATCHDIR} | awk '{ print $1 }')"
+			DOWNLOADSIZE="$(du -hd 0 ${SCRATCHDIR}/download | awk '{ print $1 }')"
+			echo "Size of complete files downloaded: ${DOWNLOADSIZE}B"
+			echo "Size of patch files downloaded: ${PATCHSIZE}B"
+			echo "Total Size of the release: ${MB}MB"
+		;;
+	esac
+}
+
+update() {
+	SCRATCHDIR="${TMPDIR}/update/$(dd if=/dev/random bs=4m count=1 2>${DEVICES}/null | sha256 -q)"
+	mkdir -p "${SCRATCHDIR}"
+	TEMPDIR="${SCRATCHDIR}/tmp"
+	mkdir -p "${TEMPDIR}"
+	STAGEDIR="${SCRATCHDIR}/stage"
+	mkdir -p "${STAGEDIR}"
+	PATCHDIR="${SCRATCHDIR}/patch"
+	mkdir -p "${PATCHDIR}"
+
+	cd "${TEMPDIR}"
+
+	if [ "${EVOKE_UPDATE_MIRROR}" = "" ] ; then
+		phttpget evoke.googlecode.com /svn/info/mirrorlist 2>${DEVICES}/null
+		EVOKE_UPDATE_MIRROR="$(grep -v ^# ${TEMPDIR}/mirrorlist | grep -v ^$ | grep ^http:// | head -n 1)"
+	fi
+
+	SERVER="$(echo "${EVOKE_UPDATE_MIRROR}" | sed 's_http://__g' | cut -d "/" -f 1)"
+	FILESPEC="/$(echo "${EVOKE_UPDATE_MIRROR}" | sed 's_http://__g' | cut -d "/" -f 2)/evoke"
+
+	case "${1}" in
+		install)
+			if [ "${3}" != "" ] ; then
+				real_update "${2}" "${3}"
+			fi
+		;;
+	esac
+	rm -r ${SCRATCHDIR}
+}
+
+update $@
+
