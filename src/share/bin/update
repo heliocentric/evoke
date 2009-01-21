@@ -194,7 +194,6 @@ real_update() {
 			exit "${ERRORCODE}"
 		fi
 	fi
-
 	cd "${DESTDIR}/evoke/"
 
 	VERSIONLIST="$(for version in $(echo */*/trackfile) 
@@ -222,15 +221,33 @@ real_update() {
 		[nN])
 		;;
 		*)
-			if [ "${VERSIONLIST}" != "" ] ; then
-			
-			else
-				# No reference points? Just fetch!
-				for filespec in ${DEST_TRACKFILE}
+			# No reference points? Just fetch!
+			for filespec in ${DEST_TRACKFILE}
+			do
+
+				# let's see if HASH matches any already existing file.
+
+				HASH="$(echo "${filespec}" | cut -d ":" -f 3)"
+				FILENAME="$(echo "${filespec}" | cut -d ":" -f 2)"
+				PDESTDIR="${STAGEDIR}/$(dirname ${FILENAME})"
+				PPATCHDIR="${PATCHDIR}/$(dirname ${FILENAME})"
+				mkdir -p "${PPATCHDIR}"
+				mkdir -p "${PDESTDIR}"
+
+				for version in ${VERSIONLIST}
 				do
-				
+					MATCHED_LINE="$(grep -a ^F: "${DESTDIR}/evoke/${version}/trackfile" | grep ${HASH})"
+					if [ "${MATCHED_LINE}" != "" ] ; then
+						SFILENAME="$(echo ${MATCHED_LINE} | cut -d ":" -f 2)"
+						cp "${DESTDIR}/evoke/${version}/${SFILENAME}" "${STAGEDIR}/${FILENAME}"
+						sh -c "cd ${STAGEDIR} && TRACKFILE="${TEMPDIR}/trackfile" verify "${FILENAME}""
+						RETVAL=$?
+						if [ "${RETVAL}" = "0" ] ; then
+							break
+						fi
+					fi
 				done
-			fi
+			done
 		;;
 	esac
 }
@@ -240,6 +257,10 @@ update() {
 	mkdir -p "${SCRATCHDIR}"
 	TEMPDIR="${SCRATCHDIR}/tmp"
 	mkdir -p "${TEMPDIR}"
+	STAGEDIR="${SCRATCHDIR}/stage"
+	mkdir -p "${STAGEDIR}"
+	PATCHDIR="${SCRATCHDIR}/patch"
+	mkdir -p "${PATCHDIR}"
 
 	cd "${TEMPDIR}"
 
