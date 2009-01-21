@@ -182,7 +182,8 @@ real_update() {
 		exit 65
 	fi
 
-	phttpget "${SERVER}" "${FILESPEC}/${2}/trackfile" 2>${DEVICES}/null
+	VERSION="${2}"
+	phttpget "${SERVER}" "${FILESPEC}/${VERSION}/trackfile" 2>${DEVICES}/null
 
 	if [ -r "${TEMPDIR}/trackfile" ] ; then
 		TRACKFILE="${TEMPDIR}/trackfile" OPTIONS="quiet" verify
@@ -194,9 +195,11 @@ real_update() {
 			exit "${ERRORCODE}"
 		fi
 	fi
+
 	cd "${DESTDIR}/evoke/"
 
 	VERSIONLIST="$(for version in $(echo */*/trackfile) 
+
 	do
 		case "${version}" in
 			BIN-UPDATES/*)
@@ -230,7 +233,8 @@ real_update() {
 				HASH="$(echo "${filespec}" | cut -d ":" -f 3)"
 				FILENAME="$(echo "${filespec}" | cut -d ":" -f 2)"
 				PDESTDIR="${STAGEDIR}/$(dirname ${FILENAME})"
-				PPATCHDIR="${PATCHDIR}/$(dirname ${FILENAME})"
+				BASENAME="$(basename ${FILENAME})"
+				PPATCHDIR="${PATCHDIR}/${HASH}"
 				mkdir -p "${PPATCHDIR}"
 				mkdir -p "${PDESTDIR}"
 
@@ -247,6 +251,29 @@ real_update() {
 						fi
 					fi
 				done
+
+				HASHLIST="$(for version in ${VERSIONLIST}
+				do
+					FILEHASH="$(grep -a ^F: ${DESTDIR}/evoke/${version}/trackfile | cut -d : -f 3)"
+					if [ "${FILEHASH}" != "" ] ; then
+						for filehash in ${FILEHASH}
+						do
+							echo "${FILESPEC}/BIN-UPDATES/${VERSION}/${HASH}/${filehash}" 
+						done
+					fi
+				done)"
+				if [ "${HASHLIST}" != "" ] ; then
+					cd "${PPATCHDIR}"
+					phttpget "${SERVER}" ${HASHLIST} 2>${DEVICES}/null
+					FOUNDFILES="$(echo *)"
+					if [ "${FOUNDFILES}" != "*" ] ; then
+						for foundfile in ${FOUNDFILES}
+						do
+							FILE="$(grep -Ha ^F: ${DESTDIR}/evoke/*/*/trackfile | grep ${foundfile} | awk -F : '{ FILENAME=$3; "dirname " $1 | getline; print $0 "/" FILENAME; }' | head -n 1)"
+							echo apply_patch "${foundfile}" "${FILE}" "${PDESTDIR}/${BASENAME}"
+						done
+					fi
+				fi
 			done
 		;;
 	esac
