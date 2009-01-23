@@ -38,7 +38,7 @@ cd "${MAINPATH}"
 svn up 2>&1 >/dev/null
 
 if [ "${NUMBER}" != "0" ] ; then
-	LOGMESSAGE="$(echo "Merge /trunk/src r${END} to ${TARGETPATH}"; svn log -l ${NUMBER} --xml | mergelog)"
+	LOGMESSAGE="$(echo "Merge /trunk/src r${END} to ${TARGETPATH}"; echo ""; svn log -l ${NUMBER} --xml | mergelog)"
 	cd "${ORIGPATH}"
 	svn merge -r ${BEGIN}:${END} https://evoke.googlecode.com/svn/trunk/src .
 	svn merge -r ${BEGIN}:${END} https://evoke.googlecode.com/svn/wiki doc
