@@ -235,6 +235,7 @@ real_update() {
 			exit "${ERRORCODE}"
 		fi
 	else
+		# XXX need to replace with a better mirror logic.
 		echo "${VERSION} does not seem to exist on this mirror"
 		exit 65
 	fi
