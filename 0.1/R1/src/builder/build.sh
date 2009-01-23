@@ -259,7 +259,7 @@ for file in $(find share/ -not -path \*.svn\* -not -type d)
 do
 	grep '#!' ${file} | head -1 >${FSDIR}/system/${file}
 	grep '$Id' ${file} | head -1 >>${FSDIR}/system/${file}
-	sed -e 's/#.*$//g' ${file} | grep -v ^$ >>${FSDIR}/system/${file}
+	grep -v "^#" ${file} | grep -v ^$ >>${FSDIR}/system/${file}
 	chmod a+rx ${FSDIR}/system/${file}
 done
 
