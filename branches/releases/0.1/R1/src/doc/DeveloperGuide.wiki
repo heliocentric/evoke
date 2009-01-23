@@ -64,7 +64,44 @@ Description
 * Item C
 }}}
 
-Right now, only merge backs do.
+== Special Commits ==
+
+=== Issue ===
+
+Any commit directly or indirectly resulting from an issue, must have the following form:
+
+{{{
+Issue from id1 id2 id3 ...
+
+* Item A
+* Item B
+* Item C
+}}}
+
+The third field, and every field till the end of line MUST be a valid issue id number. Make sure to check the issue tracker for any issues that may be directly or indirectly related to the commit in question. This is so that in the future, we can trigger automatic hints to test possible fixes.
+
+=== AQA ===
+
+AQA's are automated quality assurance tests. They get a special description, when a fix for a bug discovered through one of these tests. Note that right now the AQA's don't live up to the 'A' portion, but they will soon.
+
+The commit message is as follows:
+
+{{{
+AQA from HPAT Run number: 6daae55f-f516-4afd-8a95-59e02fb8d830
+
+* Item A
+* Item B
+* Item C
+}}}
+
+The sixth field /must/ be the uuid of the run. This is done for accounting purposes.
+
+The third field is the test short name, one of the following:
+
+|| Short Name || Full Name || Description || Technical Notes || 
+|| AFRT || Automated Functionality Regression Test || Runs the contents of each src/share/bin and each tools under both the 'run' environment, and the iso environment. Will only pick up bugs that have existing regression tests to check. || [[AQA_AFRT]] ||
+|| HPAT || Haiku Portability Acid Test || The same as AFRT, but run under a haiku environment to test the portability. The haiku environment is both a) alien enough to trigger portability bugs, but b) modern enough that the environment is useful for us. || [[AQA_HPAT]] ||
+|| MFRT || Manual Functionality Regression Test || Explicitly not automated. A human being runs the iso in a qemu or a bare metal machine, or uses the run script. As not all concievable regressions can be tested, this is done on the build machine after large changesets. || [[AQA_MFRT]] ||
 
 = Release Engineering Guide =
 
