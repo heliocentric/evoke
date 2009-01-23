@@ -67,6 +67,18 @@ Description
 
 === Issue ===
 
+Any commit directly or indirectly resulting from an issue, must have the following form:
+
+{{{
+Issue from id1 id2 id3 ...
+
+* Item A
+* Item B
+* Item C
+}}}
+
+The third field, and every field till the end of line MUST be a valid issue id number. Make sure to check the issue tracker for any issues that may be directly or indirectly related to the commit in question. This is so that in the future, we can trigger automatic hints to test possible fixes.
+
 === AQA ===
 
 AQA's are automated quality assurance tests. They get a special description, when a fix for a bug discovered through one of these tests. Note that right now the AQA's don't live up to the 'A' portion, but they will soon.
