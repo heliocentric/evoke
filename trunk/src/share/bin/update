@@ -416,7 +416,7 @@ update() {
 			fi
 		;;
 	esac
-	rm -r ${SCRATCHDIR}
+#	rm -r ${SCRATCHDIR}
 }
 
 update $@
