@@ -223,27 +223,20 @@ real_update() {
 	fi
 
 	VERSION="${2}"
-	phttpget "${SERVER}" "${FILESPEC}/${VERSION}/trackfile" 2>${DEVICES}/null
-
-	if [ -r "${TEMPDIR}/trackfile" ] ; then
-		TRACKFILE="${TEMPDIR}/trackfile" OPTIONS="quiet" verify
-		ERRORCODE="$?"
-		if [ "${ERRORCODE}" = 0 ] ; then
-			DEST_TRACKFILE="$(grep -a ^F: ${TEMPDIR}/trackfile)"
-		else
-			echo "Trackfile is corrupted"
-			exit "${ERRORCODE}"
-		fi
+	find_mirror "evoke/${VERSION}/trackfile" "${TEMPDIR}/trackfile"
+	TRACKFILE="${TEMPDIR}/trackfile" OPTIONS="quiet" verify
+	ERRORCODE="$?"
+	if [ "${ERRORCODE}" = 0 ] ; then
+		DEST_TRACKFILE="$(grep -a ^F: ${TEMPDIR}/trackfile)"
 	else
-		# XXX need to replace with a better mirror logic, maybe just have EVOKE_UPDATE_MIRROR create a mirrorlist with a single entry, and have this utility for through it. I dunno yet.
-		echo "${VERSION} does not seem to exist on this mirror"
-		exit 65
+		echo "Trackfile is corrupted"
+		exit "${ERRORCODE}"
 	fi
 
+	DEST_TRACKFILE="$(grep -a ^F: ${TEMPDIR}/trackfile)"
 	cd "${DESTDIR}/evoke/"
 
 	VERSIONLIST="$(for version in $(echo */*/trackfile) 
-
 	do
 		case "${version}" in
 			BIN-UPDATES/*)
@@ -312,7 +305,7 @@ real_update() {
 					if [ "${FILEHASH}" != "" ] ; then
 						for filehash in ${FILEHASH}
 						do
-							echo "${FILESPEC}/BIN-UPDATES/${VERSION}/${HASH}/${filehash}" 
+							echo "${FILESPEC}/evoke/BIN-UPDATES/${VERSION}/${HASH}/${filehash}" 
 						done
 					fi
 				done)"
@@ -342,7 +335,7 @@ real_update() {
 
 				# Ok, fall back on grabbing the file.
 				cd "${PDOWNDIR}"
-				phttpget "${SERVER}" "${FILESPEC}/${VERSION}/${FILENAME}" 2>${DEVICES}/null
+				phttpget "${SERVER}" "${FILESPEC}/evoke/${VERSION}/${FILENAME}" 2>${DEVICES}/null
 				cp "${BASENAME}" "${PDESTDIR}/"
 				cd "${STAGEDIR}"
 				TRACKFILE="${TEMPDIR}/trackfile" OPTIONS="quiet" verify "${FILENAME}"
@@ -384,6 +377,39 @@ real_update() {
 	esac
 }
 
+find_mirror() {
+	FILENAME="${1}"
+	OUTFILENAME="${2}"
+	cd ${TEMPDIR}
+
+	unset RETVAL
+
+	for mirrorurl in $(sed -e 's/#.*$//g' ${TEMPDIR}/mirrorlist)
+	do
+		server="$(echo "${mirrorurl}" | sed 's_http://__g' | cut -d "/" -f 1)"
+		filespec="/$(echo "${mirrorurl}" | sed 's_http://__g' | cut -d "/" -f 2-200)"
+		rfilespec="${filespec}/${FILENAME}"
+		phttpget "${server}" "${rfilespec}" 2>${DEVICES}/null
+		file="$(basename "${rfilespec}")"
+		if [ -r "${file}" ] ; then
+			RETVAL="0"
+			SERVER="${server}"
+			FILESPEC="${filespec}"
+			break
+		else
+			RETVAL="65"
+		fi
+	done
+	if [ "${RETVAL}" = "0" ] ; then
+		if [ "${TEMPDIR}/${file}" != "${OUTFILENAME}" ] ; then
+			mv "${file}" "${OUTFILENAME}"
+		fi
+	else
+		echo "No usable mirrors found. Bailing out."
+		exit 65
+	fi
+}
+
 update() {
 	SCRATCHDIR="${TMPDIR}/update/$(dd if=/dev/random bs=4m count=1 2>${DEVICES}/null | sha256 -q)"
 	mkdir -p "${SCRATCHDIR}"
@@ -404,11 +430,10 @@ update() {
 			echo "Unable to fetch mirrorlist, Network connection down?"
 			exit 65
 		fi
-		EVOKE_UPDATE_MIRROR="$(grep -v ^# ${TEMPDIR}/mirrorlist | grep -v ^$ | grep ^http:// | head -n 1)"
+	else
+		echo "${EVOKE_UPDATE_MIRROR}" >${TEMPDIR}/mirrorlist
 	fi
 
-	SERVER="$(echo "${EVOKE_UPDATE_MIRROR}" | sed 's_http://__g' | cut -d "/" -f 1)"
-	FILESPEC="/$(echo "${EVOKE_UPDATE_MIRROR}" | sed 's_http://__g' | cut -d "/" -f 2)/evoke"
 
 	case "${1}" in
 		install)
