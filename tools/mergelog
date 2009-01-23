@@ -47,6 +47,6 @@ sed 's_<msg>__g' | sed 's_</msg>__g' | awk -F "\"" '/<logentry/,/<\/logentry>/ {
 	} if ( $0 ~ /^$/) {
 		next;
 	} else { 
-		print $0 "\n";
+		print "\t" $0 "\n";
 	}
 }' | sed 's@<author>@(@g' | sed 's@</author>@)@g'
