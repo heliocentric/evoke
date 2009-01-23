@@ -234,6 +234,9 @@ real_update() {
 			echo "Trackfile is corrupted"
 			exit "${ERRORCODE}"
 		fi
+	else
+		echo "${VERSION} does not seem to exist on this mirror"
+		exit 65
 	fi
 
 	cd "${DESTDIR}/evoke/"
@@ -276,7 +279,7 @@ real_update() {
 				PDESTDIR="${STAGEDIR}/$(dirname ${FILENAME})"
 				BASENAME="$(basename ${FILENAME})"
 				PPATCHDIR="${PATCHDIR}/${HASH}"
-				PDOWNDIR="${SCRATCHDIR}/download/${HASH}"
+				PDOWNDIR="${DOWNDIR}/${HASH}"
 				mkdir -p "${PPATCHDIR}"
 				mkdir -p "${PDESTDIR}"
 				mkdir -p "${PDOWNDIR}"
@@ -389,11 +392,17 @@ update() {
 	mkdir -p "${STAGEDIR}"
 	PATCHDIR="${SCRATCHDIR}/patch"
 	mkdir -p "${PATCHDIR}"
+	DOWNDIR="${SCRATCHDIR}/download"
+	mkdir -p "${DOWNDIR}"
 
 	cd "${TEMPDIR}"
 
 	if [ "${EVOKE_UPDATE_MIRROR}" = "" ] ; then
 		phttpget evoke.googlecode.com /svn/info/mirrorlist 2>${DEVICES}/null
+		if [ ! -f mirrorlist ] ; then
+			echo "Unable to fetch mirrorlist, Network connection down?"
+			exit 65
+		fi
 		EVOKE_UPDATE_MIRROR="$(grep -v ^# ${TEMPDIR}/mirrorlist | grep -v ^$ | grep ^http:// | head -n 1)"
 	fi
 
@@ -407,7 +416,7 @@ update() {
 			fi
 		;;
 	esac
-	rm -r ${SCRATCHDIR}
+#	rm -r ${SCRATCHDIR}
 }
 
 update $@
