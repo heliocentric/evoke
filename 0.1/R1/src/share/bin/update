@@ -235,7 +235,7 @@ real_update() {
 			exit "${ERRORCODE}"
 		fi
 	else
-		# XXX need to replace with a better mirror logic.
+		# XXX need to replace with a better mirror logic, maybe just have EVOKE_UPDATE_MIRROR create a mirrorlist with a single entry, and have this utility for through it. I dunno yet.
 		echo "${VERSION} does not seem to exist on this mirror"
 		exit 65
 	fi
