@@ -26,21 +26,28 @@
 
 # $Id$
 
-svn up 2>&1 >/dev/null
-
-END="$(svnversion | sed s_M__g)"
-BEGIN="$(svn log -l 1 --xml | awk '/<logentry/, />/' | grep revision | cut -d \" -f 2)"
-ORIGPATH="$(pwd)"
-MAINPATH="$(cd ../../../../../ && pwd)"
-NUMBER="$((${END} - ${BEGIN}))"
-TARGETPATH="$(echo ${ORIGPATH} | sed "s_${MAINPATH}__g")"
-cd "${MAINPATH}"
-svn up 2>&1 >/dev/null
-
-if [ "${NUMBER}" != "0" ] ; then
-	LOGMESSAGE="$(echo "Merge /trunk/src r${END} to ${TARGETPATH}"; svn log -l ${NUMBER} --xml | mergelog)"
-	cd "${ORIGPATH}"
-	svn merge -r ${BEGIN}:${END} https://evoke.googlecode.com/svn/trunk/src .
-	svn merge -r ${BEGIN}:${END} https://evoke.googlecode.com/svn/wiki doc
-	svn commit -m "${LOGMESSAGE}"
-fi
+sed 's_<msg>__g' | sed 's_</msg>__g' | awk '/<logentry/,/<\/logentry>/ { 
+	if ( $0 ~ /<logentry/) {
+		next;
+	} if ( $0 ~ /<\/logentry>/) {
+		print "}\n";
+		next;
+	} if ( $0 ~ /revision=/) {
+		FS="\"";
+		printf "r" $2;
+		getline;
+		printf " " $0;
+		print " {\n";
+		next;
+	} if ( $0 ~ /<date>/) {
+		next;
+	} if ( $0 ~ /<msg>/) {
+		next;
+	} if ( $0 ~ /<\/msg>/) {
+		next;
+	} if ( $0 ~ /^$/) {
+		next;
+	} else { 
+		print $0 "\n";
+	}
+}' | sed 's@<author>@(@g' | sed 's@</author>@)@g'
