@@ -311,19 +311,18 @@ real_update() {
 				done)"
 				if [ "${HASHLIST}" != "" ] ; then
 					cd "${PPATCHDIR}"
-					phttpget "${SERVER}" ${HASHLIST} 2>${DEVICES}/null
-					FOUNDFILES="$(echo *)"
-					if [ "${FOUNDFILES}" != "*" ] ; then
-						for foundfile in ${FOUNDFILES}
-						do
-							FILE="$(grep -Ha ^F: ${DESTDIR}/evoke/*/*/trackfile | grep ${foundfile} | awk -F : '{ FILENAME=$3; "dirname " $1 | getline; print $0 "/" FILENAME; }' | head -n 1)"
-							RETVAL="$(apply_patch "${foundfile}" "${FILE}" "${PDESTDIR}/${BASENAME}" "${foundfile}" "${HASH}")"
+					for hash in ${HASHLIST}
+					do
+						phttpget "${SERVER}" ${hash} 2>${DEVICES}/null
+						realhash="$(basename ${hash})"
+						if [ -f "${realhash}" ] ; then
+							FILE="$(grep -Ha ^F: ${DESTDIR}/evoke/*/*/trackfile | grep ${realhash} | awk -F : '{ FILENAME=$3; "dirname " $1 | getline; print $0 "/" FILENAME; }' | head -n 1)"
+							RETVAL="$(apply_patch "${realhash}" "${FILE}" "${PDESTDIR}/${BASENAME}" "${realhash}" "${HASH}")"
 							if [ "${RETVAL}" = "0" ] ; then
 								break
 							fi
-						done
-					fi
-
+						fi
+					done
 				fi
 
 				if [ "${RETVAL}" = "0" ] ; then
