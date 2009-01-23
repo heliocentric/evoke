@@ -26,14 +26,13 @@
 
 # $Id$
 
-sed 's_<msg>__g' | sed 's_</msg>__g' | awk '/<logentry/,/<\/logentry>/ { 
+sed 's_<msg>__g' | sed 's_</msg>__g' | awk -F "\"" '/<logentry/,/<\/logentry>/ { 
 	if ( $0 ~ /<logentry/) {
 		next;
 	} if ( $0 ~ /<\/logentry>/) {
 		print "}\n";
 		next;
 	} if ( $0 ~ /revision=/) {
-		FS="\"";
 		printf "r" $2;
 		getline;
 		printf " " $0;
