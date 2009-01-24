@@ -86,7 +86,7 @@ AQA's are automated quality assurance tests. They get a special description, whe
 The commit message is as follows:
 
 {{{
-AQA from HPAT Run number: 6daae55f-f516-4afd-8a95-59e02fb8d830
+AQA from HPAT run number: 6daae55f-f516-4afd-8a95-59e02fb8d830
 
 * Item A
 * Item B
