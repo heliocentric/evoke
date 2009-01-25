@@ -49,131 +49,6 @@ if [ ! -d "${TMPDIR}" ] ; then
 	TMPDIR="/tmp"
 fi
 
-create_updates() {
-	if [ "${1}" = "" ] ; then
-		echo "Error: No version set"
-		exit 5
-	fi
-
-	DESTDIR="${1}"
-
-	shift
-
-	DEST="${1}"
-
-
-	BINUPDIR="${RELEASEDIR}/evoke/BIN-UPDATES"
-	DECOMDIR="${SCRATCHDIR}/decom"
-	export TESTDIR="${SCRATCHDIR}/test"
-	export PATCHDIR="${SCRATCHDIR}/patch"
-
-	if [ -d "${PATCHDIR}" ] ; then
-		rm -r "${PATCHDIR}"
-	fi
-
-	if [ ! -f "${DESTDIR}/trackfile" ] ; then
-		echo "Destination does not exist"
-		exit 3
-	else
-		TRACKFILE="${DESTDIR}/trackfile" OPTIONS="quiet" verify
-		ERRORCODE=$?
-		if [ "${ERRORCODE}" != "0" ] ; then
-			DEST_TRACKFILE="$(grep -a ^F: ${DESTDIR}/trackfile)"
-		else
-			echo "Destination Integrity check failed"
-			exit 3
-		fi
-	fi
-
-	IFS="${FORFS}"
-
-
-	shift
-	while [ "${1}" != "" ] 
-	do
-		SOURCE="${1}"
-		echo "${SOURCE}"
-		SOURCEDIR="${RELEASEDIR}/evoke/${SOURCE}"
-		if [ ! -f "${SOURCEDIR}/trackfile" ] ; then
-			echo "Source does not exist"
-		else
-			TRACKFILE="${SOURCEDIR}/trackfile" OPTIONS="quiet" verify
-			ERRORCODE=$?
-			if [ "${ERRORCODE}" != "0" ] ; then
-				SOURCE_TRACKFILE="$(grep -a ^F: ${SOURCEDIR}/trackfile)"
-			else
-				echo "Source Integrity check failed"
-				break
-			fi
-			for filespec in ${DEST_TRACKFILE}
-			do
-				FILENAME="$(echo "${filespec}" | cut -d : -f 2)"
-				DESTHASH="$(echo "${filespec}" | cut -d : -f 3)"
-				SOURCEFILE="${SOURCEDIR}/${FILENAME}"
-				DESTFILE="${DESTDIR}/${FILENAME}"
-				if [ -f "${SOURCEFILE}" ] ; then
-					SOURCEHASH="$(echo "${SOURCE_TRACKFILE}" | grep ${FILENAME} | cut -d : -f 3)"
-					REALHASH="$(sha256 -q "${SOURCEFILE}")"
-					if [ "${REALHASH}" = "${SOURCEHASH}" ] ; then
-						if [ "${SOURCEHASH}" != "${DESTHASH}" ] ; then
-							case "${SOURCEFILE}" in
-								*.gz)
-									mkdir -p "${DECOMDIR}"
-									gunzip -9nc "${SOURCEFILE}" >"${DECOMDIR}/${SOURCEHASH}"
-									RFILE="${DECOMDIR}/${SOURCEHASH}"
-								;;
-								*)
-									RFILE="${SOURCEFILE}"
-								;;
-							esac
-	
-							case "${DESTFILE}" in
-								*.gz)
-									mkdir -p "${DECOMDIR}"
-									gunzip -9nc "${DESTFILE}" >"${DECOMDIR}/${DESTHASH}"
-									DFILE="${DECOMDIR}/${DESTHASH}"
-								;;
-								*)
-									DFILE="${DESTFILE}"
-								;;
-							esac
-
-							PATCHFILE="${PATCHDIR}/${DESTHASH}/${SOURCEHASH}"
-							mkdir -p ${PATCHDIR}/${DESTHASH}/
-							bsdiff "${RFILE}" "${DFILE}" "${PATCHFILE}"
-							mkdir -p "${TESTDIR}"
-							bspatch "${RFILE}" "${TESTDIR}/${DESTHASH}" "${PATCHFILE}"
-							case "${DESTFILE}" in
-								*.gz)
-									mkdir -p "${DECOMDIR}"
-									rm "${TESTDIR}/${DESTHASH}.gz" 2>/dev/null 1>/dev/null
-									gzip -9nc "${TESTDIR}/${DESTHASH}" >"${TESTDIR}/${DESTHASH}.gz"
-									mv "${TESTDIR}/${DESTHASH}.gz" "${TESTDIR}/${DESTHASH}"
-								;;
-								*.bz2)
-								;;
-								*)
-									RFILE="${FILENAME}"
-								;;
-							esac
-							REALHASH="$(sha256 -q "${TESTDIR}/${DESTHASH}")"
-							if [ "${REALHASH}" != "${DESTHASH}" ] ; then
-								echo "Patch failed"
-								exit 4
-							fi
-						fi
-					fi
-				fi
-			done
-		fi
-		shift
-	done
-
-	mkdir -p "${BINUPDIR}/${DEST}"
-
-	cd "${PATCHDIR}" && tar -cf - * | tar -xvpf - -C "${BINUPDIR}/${DEST}" 2>/dev/null >/dev/null
-}
-
 apply_patch() {
 	PATCHFILE="${1}"
 	SOURCEFILE="${2}"
@@ -226,6 +101,7 @@ real_update() {
 	find_mirror "evoke/${VERSION}/trackfile" "${TEMPDIR}/trackfile"
 	TRACKFILE="${TEMPDIR}/trackfile" OPTIONS="quiet" verify
 	ERRORCODE="$?"
+
 	if [ "${ERRORCODE}" = 0 ] ; then
 		DEST_TRACKFILE="$(grep -a ^F: ${TEMPDIR}/trackfile)"
 	else
@@ -252,11 +128,15 @@ real_update() {
 	# Let's find out how many bytes we have to download.
 	BYTECOUNT="$(echo "${DEST_TRACKFILE}" | awk -F ":" '{ SUM += $4; } END { print SUM; }')"
 	MB="$((${BYTECOUNT} / 1000 / 1000))"
-	echo "The update utility will attempt to keep the total size of files downloaded to a minimum, "
-	echo "where possible."
-	echo ""
-	echo "In the worst case, update will download ${BYTECOUNT} bytes (~ ${MB}MB)"
-	read -p "Continue? [Y/n]: " PROMPT
+	if [ "${VERBOSE}" = "NO" ] ; then
+		echo "The update utility will attempt to keep the total size of files downloaded to a minimum, "
+		echo "where possible."
+		echo ""
+		echo "In the worst case, update will download ${BYTECOUNT} bytes (~ ${MB}MB)"
+		read -p "Continue? [Y/n]: " PROMPT
+	else
+		PROMPT="y"
+	fi
 	case "${PROMPT}" in
 		[nN])
 		;;
@@ -277,23 +157,33 @@ real_update() {
 				mkdir -p "${PPATCHDIR}"
 				mkdir -p "${PDESTDIR}"
 				mkdir -p "${PDOWNDIR}"
+				vecho "Starting ${FILENAME} \{\n"
+				vecho "\tChecking existing files \{\n"
 
 				for version in ${VERSIONLIST}
 				do
 					MATCHED_LINE="$(grep -a ^F: "${DESTDIR}/evoke/${version}/trackfile" | grep ${HASH})"
 					if [ "${MATCHED_LINE}" != "" ] ; then
 						SFILENAME="$(echo ${MATCHED_LINE} | cut -d ":" -f 2)"
-						cp "${DESTDIR}/evoke/${version}/${SFILENAME}" "${STAGEDIR}/${FILENAME}"
+						FILEPATH="${DESTDIR}/evoke/${version}/${SFILENAME}"
+						vecho "\t\t${FILEPATH} {\n"
+						cp "${FILEPATH}" "${STAGEDIR}/${FILENAME}"
 						sh -c "cd ${STAGEDIR} && TRACKFILE="${TEMPDIR}/trackfile" OPTIONS="quiet" verify "${FILENAME}""
 						RETVAL=$?
 						if [ "${RETVAL}" = "0" ] ; then
+							vecho "\t\t\t$Verification passed\n\t\t}\n"
 							break
+						else
+							vecho "\t\t\tVerification failed\n\t\t}\n"
+
 						fi
 					fi
 				done
 
+				vecho "\t}\n"
 				if [ "${RETVAL}" = "0" ] ; then
 					unset RETVAL
+					vecho "}\n"
 					continue
 				else
 					unset RETVAL
@@ -325,8 +215,10 @@ real_update() {
 					done
 				fi
 
+				vecho "\t}\n"
 				if [ "${RETVAL}" = "0" ] ; then
 					unset RETVAL
+					vecho "}\n"
 					continue
 				else
 					unset RETVAL
@@ -339,6 +231,8 @@ real_update() {
 				cd "${STAGEDIR}"
 				TRACKFILE="${TEMPDIR}/trackfile" OPTIONS="quiet" verify "${FILENAME}"
 				RETVAL=$?
+
+				vecho "\t}\n"
 				if [ "${RETVAL}" != "0" ] ; then
 					unset RETVAL
 					echo "File corrupted in transit, bailing out"
@@ -346,6 +240,7 @@ real_update() {
 				else
 					unset RETVAL
 				fi
+				vecho "}\n"
 			done
 
 			cd "${STAGEDIR}"
@@ -409,6 +304,12 @@ find_mirror() {
 	fi
 }
 
+vecho() {
+	if [ "${VERBOSE}" = "YES" ] ; then
+		printf "$@"
+	fi
+}
+
 update() {
 	SCRATCHDIR="${TMPDIR}/update/$(dd if=/dev/random bs=4m count=1 2>${DEVICES}/null | sha256 -q)"
 	mkdir -p "${SCRATCHDIR}"
@@ -433,6 +334,21 @@ update() {
 		echo "${EVOKE_UPDATE_MIRROR}" >${TEMPDIR}/mirrorlist
 	fi
 
+	VERBOSE="NO"
+
+	if [ "${OPTIONS}" != "" ] ; then
+		for option in ${OPTIONS}
+		do
+			case "${option}" in
+				verbose)
+					VERBOSE="YES"
+				;;
+				quiet)
+					VERBOSE="NO"
+				;;
+			esac
+		done
+	fi
 
 	case "${1}" in
 		install)
