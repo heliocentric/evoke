@@ -147,7 +147,35 @@ real_update() {
 		*)
 			# No reference points? Just fetch!
 			if [ "${VERSIONLIST}" = "error" ] ; then
-				echo "test"
+				for filespec in ${DEST_TRACKFILE}
+				do
+					unset RETVAL
+					cd "${DESTDIR}/evoke/"
+
+					vecho "Starting ${FILENAME} \{\n"
+					vecho "\tFetching full files \{\n"
+
+					HASH="$(echo "${filespec}" | cut -d ":" -f 3)"
+					FILENAME="$(echo "${filespec}" | cut -d ":" -f 2)"
+					PDESTDIR="${STAGEDIR}/$(dirname ${FILENAME})"
+					BASENAME="$(basename ${FILENAME})"
+					mkdir -p "${PDESTDIR}"
+					vecho "\tHASH=${HASH}\n"
+					vecho "\tFILENAME=${FILENAME}\n"
+					vecho "\tPDESTDIR=${PDESTDIR}\n"
+					vecho "\tBASENAME=${BASENAME}\n"
+
+
+					RETVAL="$(fetch_full_file "${HASH}" "${FILENAME}" "${PDESTDIR}" "${BASENAME}")" 2>&1
+
+					if [ "${RETVAL}" != "0" ] ; then
+						unset RETVAL
+						echo "File corrupted in transit, bailing out"
+						exit 65
+					else
+						unset RETVAL
+					fi
+				done
 			else
 				for filespec in ${DEST_TRACKFILE}
 				do
@@ -161,10 +189,8 @@ real_update() {
 					PDESTDIR="${STAGEDIR}/$(dirname ${FILENAME})"
 					BASENAME="$(basename ${FILENAME})"
 					PPATCHDIR="${PATCHDIR}/${HASH}"
-					PDOWNDIR="${DOWNDIR}/${HASH}"
 					mkdir -p "${PPATCHDIR}"
 					mkdir -p "${PDESTDIR}"
-					mkdir -p "${PDOWNDIR}"
 					vecho "Starting ${FILENAME} \{\n"
 					vecho "\tChecking existing files \{\n"
 
@@ -243,12 +269,7 @@ real_update() {
 					fi
 
 					# Ok, fall back on grabbing the file.
-					cd "${PDOWNDIR}"
-					phttpget "${SERVER}" "${FILESPEC}/evoke/${VERSION}/${FILENAME}" 2>${DEVICES}/null
-					cp "${BASENAME}" "${PDESTDIR}/"
-					cd "${STAGEDIR}"
-					TRACKFILE="${TEMPDIR}/trackfile" OPTIONS="quiet" verify "${FILENAME}"
-					RETVAL=$?
+					RETVAL="$(fetch_full_file "${HASH}" "${FILENAME}" "${PDESTDIR}" "${BASENAME}")" 2>&1
 	
 					vecho "\t}\n"
 					if [ "${RETVAL}" != "0" ] ; then
@@ -288,6 +309,31 @@ real_update() {
 		;;
 	esac
 }
+
+fetch_full_file() {
+	local HASH="${1}"
+	local FILENAME="${2}"
+	local PDESTDIR="${3}"
+	local BASENAME="${4}"
+	
+	local PDOWNDIR="${DOWNDIR}/${HASH}"
+	mkdir -p "${PDOWNDIR}"
+
+	cd "${PDOWNDIR}"
+	vecho "\t\tFetching ${FILENAME} {\n" 1>&2
+	phttpget "${SERVER}" "${FILESPEC}/evoke/${VERSION}/${FILENAME}" 2>${DEVICES}/null
+
+	cp "${BASENAME}" "${PDESTDIR}/"
+	cd "${STAGEDIR}"
+
+	TRACKFILE="${TEMPDIR}/trackfile" OPTIONS="quiet" verify "${FILENAME}"
+	local ERRORCODE="$?"
+	vecho "\t\t\tError! file not found.\n" 1>&2
+	vecho "\t\t}\n" 1>&2
+
+	echo "${ERRORCODE}"
+}
+
 
 find_mirror() {
 	FILENAME="${1}"
