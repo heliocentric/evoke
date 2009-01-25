@@ -97,6 +97,11 @@ mexit () {
 			echo "Device not configured"
 			exit 6
 		;;
+		10)
+			# Unable to fsck. Bail
+			echo "Filesystem unable to be cleaned. Bailing out."
+			exit 6
+		;;
 		*)
 			echo "General Error" >&2
 			exit 255
@@ -105,6 +110,46 @@ mexit () {
 	# XXX helio an ISTRANSPORT check is needed here, and mdconfig/ggatec destruction should be implemented.
 }
 
+normal_fsck() {
+	FSCK_BIN="${1}"
+	DEVICE="${2}"
+
+	command -v "${FSCK_BIN}" >${DEVICES}/null 
+
+	if [ "$?" != "127" ] ; then
+		"${FSCK_BIN}" -p "${DEVICES}/${DEVICE}"
+		case $? in
+	                0)
+                        ;;
+	                2)
+	                        mexit 10
+                        ;;
+	                4)
+				mexit 10
+                        ;;
+	            	8)
+				echo "Simple filesystem cleaning failed."
+				echo "Would you like to do a force clean?"
+				read -p "[Y/n]: " ANSWER
+				case "${ANSWER}" in 
+					[nN])
+						mexit 11
+					;;
+					*)
+		                                "${FSCK_BIN}" -y "${DEVICES}/${DEVICE}"
+		                                case $? in
+			                                0)
+		                                        ;;
+			                                *)
+			                                        mexit 10
+        		                                ;;
+                		                esac
+					;;
+				esac
+			;;
+		esac
+	fi
+}
 
 # Echo configuration parameters if DEBUG is set.
 
@@ -371,6 +416,16 @@ mount_proto () {
 					prep_transport
 					dists_mount
 				;;
+				ufs)
+					M_PTYPE="DEV"
+					prep_transport
+					ufs_mount
+				;;
+				msdosfs)
+					M_PTYPE="DEV"
+					prep_transport
+					msdosfs_mount
+				;;
 				*)
 					M_PTYPE="DEV"
 					prep_transport
@@ -454,6 +509,40 @@ ggate_handler () {
 	M_STYPE="GEOM"
 	M_FILE="${GATEDEV}"
 }
+
+# MSDOSFS mounting wrapper.
+
+msdosfs_mount () {
+	echo_config
+	if [ "${M_STYPE}" = "GEOM" ] ; then
+		if [ -c "${DEVICES}/${M_FILE}" ] ; then
+			normal_fsck fsck_msdosfs "${M_FILE}"
+			rmount -t ${M_PROTO} ${DEVICES}/${M_FILE} ${M_DESTINATION}
+		else
+			mexit 9
+		fi
+	else
+		mexit 8
+	fi
+}
+
+
+# UFS2 mounting wrapper.
+
+ufs_mount () {
+	echo_config
+	if [ "${M_STYPE}" = "GEOM" ] ; then
+		if [ -c "${DEVICES}/${M_FILE}" ] ; then
+			normal_fsck fsck_ffs "${M_FILE}"
+			rmount -t ${M_PROTO} ${DEVICES}/${M_FILE} ${M_DESTINATION}
+		else
+			mexit 9
+		fi
+	else
+		mexit 8
+	fi
+}
+
 
 # Native filesystem mounter. For filesystems that can be used via nmount.
 
