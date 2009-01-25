@@ -110,6 +110,7 @@ real_update() {
 	fi
 
 	DEST_TRACKFILE="$(grep -a ^F: ${TEMPDIR}/trackfile)"
+	mkdir -p "${DESTDIR}/evoke/"
 	cd "${DESTDIR}/evoke/"
 
 	VERSIONLIST="$(for version in $(echo */*/trackfile) 
@@ -118,6 +119,9 @@ real_update() {
 			BIN-UPDATES/*)
 			;;
 			ISO-IMAGES/*)
+			;;
+			\*/\*/trackfile)
+				echo "error"
 			;;
 			*)
 				echo "$(stat -f '%m' "${version}"):$(dirname ${version})"
@@ -142,107 +146,121 @@ real_update() {
 		;;
 		*)
 			# No reference points? Just fetch!
-			for filespec in ${DEST_TRACKFILE}
-			do
-
-				cd "${DESTDIR}/evoke/"
-				# let's see if HASH matches any already existing file.
-
-				HASH="$(echo "${filespec}" | cut -d ":" -f 3)"
-				FILENAME="$(echo "${filespec}" | cut -d ":" -f 2)"
-				PDESTDIR="${STAGEDIR}/$(dirname ${FILENAME})"
-				BASENAME="$(basename ${FILENAME})"
-				PPATCHDIR="${PATCHDIR}/${HASH}"
-				PDOWNDIR="${DOWNDIR}/${HASH}"
-				mkdir -p "${PPATCHDIR}"
-				mkdir -p "${PDESTDIR}"
-				mkdir -p "${PDOWNDIR}"
-				vecho "Starting ${FILENAME} \{\n"
-				vecho "\tChecking existing files \{\n"
-
-				for version in ${VERSIONLIST}
+			if [ "${VERSIONLIST}" = "error" ] ; then
+				echo "test"
+			else
+				for filespec in ${DEST_TRACKFILE}
 				do
-					MATCHED_LINE="$(grep -a ^F: "${DESTDIR}/evoke/${version}/trackfile" | grep ${HASH})"
-					if [ "${MATCHED_LINE}" != "" ] ; then
-						SFILENAME="$(echo ${MATCHED_LINE} | cut -d ":" -f 2)"
-						FILEPATH="${DESTDIR}/evoke/${version}/${SFILENAME}"
-						vecho "\t\t${FILEPATH} {\n"
-						cp "${FILEPATH}" "${STAGEDIR}/${FILENAME}"
-						sh -c "cd ${STAGEDIR} && TRACKFILE="${TEMPDIR}/trackfile" OPTIONS="quiet" verify "${FILENAME}""
-						RETVAL=$?
-						if [ "${RETVAL}" = "0" ] ; then
-							vecho "\t\t\t$Verification passed\n\t\t}\n"
-							break
-						else
-							vecho "\t\t\tVerification failed\n\t\t}\n"
 
-						fi
-					fi
-				done
-
-				vecho "\t}\n"
-				if [ "${RETVAL}" = "0" ] ; then
 					unset RETVAL
-					vecho "}\n"
-					continue
-				else
-					unset RETVAL
-				fi
+					cd "${DESTDIR}/evoke/"
+					# let's see if HASH matches any already existing file.
 
-				HASHLIST="$(for version in ${VERSIONLIST}
-				do
-					FILEHASH="$(grep -a ^F: ${DESTDIR}/evoke/${version}/trackfile | cut -d : -f 3)"
-					if [ "${FILEHASH}" != "" ] ; then
-						for filehash in ${FILEHASH}
-						do
-							echo "${FILESPEC}/evoke/BIN-UPDATES/${VERSION}/${HASH}/${filehash}" 
-						done
-					fi
-				done)"
-				if [ "${HASHLIST}" != "" ] ; then
-					cd "${PPATCHDIR}"
-					for hash in ${HASHLIST}
+					HASH="$(echo "${filespec}" | cut -d ":" -f 3)"
+					FILENAME="$(echo "${filespec}" | cut -d ":" -f 2)"
+					PDESTDIR="${STAGEDIR}/$(dirname ${FILENAME})"
+					BASENAME="$(basename ${FILENAME})"
+					PPATCHDIR="${PATCHDIR}/${HASH}"
+					PDOWNDIR="${DOWNDIR}/${HASH}"
+					mkdir -p "${PPATCHDIR}"
+					mkdir -p "${PDESTDIR}"
+					mkdir -p "${PDOWNDIR}"
+					vecho "Starting ${FILENAME} \{\n"
+					vecho "\tChecking existing files \{\n"
+
+					for version in ${VERSIONLIST}
 					do
-						phttpget "${SERVER}" ${hash} 2>${DEVICES}/null
-						realhash="$(basename ${hash})"
-						if [ -f "${realhash}" ] ; then
-							FILE="$(grep -Ha ^F: ${DESTDIR}/evoke/*/*/trackfile | grep ${realhash} | awk -F : '{ FILENAME=$3; "dirname " $1 | getline; print $0 "/" FILENAME; }' | head -n 1)"
-							RETVAL="$(apply_patch "${realhash}" "${FILE}" "${PDESTDIR}/${BASENAME}" "${realhash}" "${HASH}")"
+						MATCHED_LINE="$(grep -a ^F: "${DESTDIR}/evoke/${version}/trackfile" | grep ${HASH})"
+						if [ "${MATCHED_LINE}" != "" ] ; then
+							SFILENAME="$(echo ${MATCHED_LINE} | cut -d ":" -f 2)"
+							FILEPATH="${DESTDIR}/evoke/${version}/${SFILENAME}"
+							vecho "\t\t${FILEPATH} {\n"
+							cp "${FILEPATH}" "${STAGEDIR}/${FILENAME}"
+							sh -c "cd ${STAGEDIR} && TRACKFILE="${TEMPDIR}/trackfile" OPTIONS="quiet" verify "${FILENAME}""
+							RETVAL=$?
 							if [ "${RETVAL}" = "0" ] ; then
+								vecho "\t\t\t$Verification passed\n\t\t}\n"
 								break
+							else
+								vecho "\t\t\tVerification failed\n\t\t}\n"
+	
 							fi
 						fi
 					done
-				fi
+	
+					vecho "\t}\n"
+					if [ "${RETVAL}" = "0" ] ; then
+						unset RETVAL
+						vecho "}\n"
+						continue
+					else
+						unset RETVAL
+					fi
 
-				vecho "\t}\n"
-				if [ "${RETVAL}" = "0" ] ; then
-					unset RETVAL
+					HASHLIST="$(for version in ${VERSIONLIST}
+					do
+						FILEHASH="$(grep -a ^F: ${DESTDIR}/evoke/${version}/trackfile | cut -d : -f 3)"
+						if [ "${FILEHASH}" != "" ] ; then
+							for filehash in ${FILEHASH}
+							do
+								echo "${FILESPEC}/evoke/BIN-UPDATES/${VERSION}/${HASH}/${filehash}" 
+							done
+						fi
+					done)"
+					if [ "${HASHLIST}" != "" ] ; then
+						cd "${PPATCHDIR}"
+						for hash in ${HASHLIST}
+						do
+							realhash="$(basename ${hash})"
+							vecho "\t\tFetching ${realhash} {\n"
+							phttpget "${SERVER}" ${hash} 2>${DEVICES}/null
+							if [ -f "${realhash}" ] ; then
+								vecho "\t\t\tFile exists: ${realhash}\n"
+								FILE="$(grep -Ha ^F: ${DESTDIR}/evoke/*/*/trackfile | grep ${realhash} | awk -F : '{ FILENAME=$3; "dirname " $1 | getline; print $0 "/" FILENAME; }' | head -n 1)"
+								RETVAL="$(apply_patch "${realhash}" "${FILE}" "${PDESTDIR}/${BASENAME}" "${realhash}" "${HASH}")"
+								if [ "${RETVAL}" = "0" ] ; then
+									vecho "\t\t\tPatch applied successfully: ${realhash}\n"
+									vecho "\t\t}\n"
+									break
+								else
+									vecho "\t\t\tPatch did not apply: ${realhash}\n"
+									vecho "\t\t}\n"
+								fi
+							else
+								vecho "\t\t\tFile doesn't exist: ${realhash}\n"
+								vecho "\t\t}\n"
+							fi
+						done
+					fi
+
+					vecho "\t}\n"
+					if [ "${RETVAL}" = "0" ] ; then
+						unset RETVAL
+						vecho "}\n"
+						continue
+					else
+						unset RETVAL
+					fi
+
+					# Ok, fall back on grabbing the file.
+					cd "${PDOWNDIR}"
+					phttpget "${SERVER}" "${FILESPEC}/evoke/${VERSION}/${FILENAME}" 2>${DEVICES}/null
+					cp "${BASENAME}" "${PDESTDIR}/"
+					cd "${STAGEDIR}"
+					TRACKFILE="${TEMPDIR}/trackfile" OPTIONS="quiet" verify "${FILENAME}"
+					RETVAL=$?
+	
+					vecho "\t}\n"
+					if [ "${RETVAL}" != "0" ] ; then
+						unset RETVAL
+						echo "File corrupted in transit, bailing out"
+						exit 65
+					else
+						unset RETVAL
+					fi
 					vecho "}\n"
-					continue
-				else
-					unset RETVAL
-				fi
-
-				# Ok, fall back on grabbing the file.
-				cd "${PDOWNDIR}"
-				phttpget "${SERVER}" "${FILESPEC}/evoke/${VERSION}/${FILENAME}" 2>${DEVICES}/null
-				cp "${BASENAME}" "${PDESTDIR}/"
-				cd "${STAGEDIR}"
-				TRACKFILE="${TEMPDIR}/trackfile" OPTIONS="quiet" verify "${FILENAME}"
-				RETVAL=$?
-
-				vecho "\t}\n"
-				if [ "${RETVAL}" != "0" ] ; then
-					unset RETVAL
-					echo "File corrupted in transit, bailing out"
-					exit 65
-				else
-					unset RETVAL
-				fi
-				vecho "}\n"
-			done
-
+				done
+			fi
 			cd "${STAGEDIR}"
 
 			FILELIST="$(echo ${DEST_TRACKFILE} | cut -d : -f 2)"
@@ -302,6 +320,7 @@ find_mirror() {
 		echo "No usable mirrors found. Bailing out."
 		exit 65
 	fi
+	unset RETVAL
 }
 
 vecho() {
