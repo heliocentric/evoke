@@ -1,0 +1,339 @@
+#!/bin/sh
+# Copyright 2007-2009 Dylan Cochran
+# All rights reserved
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted providing that the following conditions
+# are met:
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+# IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
+# DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+# STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
+# IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
+
+# $Id$
+
+if [ ! -c "${DEVICES}/null" ] ; then
+	if [ -c "/dev/null" ] ; then
+		DEVICES=/dev
+	else
+		echo "Error, no device nodes found"
+		exit 1
+	fi
+fi
+
+if [ ! -d "${TMPDIR}" ] ; then
+	TMPDIR=/tmp
+fi
+
+
+if [ ! -d "${EVOKE_SCDIR}" ] ; then
+	EVOKE_SCDIR="/tmp/sysconfig"
+	mkdir -p "${EVOKE_SCDIR}"
+fi
+
+usage () {
+	cat << EOF
+usage: sysconfig command GEOM|UUID|CURRENT [options]
+
+Commands:
+  create	-- Write the header to the sysconfig partition.
+  commit	-- Commit a new record to sysconfig.
+  extract	-- Extract the most recent, consistant record.
+  verify	-- Check the consistancy of the header sector. All commands do this internally.
+  clear		-- Fill the sysconfig partition with nulls.
+
+EOF
+
+}
+
+prepsysconfig () {
+	case "${1}" in
+		[cC][uU][rR][rR][eE][nN][tT])
+			export SPEC=$(kenv -q evoke.sysconfig)
+			if [ "$(is_uuid ${SPEC})" = "no" ] ; then
+				echo "Error: You can't use CURRENT if the kernel environment variable isn't set"
+				exit 7
+			fi
+		;;
+		*)
+			SPEC="${1}"
+		;;
+	esac
+
+	if [ "$(is_uuid ${SPEC})" = "yes" ] ; then
+		for scpartition in $(mounter list sysconfig)
+		do
+
+			export SC_GEOM="$(sysctl -b kern.geom.conftxt | grep -a ${scpartition})"
+			export SC_SECTORSIZE="$(echo ${SC_GEOM} | cut -d " " -f 5)"
+			export SC_UUID="$(dd if=${DEVICES}/${scpartition} bs="${SC_SECTORSIZE}" count=1 2>${DEVICES}/null | grep -a '^uuid=' | cut -d = -f 2)"
+			if [ "${SC_UUID}" = "${SPEC}" ] ; then
+				export SC_DEVICE=$(echo ${SC_GEOM} | cut -d " " -f 3)
+			fi
+		done
+	else
+			export SC_DEVICE=${SPEC}
+	fi
+	TYPE=$(stat -f "%HT" "${DEVICES}/${SC_DEVICE}" 2>${DEVICES}/null)
+	case "${TYPE}" in
+		Character*)
+			export SC_GEOM="$(sysctl -b kern.geom.conftxt | grep -a ${SC_DEVICE})"
+			export SC_SECTORSIZE="$(echo ${SC_GEOM} | cut -d " " -f 5)"
+
+			# Since conftxt only reports the size in bytes of the geom, we have to divide it by the sector size and then remove a sector that is always used by the header.
+			export SC_SECTORCOUNT="$(($(echo ${SC_GEOM} | cut -d " " -f 4) / ${SC_SECTORSIZE} - 1))"
+
+			# For ata/scsi this doesn't matter, but only reading in the partition once really helps USB thumb drives
+			dd if=${DEVICES}/${SC_DEVICE} of=${SCRATCHDIR}/partition 2>${DEVICES}/null
+			dd if=${SCRATCHDIR}/partition of=${SCRATCHDIR}/headsect bs=${SC_SECTORSIZE} count=1 conv=sync fillchar=" " 2>${DEVICES}/null
+			dd if=${SCRATCHDIR}/headsect of=${SCRATCHDIR}/hash bs=64 count=1 conv=sync fillchar=" " 2>${DEVICES}/null
+			dd if=${SCRATCHDIR}/headsect of=${SCRATCHDIR}/header bs=64 skip=1 conv=sync fillchar=" " 2>${DEVICES}/null
+	
+			# size of the header, in bytes
+			export SC_HEADERSIZE="$(stat -f '%z' ${SCRATCHDIR}/header)"
+	
+			if [ "$(verify_header)" = "passed" ] ; then
+				export SC_UUID="$(grep -a ^uuid= ${SCRATCHDIR}/header | cut -d = -f 2)"
+				export SC_DESCRIPTION="$(grep -a ^description= ${SCRATCHDIR}/header | cut -d = -f 2)"
+				export SC_ENTRYSIZE="$(grep -a ^entrysize= ${SCRATCHDIR}/header | cut -d = -f 2)"
+				export SC_PADSIZE="$(grep -a ^pad= ${SCRATCHDIR}/header | cut -d = -f 2)"
+
+				# the number of entries in the config log
+				export SC_LOGSIZE="$(grep -a ^log= ${SCRATCHDIR}/header | cut -d = -f 2)"
+				export SC_ARRAYOFFSET="$((${SC_PADSIZE} + 1))"
+				export SC_TARBALLSIZE="$(( (${SC_ENTRYSIZE} * 512) - 74))"
+	
+				export RECORDNUM=0
+				export TEMPOFFSET="${SC_ARRAYOFFSET}"
+
+				# Note, that the TEMPOFFSET is actually the last sector in the pad.
+				# This is because we use dd, which specifies it as /skipping/ those number of sectors.
+				# ie, if the pad is 7 sectors, the offset will be 8 sectors, so the first record 
+				# would start at sector 9, because we are /skipping/ 8 sectors, not starting at 
+				# sector 8.
+
+				# All OFFSET's use this arithmetic, therefore, when writing, you must increment by one before using dd's seek.
+
+				# anyone who's ever used a functional language will hate this, but it does what is intended.
+				# since bourne shell's looping facilities leave a lot to be desired, this saves us quite 
+				# a lot of time by doing the loop once.
+
+				export SC_CONSISTENT="$(until [ "${RECORDNUM}" -eq "${SC_LOGSIZE}" ]
+					do
+#						echo "${RECORDNUM} ${TEMPOFFSET}" 1>&2
+						mkdir -p ${SCRATCHDIR}/record${RECORDNUM}
+						dd if=${SCRATCHDIR}/partition of=${SCRATCHDIR}/record${RECORDNUM}/record bs=${SC_SECTORSIZE} count=${SC_ENTRYSIZE} skip=${TEMPOFFSET} conv=sync fillchar=" " 2>${DEVICES}/null
+						dd if=${SCRATCHDIR}/record${RECORDNUM}/record bs=1 count=64 conv=sync of=${SCRATCHDIR}/record${RECORDNUM}/hash 2>${DEVICES}/null
+						dd if=${SCRATCHDIR}/record${RECORDNUM}/record bs=1 skip=64 count=10 conv=sync of=${SCRATCHDIR}/record${RECORDNUM}/timestamp 2>${DEVICES}/null
+						dd if=${SCRATCHDIR}/record${RECORDNUM}/record bs=1 skip=74 conv=sync of=${SCRATCHDIR}/record${RECORDNUM}/tarball.tgz 2>${DEVICES}/null
+						RHASH="$(cat ${SCRATCHDIR}/record${RECORDNUM}/timestamp ${SCRATCHDIR}/record${RECORDNUM}/tarball.tgz | sha256 -q)"
+#						echo ${RHASH} 1>&2
+#						echo $(cat ${SCRATCHDIR}/record${RECORDNUM}/hash) 1>&2
+						if [ "$(cat ${SCRATCHDIR}/record${RECORDNUM}/hash)" != "${RHASH}" ] ; then
+							echo "" >${SCRATCHDIR}/record${RECORDNUM}/failed
+						else
+							echo "$(cat ${SCRATCHDIR}/record${RECORDNUM}/timestamp) ${RECORDNUM}"
+							echo "" >${SCRATCHDIR}/record${RECORDNUM}/passed
+						fi
+						rm ${SCRATCHDIR}/record${RECORDNUM}/record
+						TEMPOFFSET=$((${TEMPOFFSET} + ${SC_ENTRYSIZE}))
+						RECORDNUM=$((${RECORDNUM} + 1))
+					done | sort -rg)"
+				if [ "${SC_CONSISTENT}" = "" ] ; then
+					SC_CURRECORD="-1"
+				else
+					SC_CURRECORD="$(echo ${SC_CONSISTENT} | head -n 1 | cut -d " " -f 2)"
+				fi
+				export SC_NEXTRECORD="$((${SC_CURRECORD} + 1))"
+				if [ "${SC_NEXTRECORD}" -eq "${SC_LOGSIZE}" ] ; then
+					SC_NEXTRECORD="0"
+				fi
+				export SC_CURRECORD_OFFSET="$((${SC_CURRECORD} * ${SC_ENTRYSIZE} + ${SC_PADSIZE} +1))"
+				export SC_NEXTRECORD_OFFSET="$((${SC_NEXTRECORD} * ${SC_ENTRYSIZE} + ${SC_PADSIZE} +1))"
+				rm ${SCRATCHDIR}/partition
+			fi
+		;;
+		*)
+			echo "Not a character device"
+			exit 2
+		;;
+	esac
+}
+
+verify_header () {
+	RHASH=$(sha256 -q ${SCRATCHDIR}/header)
+	HASH=$(cat ${SCRATCHDIR}/hash)
+	if [ "${RHASH}" != "${HASH}" ] ; then
+		echo "failed"
+	else
+		echo "passed"
+	fi
+}
+is_uuid () {
+	case "${1}" in
+		[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]-[0-9a-f][0-9a-f][0-9a-f][0-9a-f]-[0-9a-f][0-9a-f][0-9a-f][0-9a-f]-[0-9a-f][0-9a-f][0-9a-f][0-9a-f]-[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f])
+			echo "yes"
+		;;
+		*)
+			echo "no"
+		;;
+	esac
+}
+sysconfig () {
+	local SCRATCHDIR="${TMPDIR}/sctemp/$(dd if=${DEVICES}/random bs=4m count=1 2>${DEVICES}/null | sha256 -q )"	
+	mkdir -p "${SCRATCHDIR}"
+	case "${1}" in
+		[vV][eE][rR][iI][fF][yY])
+			prepsysconfig "${2}"
+			RESULT=$(verify_header)
+			echo ${RESULT}
+			if [ "${RESULT}" = "failed" ] ; then
+				exit 3
+			fi
+		;;
+		[eE][xX][tT][rR][aA][cC][tT])
+			EXTRACTPOINT="${3}"
+			prepsysconfig "${2}"
+			RESULT=$(verify_header)
+			if [ "${RESULT}" = "failed" ] ; then
+				exit 3
+			fi
+			if [ "${SC_CURRECORD}" -eq "-1" ] ; then
+				echo "Error: No config data"
+				exit 6
+			else
+				if [ ! -d "${EXTRACTPOINT}" ] ; then
+					tar -xpf ${SCRATCHDIR}/record${SC_CURRECORD}/tarball.tgz -C ${EVOKE_SCDIR}/
+				else
+					tar -xpf ${SCRATCHDIR}/record${SC_CURRECORD}/tarball.tgz -C ${EXTRACTPOINT}/
+				fi
+			fi
+		;;
+		[lL][iI][sS][tT])
+			PARTLIST=$(mounter list sysconfig)
+			if [ ! "${PARTLIST}" = "" ] ; then
+				for i in ${PARTLIST}
+				do
+					TYPE=$(stat -f "%HT" "${DEVICES}/${i}")
+					case "${TYPE}" in
+						Character*)
+							export SC_GEOM="$(sysctl -b kern.geom.conftxt | grep -a ${i})"
+							export SC_SECTORSIZE="$(echo ${SC_GEOM} | cut -d " " -f 5)"
+							UUID=$(dd if=${DEVICES}/${i} bs=${SC_SECTORSIZE} count=1 2>/dev/null | grep -a ^uuid= | cut -d = -f 2)
+							DESC=$(dd if=${DEVICES}/${i} bs=${SC_SECTORSIZE} count=1 2>/dev/null | grep -a ^description= | cut -d = -f 2)
+							echo "${UUID} - ${DESC}"
+						;;
+						*)
+							echo "Not a character device"
+							exit 2
+						;;
+					esac
+				done
+			fi
+		;;
+		[cC][oO][mM][mM][iI][tT])
+			prepsysconfig "${2}"
+			RESULT=$(verify_header)
+			if [ "${RESULT}" = "failed" ] ; then
+				exit 3
+			fi
+			if [ ! -d "${3}" ] ; then
+				echo "Source is not a directory"
+				exit 4
+			fi
+			cd "${3}"
+			tar -cpf - * | gzip -9 >${SCRATCHDIR}/newrecord.tgz
+			if [ "$(stat -f '%z' ${SCRATCHDIR}/newrecord.tgz)" -gt "${SC_TARBALLSIZE}" ] ; then
+				echo "Error, config to large for partition"
+				exit 5
+			fi
+			cp ${SCRATCHDIR}/newrecord.tgz ${SCRATCHDIR}/newrecord
+			dd if=/dev/zero of=${SCRATCHDIR}/newrecord seek=${SC_TARBALLSIZE} count=0 bs=1 2>${DEVICES}/null
+			NDATE=$(date -u +%s)
+			if [ ! "${SC_CURRECORD}" = "-1" ] ; then
+				ODATE=$(cat ${SCRATCHDIR}/record${SC_CURRECORD}/timestamp)
+				if [ "${ODATE}" -ge "${NDATE}" ] ; then
+					NDATE=$((${ODATE} + 1))
+				fi
+			fi
+			echo "${NDATE}" | dd of=${SCRATCHDIR}/newdate bs=10 count=1 conv=sync 2>${DEVICES}/null
+			cat ${SCRATCHDIR}/newdate ${SCRATCHDIR}/newrecord | sha256 -q | dd of=${SCRATCHDIR}/newhash bs=64 count=1 conv=sync 2>${DEVICES}/null	
+			SC_NEXTRECORDSEEK="$((${SC_NEXTRECORD_OFFSET}))"
+			cat ${SCRATCHDIR}/newhash ${SCRATCHDIR}/newdate ${SCRATCHDIR}/newrecord | dd of=${DEVICES}/${SC_DEVICE} bs=512 count=${SC_ENTRYSIZE} seek="${SC_NEXTRECORDSEEK}" conv=sync 2>${DEVICES}/null
+		;;
+		[cC][lL][eE][aA][rR])
+			prepsysconfig "${2}"
+			dd if=${DEVICES}/zero of=${DEVICES}/${SC_DEVICE} bs=${SC_SECTORSIZE} count=$((${SC_SECTORCOUNT} + 1)) 2>${DEVICES}/null
+		;;
+		[cC][rR][eE][aA][tT][eE])
+			prepsysconfig "${2}"
+			unset break
+			until [ "${break}" = "yes" ]
+			do
+				read -p "Description: " LONGDESC
+				if [ "${LONGDESC}" != "" ] ; then
+					break="yes"
+				else
+					echo "Please input a long description"
+				fi
+			done
+			unset break
+			until [ "${break}" = "yes" ]
+			do
+				read -p "Length of the config log: " CONFIGLOG
+				if [ "${CONFIGLOG}" != "" ] ; then
+					break="yes"
+				else
+					CONFIGLOG=8
+					break="yes"
+				fi
+			done
+			UUID=$(uuid -v 4)
+	
+			# the size of each entry in the log, in sectors
+			SC_ENTRYSIZE=$((${SC_SECTORCOUNT} / ${CONFIGLOG}))
+	
+			# the size of the padding sectors, that are between the header sector, and the 
+			# start of the array. If we don't add a pad, we'd have to have the nvram match the 
+			# arraysize * array entries + header sector exactly.
+			SC_PADSIZE=$((${SC_SECTORCOUNT} % ${CONFIGLOG}))
+	
+			printf "\nversion=1.0\nentrysize=${SC_ENTRYSIZE}\npad=${SC_PADSIZE}\nlog=${CONFIGLOG}\nuuid=${UUID}\ndescription=${LONGDESC}\n" | dd bs=${SC_HEADERSIZE} count=1 of=${SCRATCHDIR}/header conv=sync 2>${DEVICES}/null
+			sha256 -q ${SCRATCHDIR}/header | dd bs=64 count=1 of=${SCRATCHDIR}/hash fillchar=" " conv=sync 2>${DEVICES}/null
+			cat ${SCRATCHDIR}/hash ${SCRATCHDIR}/header >${SCRATCHDIR}/headsect
+			cat ${SCRATCHDIR}/headsect | dd of=${DEVICES}/${SC_DEVICE} bs=${SC_SECTORSIZE} count=1 2>${DEVICES}/null
+		;;
+		[mM][eE][nN][uU])
+			CONFIGLIST=$(mounter list sysconfig)
+			. $(command -v menu)
+			CHOICE=$(menu "Available Configurations" "sysconfig list ; echo None")
+			if [ "$(is_uuid ${CHOICE})" = "yes" ] ; then
+				UUID="$(echo "${CHOICE}" | awk '{ print $1 }')"
+				DESCRIPTION="$(echo "${CHOICE}" | cut -d "-" -f 6 | cut -b 2-4096)"
+				echo ${UUID}
+			fi
+		;;
+		*)
+			usage
+		;;
+	esac
+
+	rm -r ${SCRATCHDIR}
+}
+
+sysconfig $@
+
