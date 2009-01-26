@@ -20,8 +20,9 @@
 
 ==== Programs ====
 
- * Update - *New* Binary patched based update utility.
- * Doc - *New* Documentation system with a search interface.
+|| Name     || Change      || Description                                   ||
+|| Update   || *New*       || Binary patched based update utility.          ||
+|| Doc      || *New*       || Documentation system with a search interface. ||
 
 == Todo ==
 
