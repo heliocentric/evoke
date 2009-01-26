@@ -144,7 +144,7 @@ Branch /trunk rREVISION to /branches/releases/0.2/R1
 
 Then, we need to copy the wiki into the branch, like so:
 
- `svn copy wiki branches/releases/0.2/R1/src/doc`
+ `svn copy wiki branches/releases/0.2/R1/doc`
 
 Finally, we commit:
 
