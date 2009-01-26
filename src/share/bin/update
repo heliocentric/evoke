@@ -127,7 +127,7 @@ real_update() {
 				echo "$(stat -f '%m' "${version}"):$(dirname ${version})"
 			;;
 		esac
-	done | sort -r | cut -d : -f 2)"
+	done | sort -r | head -n 7 | cut -d : -f 2)"
 
 	# Let's find out how many bytes we have to download.
 	BYTECOUNT="$(echo "${DEST_TRACKFILE}" | awk -F ":" '{ SUM += $4; } END { print SUM; }')"
