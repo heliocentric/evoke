@@ -1,5 +1,14 @@
 #summary 0.1 Release Notes
 #labels Release
+<wiki:comment>
+	type: release-doc
+	author: heliocentric
+	name: notes
+	svnid: $Id$
+	svnauthor: $Author$
+	svnrevision: $Revision$
+</wiki:comment>
+
 == Revisions ==
 
 === [http://code.google.com/p/evoke/source/browse/#svn/branches/releases/0.1/R1 R1] ===
