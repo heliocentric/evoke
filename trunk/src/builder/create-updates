@@ -119,58 +119,56 @@ if [ "${1}" != "" ] ; then
 					SOURCEHASH="$(echo "${SOURCE_TRACKFILE}" | grep ${FILENAME} | cut -d : -f 3)"
 					REALHASH="$(sha256 -q "${SOURCEFILE}")"
 					if [ "${REALHASH}" = "${SOURCEHASH}" ] ; then
-						if [ "${SOURCEHASH}" != "${DESTHASH}" ] ; then
-							case "${SOURCEFILE}" in
-								*.gz)
-									mkdir -p "${DECOMDIR}"
-									gunzip -9nc "${SOURCEFILE}" >"${DECOMDIR}/${SOURCEHASH}"
-									RFILE="${DECOMDIR}/${SOURCEHASH}"
-								;;
-								*)
-									RFILE="${SOURCEFILE}"
-								;;
-							esac
+						case "${SOURCEFILE}" in
+							*.gz)
+								mkdir -p "${DECOMDIR}"
+								gunzip -9nc "${SOURCEFILE}" >"${DECOMDIR}/${SOURCEHASH}"
+								RFILE="${DECOMDIR}/${SOURCEHASH}"
+							;;
+							*)
+								RFILE="${SOURCEFILE}"
+							;;
+						esac
 
-							case "${DESTFILE}" in
-								*.gz)
-									mkdir -p "${DECOMDIR}"
-									gunzip -9nc "${DESTFILE}" >"${DECOMDIR}/${DESTHASH}"
-									DFILE="${DECOMDIR}/${DESTHASH}"
-								;;
-								*)
-									DFILE="${DESTFILE}"
-								;;
-							esac
+						case "${DESTFILE}" in
+							*.gz)
+								mkdir -p "${DECOMDIR}"
+								gunzip -9nc "${DESTFILE}" >"${DECOMDIR}/${DESTHASH}"
+								DFILE="${DECOMDIR}/${DESTHASH}"
+							;;
+							*)
+								DFILE="${DESTFILE}"
+							;;
+						esac
 
-							PATCHFILE="${PATCHDIR}/${DESTHASH}/${SOURCEHASH}"
-							mkdir -p ${PATCHDIR}/${DESTHASH}/
-							bsdiff "${RFILE}" "${DFILE}" "${PATCHFILE}"
-							mkdir -p "${TESTDIR}"
-							bspatch "${RFILE}" "${TESTDIR}/${DESTHASH}" "${PATCHFILE}"
-							case "${DESTFILE}" in
-								*.gz)
-									mkdir -p "${DECOMDIR}"
-									rm "${TESTDIR}/${DESTHASH}.gz" 2>/dev/null 1>/dev/null
-									gzip -9nc "${TESTDIR}/${DESTHASH}" >"${TESTDIR}/${DESTHASH}.gz"
-									mv "${TESTDIR}/${DESTHASH}.gz" "${TESTDIR}/${DESTHASH}"
-								;;
-								*.bz2)
-								;;
-								*)
-									RFILE="${FILENAME}"
-								;;
-							esac
-							REALHASH="$(sha256 -q "${TESTDIR}/${DESTHASH}")"
-							if [ "${REALHASH}" != "${DESTHASH}" ] ; then
-								echo "Patch failed"
-								exit 4
-							fi
+						PATCHFILE="${PATCHDIR}/${DESTHASH}/${SOURCEHASH}"
+						mkdir -p ${PATCHDIR}/${DESTHASH}/
+						bsdiff "${RFILE}" "${DFILE}" "${PATCHFILE}"
+						mkdir -p "${TESTDIR}"
+						bspatch "${RFILE}" "${TESTDIR}/${DESTHASH}" "${PATCHFILE}"
+						case "${DESTFILE}" in
+							*.gz)
+								mkdir -p "${DECOMDIR}"
+								rm "${TESTDIR}/${DESTHASH}.gz" 2>/dev/null 1>/dev/null
+								gzip -9nc "${TESTDIR}/${DESTHASH}" >"${TESTDIR}/${DESTHASH}.gz"
+								mv "${TESTDIR}/${DESTHASH}.gz" "${TESTDIR}/${DESTHASH}"
+							;;
+							*.bz2)
+							;;
+							*)
+								RFILE="${FILENAME}"
+							;;
+						esac
+						REALHASH="$(sha256 -q "${TESTDIR}/${DESTHASH}")"
+						if [ "${REALHASH}" != "${DESTHASH}" ] ; then
+							echo "Patch failed"
+							exit 4
 						fi
 					fi
 				fi
-			done
-			IFS="${OLDFS}"
-		fi
+			fi
+		done
+		IFS="${OLDFS}"
 		shift
 	done
 
