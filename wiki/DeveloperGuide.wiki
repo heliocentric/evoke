@@ -110,9 +110,6 @@ The third field is the test short name, one of the following:
 
 To initially create a release branch, always use the following steps:
 
- `svn mkdir branches/releases/0.2`
-
-
  `svn copy trunk branches/releases/0.2/R1`
 
 R1 is always the first revision.
@@ -132,17 +129,31 @@ The first thing to do is fill out the release page with the todo list:
  * any items that need to be done before R1
 }}}
 
-Then, we need to copy the wiki into the branch, like so:
-
- `svn copy wiki branches/releases/0.2/R1/src/doc`
-
 Now, we commit:
 
  `svn commit`
 
 The format of the commit message is similar to 'Merge', except the items are not commit logs that apply, rather, it is the contents of the initial Todo list.
+
 {{{
-Branch /trunk rREVISION to /branches/releases/0.2/R1 
+Branch /trunk rREVISION to /branches/releases/0.2/R1
+
+ * any items that need to be done before R1
+
+}}}
+
+Then, we need to copy the wiki into the branch, like so:
+
+ `svn copy wiki branches/releases/0.2/R1/src/doc`
+
+Finally, we commit:
+
+ `svn commit`
+
+The format of the commit message is similar to 'Merge', however, the item list should be a todo list for the documents.
+
+{{{
+Branch /wiki rREVISION to /branches/releases/0.2/R1/doc
 
  * any items that need to be done before R1
 
