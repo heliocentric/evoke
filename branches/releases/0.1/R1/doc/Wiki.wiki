@@ -1,0 +1,35 @@
+#labels Tab
+
+== Usage ==
+ * [BuildEnvironment Requirements for a build environment]
+ * [SystemRequirements Requirements for a running evoke system]
+ * [Target Idealized Target Environment]
+ * [DeveloperGuide Guide for Developers]
+
+== Design Notes ==
+ * [GUIDList Reserved UUID list]
+
+== Projects ==
+ * [ProgramSupport Increasing program support]
+ * [ConvertBuild Convert the build from bourne to make]
+ * [http://code.google.com/p/evoke/w/list?q=label:Draft Incomplete documents]
+
+== Release Notes ==
+ * [Release01 0.1R1]
+
+== Command List ==
+ * [Mounter mounter]
+ * [Sysconfig sysconfig]
+ * [Installer installer]
+ * [Systart systart]
+ * [Doc doc]
+ * [Consolidate consolidate]
+ * [Jailer jailer]
+ * [Lsvol lsvol]
+ * [Menu menu]
+ * [Merger merger]
+ * [Update update] 
+ * [Userconfig userconfig] 
+ * [Verify verify]
+
+

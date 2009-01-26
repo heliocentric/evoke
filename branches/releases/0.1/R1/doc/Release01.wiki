@@ -1,0 +1,34 @@
+#summary 0.1 Release Notes
+#labels Release
+<wiki:comment>
+	type: release-doc
+	author: heliocentric
+	name: notes
+	svnid: $Id$
+	svnauthor: $Author$
+	svnrevision: $Revision$
+</wiki:comment>
+
+== Todo ==
+
+ * installer needs to be able to install to a thumb drive.
+ * 6.4 and 7.1 for i386 need to be on the image.
+
+== Revisions ==
+
+=== [http://code.google.com/p/evoke/source/browse/#svn/branches/releases/0.1/R1 R1] ===
+
+==== Targets ====
+
+ * FreeBSD 6.4-RELEASE-p3/i386
+ * FreeBSD 7.1-RELEASE-p2/i386
+
+==== Security Updates ====
+
+ * N/A
+
+==== Programs ====
+
+|| Name     || Change      || Description                                   ||
+|| Update   || *New*       || Binary patched based update utility.          ||
+|| Doc      || *New*       || Documentation system with a search interface. ||
