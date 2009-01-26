@@ -2,7 +2,16 @@
 #labels Release
 == Revisions ==
 
- * [http://code.google.com/p/evoke/source/browse/#svn/branches/releases/0.1/R1 R1]
+=== [http://code.google.com/p/evoke/source/browse/#svn/branches/releases/0.1/R1 R1] ===
+
+==== Targets ====
+
+ * FreeBSD 6.4-RELEASE-p3/i386
+ * FreeBSD 7.1-RELEASE-p2/i386
+
+==== Programs ====
+
+ * Update - Addition, supports binary patched based updating for all releases.
 
 == Todo ==
 
