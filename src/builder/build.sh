@@ -181,7 +181,7 @@ do
 	esac
 
 	# let's make bsdlabel and fdisk have real bootcode.
-	cp ${DESTDIR}${BOOTPATH}/boot ${DESTDIR}${BOOTPATH}/mbr ${FSDIR}${N_BOOT}
+	cp ${DESTDIR}boot/boot ${DESTDIR}boot/mbr ${FSDIR}${N_BOOT}
 
 	echo -n " * ${target} = Compressing Kernel"
 	cd ${DESTDIR}/boot/${KERNCONF}/
