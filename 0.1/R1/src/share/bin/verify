@@ -178,8 +178,9 @@ verify() {
 				SIGNATURE_BYTES="0"
 			fi
 
+#			TIMESTAMP="$(date -j -f "%a %b %d %T %Z %Y" "`date`" "+%s")"
 			TRACKDATA="$(verify_loop $@)"
-			TRACKDATA="$(printf "I:1.1::${SIGNATURE_BYTES}\n${TRACKDATA}\n#")"
+			TRACKDATA="$(printf "I:1.1:${TIMESTAMP}:${SIGNATURE_BYTES}\n${TRACKDATA}\n#")"
 			echo "${TRACKDATA}" | dd bs=512 fillchar=" " conv=sync "of=${SCRATCHDIR}/head" 2>${DEVICES}/null
 			
 			if [ -r "${TRACKFILE_PRIVATE_KEY}" ] ; then

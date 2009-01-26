@@ -180,9 +180,6 @@ do
 		;;
 	esac
 
-	# let's make bsdlabel and fdisk have real bootcode.
-	cp ${DESTDIR}${BOOTPATH}/boot ${DESTDIR}${BOOTPATH}/mbr ${FSDIR}${N_BOOT}
-
 	echo -n " * ${target} = Compressing Kernel"
 	cd ${DESTDIR}/boot/${KERNCONF}/
 
@@ -201,6 +198,7 @@ do
 	# Remove everything that is not gzipped.
 	rm -r *.symbols
 	rm -r *.ko
+	rm -r *.hints
 	# Yes, this is all wasteful. But this bug will be fixed eventually, and when it does, this line can be removed.
 #	gunzip *.gz
 	for file in $(grep ^M ${BUILDDIR}/portlist | cut -d : -f 2) ${MODULES}
@@ -263,7 +261,7 @@ do
 	chmod a+rx ${FSDIR}/system/${file}
 done
 
-cp "${EVOKE_BUILDER_PUBLIC}" "${FSDIR}/system/lib/evoke_public.rsa"
+cp "${EVOKE_BUILDER_PUBLIC}" "${FSDIR}/system/share/lib/evoke_public.rsa"
 
 mkdir -p ${FSDIR}/system/share/doc
 
