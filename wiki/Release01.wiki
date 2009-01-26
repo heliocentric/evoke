@@ -18,6 +18,10 @@
  * FreeBSD 6.4-RELEASE-p3/i386
  * FreeBSD 7.1-RELEASE-p2/i386
 
+==== Security Updates ====
+
+ * N/A
+
 ==== Programs ====
 
 || Name     || Change      || Description                                   ||
