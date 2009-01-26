@@ -328,7 +328,11 @@ fetch_full_file() {
 
 	TRACKFILE="${TEMPDIR}/trackfile" OPTIONS="quiet" verify "${FILENAME}"
 	local ERRORCODE="$?"
-	vecho "\t\t\tError! file not found.\n" 1>&2
+	if [ "${ERRORCODE}" = "0" ] ; then
+		vecho "\t\t\tFile fetched successfully\n" 1>&2
+	else
+		vecho "\t\t\tError! file not found.\n" 1>&2
+	fi
 	vecho "\t\t}\n" 1>&2
 
 	echo "${ERRORCODE}"
