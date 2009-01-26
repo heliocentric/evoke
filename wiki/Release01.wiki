@@ -11,7 +11,8 @@
 
 ==== Programs ====
 
- * Update - Addition, supports binary patched based updating for all releases.
+ * Update - *New* Binary patched based update utility.
+ * Doc - *New* Documentation system with a search interface.
 
 == Todo ==
 
