@@ -166,8 +166,8 @@ if [ "${1}" != "" ] ; then
 						fi
 					fi
 				fi
-			fi
-		done
+			done
+		fi
 		IFS="${OLDFS}"
 		shift
 	done
