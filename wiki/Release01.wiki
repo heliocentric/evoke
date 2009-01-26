@@ -4,10 +4,6 @@
 
  * [http://code.google.com/p/evoke/source/browse/#svn/branches/releases/0.1/R1 R1]
 
-== Update instructions ==
-
-Run `update install /test 0.1/R1`
-
 == Todo ==
 
  * installer needs to be able to install to a thumb drive.
