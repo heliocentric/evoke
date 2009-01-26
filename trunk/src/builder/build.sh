@@ -261,7 +261,7 @@ do
 	chmod a+rx ${FSDIR}/system/${file}
 done
 
-cp "${EVOKE_BUILDER_PUBLIC}" "${FSDIR}/system/lib/evoke_public.rsa"
+cp "${EVOKE_BUILDER_PUBLIC}" "${FSDIR}/system/share/lib/evoke_public.rsa"
 
 mkdir -p ${FSDIR}/system/share/doc
 
