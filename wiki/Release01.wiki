@@ -5,9 +5,3 @@
 
  * installer needs to be able to install to a thumb drive.
  * 6.4 and 7.1 for i386 need to be on the image.
- * If installer can install to the thumb drive, we need an 'update' command that can automate finding boot filesystems, installing higher revisions/versions, and activating them.
-    * the create-update script is capable of generating the bin updates, now all they need is a program capable of applying them.
-    * the build.sh also needs to be able to push the bin-updates, should be trivial to add.
-
- * inline signing of the trackfile. (to secure the update mechanism). Remember the trackfile for the current system is loaded as an md device, is aligned, with a geom label trailer added. We need to make sure the signing system does not break this.
- * Target specific boot directory is not filled any more. This needs to be fixed before release, as installer will depend on it.
