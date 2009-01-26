@@ -9,6 +9,11 @@
 	svnrevision: $Revision$
 </wiki:comment>
 
+== Todo ==
+
+ * installer needs to be able to install to a thumb drive.
+ * 6.4 and 7.1 for i386 need to be on the image.
+
 == Revisions ==
 
 === [http://code.google.com/p/evoke/source/browse/#svn/branches/releases/0.1/R1 R1] ===
@@ -27,8 +32,3 @@
 || Name     || Change      || Description                                   ||
 || Update   || *New*       || Binary patched based update utility.          ||
 || Doc      || *New*       || Documentation system with a search interface. ||
-
-== Todo ==
-
- * installer needs to be able to install to a thumb drive.
- * 6.4 and 7.1 for i386 need to be on the image.
