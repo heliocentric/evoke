@@ -223,6 +223,7 @@ real_update() {
 						unset RETVAL
 					fi
 
+					vecho "\tGrabbing patches {\n"
 					HASHLIST="$(for version in ${VERSIONLIST}
 					do
 						FILEHASH="$(grep -a ^F: ${DESTDIR}/evoke/${version}/trackfile | cut -d : -f 3)"
@@ -268,8 +269,9 @@ real_update() {
 						unset RETVAL
 					fi
 
+					vecho "\tGrabbing full file {\n"
 					# Ok, fall back on grabbing the file.
-					RETVAL="$(fetch_full_file "${HASH}" "${FILENAME}" "${PDESTDIR}" "${BASENAME}")" 2>&1
+					RETVAL="$(fetch_full_file "${HASH}" "${FILENAME}" "${PDESTDIR}" "${BASENAME}")"
 	
 					vecho "\t}\n"
 					if [ "${RETVAL}" != "0" ] ; then
@@ -422,7 +424,7 @@ update() {
 	case "${1}" in
 		install)
 			if [ "${3}" != "" ] ; then
-				real_update "${2}" "${3}"
+				real_update "${2}" "${3}" 2>&1
 			fi
 		;;
 	esac
