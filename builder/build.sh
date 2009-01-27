@@ -348,7 +348,7 @@ echo "					[DONE]"
 echo -n " * share = Creating RELEASEDIR"
 
 # grab a list of already installed versions for create-updates.
-VERSIONLIST="$(cd /releases/evoke && find . -not -path "./BIN-UPDATES*" -not -path "./ISO-IMAGES*" -depth 2 | cut -b 3-300 | paste - - - - - - - - - - - - - - - - - - - - - - -)"
+VERSIONLIST="$(cd /releases/evoke && find . -not -path "./misc*" -depth 2 | cut -b 3-300 | paste - - - - - - - - - - - - - - - - - - - - - - -)"
 
 mkdir -p ${RELEASEDIR}${BOOTPREFIX}
 cd ${BOOTDIR}${BOOTPREFIX}
@@ -366,14 +366,14 @@ echo -n " * share = Making ISO image"
 mkdir -p ${BOOTDIR}/cdboot
 cp ${BOOTDIR}${BOOTPREFIX}/freebsd$(echo ${i386_ACTIVE} | cut -d "." -f 1)/$(echo ${i386_ACTIVE} | cut -d "/" -f 2)/cdboot ${BOOTDIR}/cdboot/i386
 
-mkdir -p ${RELEASEDIR}/evoke/ISO-IMAGES/${VERSION}/${REVISION}
+mkdir -p ${RELEASEDIR}/evoke/misc/ISO-IMAGES/${VERSION}/${REVISION}
 
 if [ -d "${BOOTOVERLAY}" ] ; then
 	cd ${BOOTOVERLAY}
 	tar -cf - --exclude ".." --exclude "." * .* | tar -xf - -C ${BOOTDIR}/
 fi
 
-cd ${RELEASEDIR}/evoke/ISO-IMAGES/${VERSION}/${REVISION}
+cd ${RELEASEDIR}/evoke/misc/ISO-IMAGES/${VERSION}/${REVISION}
 
 # DO NOT TOUCH UNDER PENALTY OF DEATH.
 mkisofs -b cdboot/i386 -no-emul-boot -r -J -V EVOKE-${VERSION}-${REVISION} -p "${ENGINEER}" -publisher "http://evoke.googlecode.com" -o evoke.iso ${BOOTDIR} 1>&2
@@ -395,7 +395,7 @@ if [ "${EVOKE_PUSH_MIRROR}" != "" ] ; then
 	do
 		mounter "${volume}" "${MOUNTPOINT}"
 		mkdir -p "${MOUNTPOINT}/evoke"
-		tar -cf - "${VERSION}/${REVISION}" "ISO-IMAGES/${VERSION}/${REVISION}" "BIN-UPDATES/${VERSION}/${REVISION}" | tar -xvf - -C "${MOUNTPOINT}/evoke/"
+		tar -cf - "${VERSION}/${REVISION}" "misc/ISO-IMAGES/${VERSION}/${REVISION}" "misc/BIN-UPDATES/${VERSION}/${REVISION}" | tar -xvf - -C "${MOUNTPOINT}/evoke/"
 		mounter umount "${MOUNTPOINT}"
 	done
 fi

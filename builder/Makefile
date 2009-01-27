@@ -97,7 +97,7 @@ ERRFILE != echo ${ROOTDIR}/logs/$(date +%Y%m%d%H%M%S).log
 
 # make iso variables.
 ACTIVE_ABI != echo ${i386_ACTIVE} | cut -d . -f 1 
-ISO ?= ${RELEASEDIR}/ISO-IMAGES/${VERSION}/evoke.iso
+ISO ?= ${RELEASEDIR}/misc/ISO-IMAGES/${VERSION}/evoke.iso
 ISODIR != dirname ${ISO}
 ISTMPDIR ?= ${TMPDIR}${ROOTDIR}/iso-gen/
 
@@ -143,7 +143,7 @@ ${ISO}: ${RELEASECOOKIE} ${PER_RELEASE_DIR}
 	@mkdir -p ${ISTMPDIR}/cdboot
 	@cd ${RELEASEDIR} && tar -cf - .${BOOTPREFIX} | tar -xpf - -C ${ISTMPDIR}
 	@cp ${ISTMPDIR}${BOOTPREFIX}/freebsd${ACTIVE_ABI}/i386/cdboot ${ISTMPDIR}/cdboot/i386
-	@mkisofs -b cdboot/i386 -no-emul-boot -r -J -V EVOKE-${VERSION} -p "${ENGINEER}" -publisher "http://evoke.googlecode.com" -o ${RELEASEDIR}/ISO-IMAGES/${VERSION}${BSDIR}.iso ${ISTMPDIR} 1>&2
+	@mkisofs -b cdboot/i386 -no-emul-boot -r -J -V EVOKE-${VERSION} -p "${ENGINEER}" -publisher "http://evoke.googlecode.com" -o ${RELEASEDIR}/misc/ISO-IMAGES/${VERSION}${BSDIR}.iso ${ISTMPDIR} 1>&2
 
 # Note, we have two targets, the cookie and the directory; if either are too old
 # real-releasedir will be ran.

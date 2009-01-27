@@ -116,9 +116,7 @@ real_update() {
 	VERSIONLIST="$(for version in $(echo */*/trackfile) 
 	do
 		case "${version}" in
-			BIN-UPDATES/*)
-			;;
-			ISO-IMAGES/*)
+			misc/*)
 			;;
 			\*/\*/trackfile)
 				echo "error"
@@ -230,7 +228,7 @@ real_update() {
 						if [ "${FILEHASH}" != "" ] ; then
 							for filehash in ${FILEHASH}
 							do
-								echo "${FILESPEC}/evoke/BIN-UPDATES/${VERSION}/${HASH}/${filehash}" 
+								echo "${FILESPEC}/evoke/misc/BIN-UPDATES/${VERSION}/${HASH}/${filehash}" 
 							done
 						fi
 					done)"
