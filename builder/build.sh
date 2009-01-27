@@ -394,8 +394,9 @@ if [ "${EVOKE_PUSH_MIRROR}" != "" ] ; then
 	for volume in $(mounter search "tag=${EVOKE_PUSH_MIRROR}")
 	do
 		mounter "${volume}" "${MOUNTPOINT}"
-		mkdir -p "${MOUNTPOINT}/evoke"
+		mkdir -p "${MOUNTPOINT}/evoke/misc"
 		tar -cf - "${VERSION}/${REVISION}" "misc/ISO-IMAGES/${VERSION}/${REVISION}" "misc/BIN-UPDATES/${VERSION}/${REVISION}" | tar -xvf - -C "${MOUNTPOINT}/evoke/"
+		cat "${MOUNTPOINT}/evoke/misc/versionlist}" ; echo "${VERSION}/${REVISION}" | sort -r | uniq >"${MOUNTPOINT}/evoke/misc/versionlist"
 		mounter umount "${MOUNTPOINT}"
 	done
 fi
