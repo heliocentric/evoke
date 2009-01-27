@@ -228,9 +228,8 @@ verify() {
 	else
 		verify_loop $@
 	fi
-#	rm -r "${SCRATCHDIR}"
+	rm -r "${SCRATCHDIR}"
 	exit "${ERRORCODE}"
 }
 
 verify $@
-
