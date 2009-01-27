@@ -133,8 +133,8 @@ real_update() {
 	BYTECOUNT="$(echo "${DEST_TRACKFILE}" | awk -F ":" '{ SUM += $4; } END { print SUM; }')"
 	MB="$((${BYTECOUNT} / 1000 / 1000))"
 	if [ "${VERBOSE}" = "NO" ] ; then
-		echo "The update utility will attempt to keep the total size of files downloaded to a minimum, "
-		echo "where possible."
+		echo "The update utility will attempt to keep the total size of files downloaded to a"
+		echo "minimum, where possible."
 		echo ""
 		echo "In the worst case, update will download ${BYTECOUNT} bytes (~ ${MB}MB)"
 		read -p "Continue? [Y/n]: " PROMPT
@@ -305,8 +305,8 @@ real_update() {
 			OPTIONS="write" verify *
 			PATCHSIZE="$(du -hd 0 ${PATCHDIR} | awk '{ print $1 }')"
 			DOWNLOADSIZE="$(du -hd 0 ${SCRATCHDIR}/download | awk '{ print $1 }')"
-			echo "Size of complete files downloaded: ${DOWNLOADSIZE}B"
-			echo "Size of patch files downloaded: ${PATCHSIZE}B"
+			echo "Size of complete files downloaded: ${DOWNLOADSIZE}"
+			echo "Size of patch files downloaded: ${PATCHSIZE}"
 			echo "Total Size of the release: ${MB}MB"
 		;;
 	esac
@@ -396,10 +396,15 @@ update() {
 	cd "${TEMPDIR}"
 
 	if [ "${EVOKE_UPDATE_MIRROR}" = "" ] ; then
-		phttpget evoke.googlecode.com /svn/info/mirrorlist 2>${DEVICES}/null
-		if [ ! -f mirrorlist ] ; then
-			echo "Unable to fetch mirrorlist, Network connection down?"
-			exit 65
+		MOUNTER_EVOKE_LIST="$(mounter search tag=evoke)"
+		if [ "${MOUNTER_EVOKE_LIST}" = "" ] ; then
+			phttpget evoke.googlecode.com /svn/info/mirrorlist 2>${DEVICES}/null
+			if [ ! -f mirrorlist ] ; then
+				echo "Unable to fetch mirrorlist, Network connection down?"
+				exit 65
+			fi
+		else
+			echo "${MOUNTER_EVOKE_LIST}" >${TEMPDIR}/mirrorlist
 		fi
 	else
 		echo "${EVOKE_UPDATE_MIRROR}" >${TEMPDIR}/mirrorlist
