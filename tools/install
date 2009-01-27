@@ -42,19 +42,16 @@ case "${CHOICE}" in
 		echo -n "Fetching DamnSmallBSD"
 		DEST=dsbsd-0.1P1
 		svn checkout http://evoke.googlecode.com/svn/branches/releases/0.1P1/src ${DEST} 2>/dev/null >/dev/null
-		TARGETS=$(cat ${DEST}/build.sh | grep TARGETS= | cut -d \" -f 2)
 	;;
 	[dD])
 		echo -n "Fetching Evoke"
 		DEST=evoke-head
 		svn checkout http://evoke.googlecode.com/svn/trunk/ ${DEST} 2>/dev/null >/dev/null
-		TARGETS=$(cat ${DEST}/build.sh | grep TARGETS= | cut -d \" -f 2)
 	;;
 	*)
 		echo -n "Fetching Evoke"
 		DEST=evoke-0.1R1
 		svn checkout "http://evoke.googlecode.com/svn/branches/releases/0.1/R1/" "${DEST}" 2>/dev/null >/dev/null
-		TARGETS=$(cat ${DEST}/build.sh | grep TARGETS= | cut -d \" -f 2)
 	;;
 esac
 echo ""
