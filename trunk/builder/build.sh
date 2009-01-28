@@ -384,6 +384,9 @@ ISO_MD5="$(md5 *)"
 echo "${ISO_SHA256}" >>CHECKSUM.SHA256
 echo "${ISO_MD5}" >>CHECKSUM.MD5
 
+mkdir -p ${RELEASEDIR}/evoke/misc
+cat "${RELEASEDIR}/evoke/misc/versionlist}" ; echo "${VERSION}/${REVISION}" | sort -r | uniq >"${RELEASEDIR}/evoke/misc/versionlist"
+
 if [ "${EVOKE_PUSH_MIRROR}" != "" ] ; then
 	cd ${RELEASEDIR}/evoke
 
