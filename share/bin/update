@@ -305,7 +305,7 @@ real_update() {
 			DOWNLOADSIZE="$(du -hd 0 ${SCRATCHDIR}/download | awk '{ print $1 }')"
 			echo "Size of complete files downloaded: ${DOWNLOADSIZE}"
 			echo "Size of patch files downloaded: ${PATCHSIZE}"
-			echo "Total Size of the release: ${MB}MB"
+			echo "Total Size of the release: ${MB}M"
 		;;
 	esac
 }
