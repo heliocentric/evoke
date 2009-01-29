@@ -116,9 +116,7 @@ real_update() {
 	VERSIONLIST="$(for version in $(echo */*/trackfile) 
 	do
 		case "${version}" in
-			BIN-UPDATES/*)
-			;;
-			ISO-IMAGES/*)
+			misc/*)
 			;;
 			\*/\*/trackfile)
 				echo "error"
@@ -133,8 +131,8 @@ real_update() {
 	BYTECOUNT="$(echo "${DEST_TRACKFILE}" | awk -F ":" '{ SUM += $4; } END { print SUM; }')"
 	MB="$((${BYTECOUNT} / 1000 / 1000))"
 	if [ "${VERBOSE}" = "NO" ] ; then
-		echo "The update utility will attempt to keep the total size of files downloaded to a minimum, "
-		echo "where possible."
+		echo "The update utility will attempt to keep the total size of files downloaded to a"
+		echo "minimum, where possible."
 		echo ""
 		echo "In the worst case, update will download ${BYTECOUNT} bytes (~ ${MB}MB)"
 		read -p "Continue? [Y/n]: " PROMPT
@@ -230,7 +228,7 @@ real_update() {
 						if [ "${FILEHASH}" != "" ] ; then
 							for filehash in ${FILEHASH}
 							do
-								echo "${FILESPEC}/evoke/BIN-UPDATES/${VERSION}/${HASH}/${filehash}" 
+								echo "evoke/misc/BIN-UPDATES/${VERSION}/${HASH}/${filehash}" 
 							done
 						fi
 					done)"
@@ -240,7 +238,7 @@ real_update() {
 						do
 							realhash="$(basename ${hash})"
 							vecho "\t\tFetching ${realhash} {\n"
-							phttpget "${SERVER}" ${hash} 2>${DEVICES}/null
+							getfile ${hash} 2>${DEVICES}/null
 							if [ -f "${realhash}" ] ; then
 								vecho "\t\t\tFile exists: ${realhash}\n"
 								FILE="$(grep -Ha ^F: ${DESTDIR}/evoke/*/*/trackfile | grep ${realhash} | awk -F : '{ FILENAME=$3; "dirname " $1 | getline; print $0 "/" FILENAME; }' | head -n 1)"
@@ -305,9 +303,9 @@ real_update() {
 			OPTIONS="write" verify *
 			PATCHSIZE="$(du -hd 0 ${PATCHDIR} | awk '{ print $1 }')"
 			DOWNLOADSIZE="$(du -hd 0 ${SCRATCHDIR}/download | awk '{ print $1 }')"
-			echo "Size of complete files downloaded: ${DOWNLOADSIZE}B"
-			echo "Size of patch files downloaded: ${PATCHSIZE}B"
-			echo "Total Size of the release: ${MB}MB"
+			echo "Size of complete files downloaded: ${DOWNLOADSIZE}"
+			echo "Size of patch files downloaded: ${PATCHSIZE}"
+			echo "Total Size of the release: ${MB}M"
 		;;
 	esac
 }
@@ -323,7 +321,7 @@ fetch_full_file() {
 
 	cd "${PDOWNDIR}"
 	vecho "\t\tFetching ${FILENAME} {\n" 1>&2
-	phttpget "${SERVER}" "${FILESPEC}/evoke/${VERSION}/${FILENAME}" 2>${DEVICES}/null
+	getfile "evoke/${VERSION}/${FILENAME}" 2>${DEVICES}/null
 
 	cp "${BASENAME}" "${PDESTDIR}/"
 	cd "${STAGEDIR}"
@@ -418,10 +416,15 @@ update() {
 	cd "${TEMPDIR}"
 
 	if [ "${EVOKE_UPDATE_MIRROR}" = "" ] ; then
-		phttpget evoke.googlecode.com /svn/info/mirrorlist 2>${DEVICES}/null
-		if [ ! -f mirrorlist ] ; then
-			echo "Unable to fetch mirrorlist, Network connection down?"
-			exit 65
+		MOUNTER_EVOKE_LIST="$(mounter search tag=evoke)"
+		if [ "${MOUNTER_EVOKE_LIST}" = "" ] ; then
+			phttpget evoke.googlecode.com /svn/info/mirrorlist 2>${DEVICES}/null
+			if [ ! -f mirrorlist ] ; then
+				echo "Unable to fetch mirrorlist, Network connection down?"
+				exit 65
+			fi
+		else
+			echo "${MOUNTER_EVOKE_LIST}" >${TEMPDIR}/mirrorlist
 		fi
 	else
 		echo "${EVOKE_UPDATE_MIRROR}" >${TEMPDIR}/mirrorlist

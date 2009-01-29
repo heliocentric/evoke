@@ -299,7 +299,11 @@ mount_proto () {
 			prep_transport
 			if [ "${M_STYPE}" = "GEOM" ] ; then
 				if [ "${M_FILE}" != "" ] ; then
-					geom eli onetime -d "${DEVICES}/${M_FILE}" && swapon ${DEVICES}/${M_FILE}.eli
+					if [ "${@}" = "enc" ] ; then
+						geom eli onetime -d "${DEVICES}/${M_FILE}" && swapon ${DEVICES}/${M_FILE}.eli
+					else
+						swapon ${DEVICES}/${M_FILE}
+					fi
 				else
 					mexit 2
 				fi
