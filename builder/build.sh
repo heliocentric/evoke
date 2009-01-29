@@ -385,7 +385,8 @@ echo "${ISO_SHA256}" >>CHECKSUM.SHA256
 echo "${ISO_MD5}" >>CHECKSUM.MD5
 
 mkdir -p ${RELEASEDIR}/evoke/misc
-cat "${RELEASEDIR}/evoke/misc/versionlist}" ; echo "${VERSION}/${REVISION}" | sort -r | uniq >"${RELEASEDIR}/evoke/misc/versionlist"
+cat "${RELEASEDIR}/evoke/misc/versionlist}" ; echo "${VERSION}/${REVISION}" | sort -r | uniq >"${TMPDIR}/mirrortest"
+mv "${TMPDIR}/mirrortest" "${RELEASEDIR}/evoke/misc/versionlist"
 
 if [ "${EVOKE_PUSH_MIRROR}" != "" ] ; then
 	cd ${RELEASEDIR}/evoke
@@ -399,7 +400,8 @@ if [ "${EVOKE_PUSH_MIRROR}" != "" ] ; then
 		mounter "${volume}" "${MOUNTPOINT}"
 		mkdir -p "${MOUNTPOINT}/evoke/misc"
 		tar -cf - "${VERSION}/${REVISION}" "misc/ISO-IMAGES/${VERSION}/${REVISION}" "misc/BIN-UPDATES/${VERSION}/${REVISION}" | tar -xvf - -C "${MOUNTPOINT}/evoke/"
-		cat "${MOUNTPOINT}/evoke/misc/versionlist}" ; echo "${VERSION}/${REVISION}" | sort -r | uniq >"${MOUNTPOINT}/evoke/misc/versionlist"
+		cat "${MOUNTPOINT}/evoke/misc/versionlist}" ; echo "${VERSION}/${REVISION}" | sort -r | uniq >"${TMPDIR}/mirrortest"
+		mv "${TMPDIR}/mirrortest" "${MOUNTPOINT}/evoke/misc/versionlist"
 		mounter umount "${MOUNTPOINT}"
 	done
 fi
