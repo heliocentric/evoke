@@ -395,68 +395,70 @@ update_menu() {
 		local DESTDIR="${1}"
 	fi
 
-	if [ -d "${DESTDIR}" ] ; then
-		. $(command -v menu)
-		find_mirror "evoke/misc/versionlist" "${TEMPDIR}/versionlist"
-		if [ -f "${TEMPDIR}/versionlist" ] ; then
-			while [ 1 != 2 ]
-			do
-				unset BRANCH
-				unset RESULT
-				unset REVISIONS
-				unset REVISION
-				BRANCH=$(menu "Branch" "$(cut -d "/" -f 1 ${TEMPDIR}/versionlist | sort -r | uniq | grep -v ^$)" "$(printf "a:Activate\nq:Quit")")
-				if [ "${BRANCH}" != "" ] ; then
-					case "${BRANCH}" in
-						Quit)
-							break
-						;;
-						Activate)
-							activater
-							break
-						;;
-						*)
-							while [ 1 != 2 ]
-							do
-								unset RESULT
-								unset REVISIONS
-								unset REVISION
-	
-								REVISIONS="$(awk -F "/" -v branch="${BRANCH}" '{ if ($1 == branch) { print $2; }; }' ${TEMPDIR}/versionlist | sort -r | grep -v ^$)"
-								REVISION=$(menu "Revision" "${REVISIONS}" "$(printf "a:Activate\nb:Back\nq:Quit")")
-								if [ "${REVISION}" != "" ] ; then
-									case "${REVISION}" in
-										Quit)
-											break 2
-										;;
-										Activate)
-											activater
-											break
-										;;
-										Back)
-											break
-										;;
-										*)
-											VERSION="${BRANCH}/${REVISION}"
-											real_update "${DESTDIR}" "${VERSION}"
-										;;
-									esac
-								else
-									echo "Revision not found! - Press any key to continue" 
-									read RESULT
-								fi
-							done
-						;;
-					esac
-				else
-					echo "Branch not found! - Press any key to continue" 
-					read RESULT
-				fi
-			done
-		fi
-	else
+	if [ ! -d "${DESTDIR}" ] ; then
 		echo "No destination directory specified!"
 		GLOBAL_ERRORCODE="65"
+		return
+	fi
+
+	. $(command -v menu)
+	find_mirror "evoke/misc/versionlist" "${TEMPDIR}/versionlist"
+
+	if [ -f "${TEMPDIR}/versionlist" ] ; then
+		while [ 1 != 2 ]
+		do
+			unset BRANCH
+			unset RESULT
+			unset REVISIONS
+			unset REVISION
+			BRANCH=$(menu "Branch" "$(cut -d "/" -f 1 ${TEMPDIR}/versionlist | sort -r | uniq | grep -v ^$)" "$(printf "a:Activate\nq:Quit")")
+			if [ "${BRANCH}" != "" ] ; then
+				case "${BRANCH}" in
+					Quit)
+						break
+					;;
+					Activate)
+						activater
+						break
+					;;
+					*)
+						while [ 1 != 2 ]
+						do
+							unset RESULT
+							unset REVISIONS
+							unset REVISION
+
+							REVISIONS="$(awk -F "/" -v branch="${BRANCH}" '{ if ($1 == branch) { print $2; }; }' ${TEMPDIR}/versionlist | sort -r | grep -v ^$)"
+							REVISION=$(menu "Revision" "${REVISIONS}" "$(printf "a:Activate\nb:Back\nq:Quit")")
+							if [ "${REVISION}" != "" ] ; then
+								case "${REVISION}" in
+									Quit)
+										break 2
+									;;
+									Activate)
+										activater
+										break
+									;;
+									Back)
+										break
+									;;
+									*)
+										VERSION="${BRANCH}/${REVISION}"
+										real_update "${DESTDIR}" "${VERSION}"
+									;;
+								esac
+							else
+								echo "Revision not found! - Press any key to continue" 
+								read RESULT
+							fi
+						done
+					;;
+				esac
+			else
+				echo "Branch not found! - Press any key to continue" 
+				read RESULT
+			fi
+		done
 	fi
 }
 
