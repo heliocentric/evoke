@@ -48,6 +48,7 @@ fi
 if [ ! -d "${TMPDIR}" ] ; then
 	TMPDIR="/tmp"
 fi
+GLOBAL_ERRORCODE="0"
 
 apply_patch() {
 	PATCHFILE="${1}"
@@ -386,56 +387,65 @@ getfile() {
 }
 
 update_menu() {
-	. $(command -v menu)
-	find_mirror "evoke/misc/versionlist" "${TEMPDIR}/versionlist"
-	if [ -f "${TEMPDIR}/versionlist" ] ; then
-		while [ 1 != 2 ]
-		do
-			unset BRANCH
-			unset RESULT
-			unset REVISIONS
-			unset REVISION
-			clear
-			BRANCH=$(menu "Branch" "$(cut -d "/" -f 1 ${TEMPDIR}/versionlist | sort -r | uniq | grep -v ^$ ; echo Quit)")
-			if [ "${BRANCH}" != "" ] ; then
-				case "${BRANCH}" in
-					Quit)
-						break
-					;;
-					*)
-						while [ 1 != 2 ]
-						do
-							unset RESULT
-							unset REVISIONS
-							unset REVISION
-							clear
+	if [ "${1}" != "" ] ; then
+		local DESTDIR="${1}"
+	fi
+
+	if [ -d "${DESTDIR}" ] ; then
+		. $(command -v menu)
+		find_mirror "evoke/misc/versionlist" "${TEMPDIR}/versionlist"
+		if [ -f "${TEMPDIR}/versionlist" ] ; then
+			while [ 1 != 2 ]
+			do
+				unset BRANCH
+				unset RESULT
+				unset REVISIONS
+				unset REVISION
+				clear
+				BRANCH=$(menu "Branch" "$(cut -d "/" -f 1 ${TEMPDIR}/versionlist | sort -r | uniq | grep -v ^$)" "q:Quit")
+				if [ "${BRANCH}" != "" ] ; then
+					case "${BRANCH}" in
+						Quit)
+							break
+						;;
+						*)
+							while [ 1 != 2 ]
+							do
+								unset RESULT
+								unset REVISIONS
+								unset REVISION
+								clear
 	
-							REVISIONS="$(awk -F "/" -v branch="${BRANCH}" '{ if ($1 == branch) { print $2; }; }' ${TEMPDIR}/versionlist | sort -r | grep -v ^$ ; echo "Back" ; echo "Quit")"
-							REVISION=$(menu "Revision" "${REVISIONS}")
-							if [ "${REVISION}" != "" ] ; then
-								case "${REVISION}" in
-									Quit)
-										break 2
-									;;
-									Back)
-										break
-									;;
-									*)
-										VERSION="${BRANCH}/${REVISION}"
-									;;
-								esac
-							else
-								echo "Revision not found! - Press any key to continue" 
-								read RESULT
-							fi
-						done
-					;;
-				esac
-			else
-				echo "Branch not found! - Press any key to continue" 
-				read RESULT
-			fi
-		done
+								REVISIONS="$(awk -F "/" -v branch="${BRANCH}" '{ if ($1 == branch) { print $2; }; }' ${TEMPDIR}/versionlist | sort -r | grep -v ^$)"
+								REVISION=$(menu "Revision" "${REVISIONS}" "$(printf "b:Back\nq:Quit")")
+								if [ "${REVISION}" != "" ] ; then
+									case "${REVISION}" in
+										Quit)
+											break 2
+										;;
+										Back)
+											break
+										;;
+										*)
+											VERSION="${BRANCH}/${REVISION}"
+										;;
+									esac
+								else
+									echo "Revision not found! - Press any key to continue" 
+									read RESULT
+								fi
+							done
+						;;
+					esac
+				else
+					echo "Branch not found! - Press any key to continue" 
+					read RESULT
+				fi
+			done
+		fi
+	else
+		echo "No destination directory specified!"
+		GLOBAL_ERRORCODE="65"
 	fi
 }
 
@@ -486,7 +496,7 @@ update() {
 
 	case "${1}" in
 		[mM][eE][nN][uU])
-			update_menu
+			update_menu "${2}"
 		;;
 		[iI][nN][sS][tT][aA][lL][lL])
 			if [ "${3}" != "" ] ; then
@@ -495,6 +505,7 @@ update() {
 		;;
 	esac
 	rm -r ${SCRATCHDIR}
+	exit "${GLOBAL_ERRORCODE}"
 }
 
 update $@
