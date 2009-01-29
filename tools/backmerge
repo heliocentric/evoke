@@ -29,7 +29,11 @@
 svn up 2>&1 >/dev/null
 
 END="$(svnversion | sed s_M__g)"
-BEGIN="$(svn log -l 1 --xml | awk '/<logentry/, />/' | grep revision | cut -d \" -f 2)"
+if [ "${1}" = "" ] ; then
+	BEGIN="$(svn log -l 1 --xml | awk '/<logentry/, />/' | grep revision | cut -d \" -f 2)"
+else
+	BEGIN="${1}"
+fi
 ORIGPATH="$(pwd)"
 MAINPATH="$(cd ../../../../ && pwd)"
 NUMBER="$((${END} - ${BEGIN}))"
