@@ -78,15 +78,15 @@ freebsd_disk_list() {
 			}
 			if ($11 == "!12f31621-10a0-4a3c-a0e8-9406c2e485f0") {
 				print "boot-ufs:"$3;
-				print "ufs:"$3;
 			}
 		}
 		if ($2 == "BSD") {
 			if ($11 == "7") {
 				if ($3 ~ /a$/) { 
 					print "boot-ufs:"$3;
+				} else {
+					print "ufs:"$3;
 				}
-				print "ufs:"$3;
 	
 			}
 			if ($11 == "8") {
@@ -117,11 +117,9 @@ freebsd_disk_list() {
 		else if ($2 == "MBR") {
 			if ($11 == "4") {
 				print "boot-msdosfs:"$3;
-				print "msdosfs:"$3;
 			}
 			else if ($11 == "6") {
 				print "boot-msdosfs:"$3;
-				print "msdosfs:"$3;
 			} 
 			else if ($11 == "130") {
 				print "swap:"$3;
@@ -131,11 +129,9 @@ freebsd_disk_list() {
 			} 
 			else if ($11 == "11") {
 				print "boot-msdosfs:"$3;
-				print "msdosfs:"$3;
 			} 
 			else if ($11 == "14") {
 				print "boot-msdosfs:"$3;
-				print "msdosfs:"$3;
 			} 
 			else if ($11 == "7") {
 				print "ntfs:"$3;
