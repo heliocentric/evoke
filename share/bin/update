@@ -421,6 +421,7 @@ update_menu() {
 										break
 									;;
 									*)
+										VERSION="${BRANCH}/${REVISION}"
 									;;
 								esac
 							else
