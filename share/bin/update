@@ -386,6 +386,10 @@ getfile() {
 	phttpget "${SERVER}" "${FILESPEC}/${1}" 2>${DEVICES}/null
 }
 
+activater() {
+	echo "Does not exist yet"
+}
+
 update_menu() {
 	if [ "${1}" != "" ] ; then
 		local DESTDIR="${1}"
@@ -401,11 +405,14 @@ update_menu() {
 				unset RESULT
 				unset REVISIONS
 				unset REVISION
-				clear
-				BRANCH=$(menu "Branch" "$(cut -d "/" -f 1 ${TEMPDIR}/versionlist | sort -r | uniq | grep -v ^$)" "q:Quit")
+				BRANCH=$(menu "Branch" "$(cut -d "/" -f 1 ${TEMPDIR}/versionlist | sort -r | uniq | grep -v ^$)" "$(printf "a:Activate\nq:Quit")")
 				if [ "${BRANCH}" != "" ] ; then
 					case "${BRANCH}" in
 						Quit)
+							break
+						;;
+						Activate)
+							activater
 							break
 						;;
 						*)
@@ -414,20 +421,24 @@ update_menu() {
 								unset RESULT
 								unset REVISIONS
 								unset REVISION
-								clear
 	
 								REVISIONS="$(awk -F "/" -v branch="${BRANCH}" '{ if ($1 == branch) { print $2; }; }' ${TEMPDIR}/versionlist | sort -r | grep -v ^$)"
-								REVISION=$(menu "Revision" "${REVISIONS}" "$(printf "b:Back\nq:Quit")")
+								REVISION=$(menu "Revision" "${REVISIONS}" "$(printf "a:Activate\nb:Back\nq:Quit")")
 								if [ "${REVISION}" != "" ] ; then
 									case "${REVISION}" in
 										Quit)
 											break 2
+										;;
+										Activate)
+											activater
+											break
 										;;
 										Back)
 											break
 										;;
 										*)
 											VERSION="${BRANCH}/${REVISION}"
+											real_update "${DESTDIR}" "${VERSION}"
 										;;
 									esac
 								else
