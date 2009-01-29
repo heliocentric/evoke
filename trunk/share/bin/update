@@ -384,6 +384,7 @@ vecho() {
 getfile() {
 	phttpget "${SERVER}" "${FILESPEC}/${1}" 2>${DEVICES}/null
 }
+
 update_menu() {
 	. $(command -v menu)
 	find_mirror "evoke/misc/versionlist" "${TEMPDIR}/versionlist"
@@ -391,15 +392,52 @@ update_menu() {
 		while [ 1 != 2 ]
 		do
 			unset BRANCH
+			unset RESULT
 			unset REVISIONS
 			unset REVISION
 			clear
-			BRANCH=$(menu "Branch" "$(cut -d "/" -f 1 ${TEMPDIR}/versionlist | sort -r | uniq | grep -v ^$)")
-			REVISIONS="$(awk -F "/" -v branch="${BRANCH}" '{ if ($1 == branch) { print $2; }; }' ${TEMPDIR}/versionlist | sort -r | grep -v ^$)"
-			BRANCH=$(menu "Revision" "${REVISIONS}")
+			BRANCH=$(menu "Branch" "$(cut -d "/" -f 1 ${TEMPDIR}/versionlist | sort -r | uniq | grep -v ^$ ; echo Quit)")
+			if [ "${BRANCH}" != "" ] ; then
+				case "${BRANCH}" in
+					Quit)
+						break
+					;;
+					*)
+						while [ 1 != 2 ]
+						do
+							unset RESULT
+							unset REVISIONS
+							unset REVISION
+							clear
+	
+							REVISIONS="$(awk -F "/" -v branch="${BRANCH}" '{ if ($1 == branch) { print $2; }; }' ${TEMPDIR}/versionlist | sort -r | grep -v ^$ ; echo "Back" ; echo "Quit")"
+							REVISION=$(menu "Revision" "${REVISIONS}")
+							if [ "${REVISION}" != "" ] ; then
+								case "${REVISION}" in
+									Quit)
+										break 2
+									;;
+									Back)
+										break
+									;;
+									*)
+									;;
+								esac
+							else
+								echo "Revision not found! - Press any key to continue" 
+								read RESULT
+							fi
+						done
+					;;
+				esac
+			else
+				echo "Branch not found! - Press any key to continue" 
+				read RESULT
+			fi
 		done
 	fi
 }
+
 update() {
 	SCRATCHDIR="${TMPDIR}/update/$(dd if=/dev/random bs=4m count=1 2>${DEVICES}/null | sha256 -q)"
 	mkdir -p "${SCRATCHDIR}"
