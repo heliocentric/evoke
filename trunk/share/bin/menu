@@ -55,6 +55,6 @@ menu () {
 
 case "${0}" in
 	*menu)
-		menu $@
+		menu "$@"
 	;;
 esac
