@@ -275,7 +275,7 @@ doc() {
 			while [ "${BREAK}" != "yes" ]
 			do
 				clear
-				CHOICE=$(menu "Results" "getlist ${DOC_DOCTYPE} ; echo Quit")
+				CHOICE=$(menu "Results" "$(getlist ${DOC_DOCTYPE} ; echo Quit)")
 				case "${CHOICE}" in
 					[qQ][uU][iI][tT])
 						BREAK="yes"

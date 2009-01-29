@@ -384,7 +384,22 @@ vecho() {
 getfile() {
 	phttpget "${SERVER}" "${FILESPEC}/${1}" 2>${DEVICES}/null
 }
-
+update_menu() {
+	. $(command -v menu)
+	find_mirror "evoke/misc/versionlist" "${TEMPDIR}/versionlist"
+	if [ -f "${TEMPDIR}/versionlist" ] ; then
+		while [ 1 != 2 ]
+		do
+			unset BRANCH
+			unset REVISIONS
+			unset REVISION
+			clear
+			BRANCH=$(menu "Branch" "$(cut -d "/" -f 1 ${TEMPDIR}/versionlist | sort -r | uniq | grep -v ^$)")
+			REVISIONS="$(awk -F "/" -v branch="${BRANCH}" '{ if ($1 == branch) { print $2; }; }' ${TEMPDIR}/versionlist | sort -r | grep -v ^$)"
+			BRANCH=$(menu "Revision" "${REVISIONS}")
+		done
+	fi
+}
 update() {
 	SCRATCHDIR="${TMPDIR}/update/$(dd if=/dev/random bs=4m count=1 2>${DEVICES}/null | sha256 -q)"
 	mkdir -p "${SCRATCHDIR}"
@@ -431,7 +446,10 @@ update() {
 	fi
 
 	case "${1}" in
-		install)
+		[mM][eE][nN][uU])
+			update_menu
+		;;
+		[iI][nN][sS][tT][aA][lL][lL])
 			if [ "${3}" != "" ] ; then
 				real_update "${2}" "${3}" 2>&1
 			fi
