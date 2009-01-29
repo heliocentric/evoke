@@ -29,10 +29,10 @@
 menu () {
 	echo "${1}:" 1>&2
 	echo "" 1>&2
-	eval $2 | awk '{ print " " NR ") " $0 }' 1>&2
+	echo "$2" | awk '{ print " " NR ") " $0 }' 1>&2
 	echo "" 1>&2
 	read -p "Choice: " CHOICE
-	eval $2 | awk -v CHOICE=${CHOICE} '{ if (NR == CHOICE) { print $0 } }'
+	echo "$2" | awk -v CHOICE=${CHOICE} '{ if (NR == CHOICE) { print $0 } }'
 }
 
 case "${0}" in

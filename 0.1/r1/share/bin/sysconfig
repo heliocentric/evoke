@@ -320,7 +320,7 @@ sysconfig () {
 		[mM][eE][nN][uU])
 			CONFIGLIST=$(mounter list sysconfig)
 			. $(command -v menu)
-			CHOICE=$(menu "Available Configurations" "sysconfig list ; echo None")
+			CHOICE=$(menu "Available Configurations" "$(sysconfig list ; echo None)")
 			if [ "$(is_uuid ${CHOICE})" = "yes" ] ; then
 				UUID="$(echo "${CHOICE}" | awk '{ print $1 }')"
 				DESCRIPTION="$(echo "${CHOICE}" | cut -d "-" -f 6 | cut -b 2-4096)"
