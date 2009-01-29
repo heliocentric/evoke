@@ -379,6 +379,12 @@ vecho() {
 	fi
 }
 
+# Wrapper, as our main mirror doesn't support wdfs, so we have to fall back to phttpget
+
+getfile() {
+
+}
+
 update() {
 	SCRATCHDIR="${TMPDIR}/update/$(dd if=/dev/random bs=4m count=1 2>${DEVICES}/null | sha256 -q)"
 	mkdir -p "${SCRATCHDIR}"
