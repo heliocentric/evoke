@@ -27,12 +27,30 @@
 # $Id$
 
 menu () {
+	if [ "${1}" = "" ] ; then
+		echo "Error: Title needs to be specified"
+		return 65
+	fi
+	if [ "${2}" = "" ] ; then
+		echo "Error: List needs elements"
+		return 65
+	fi
 	echo "${1}:" 1>&2
 	echo "" 1>&2
 	echo "$2" | awk '{ print " " NR ") " $0 }' 1>&2
 	echo "" 1>&2
+	if [ "${3}" != "" ] ; then
+		echo "${3}" |  awk -F ":" '{ print " " $1 ") " $2 }' 1>&2
+	fi
 	read -p "Choice: " CHOICE
-	echo "$2" | awk -v CHOICE=${CHOICE} '{ if (NR == CHOICE) { print $0 } }'
+	case "${CHOICE}" in
+		[a-zA-Z])
+			echo "$3" | awk -v CHOICE=${CHOICE} -F ":" '{ if ($1 == CHOICE) { print $2 } }'
+		;;
+		*)
+			echo "$2" | awk -v CHOICE=${CHOICE} '{ if (NR == CHOICE) { print $0 } }'
+		;;
+	esac
 }
 
 case "${0}" in
