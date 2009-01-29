@@ -102,7 +102,7 @@ create () {
 
 	mkdir -p "${EVOKE_SYSCFG}/${UUID}"
 
-	ENCTYPE=$(menu "Encryption Method" "mounter list fs | grep encfs; mounter list fs | grep cryptofs; echo none")
+	ENCTYPE=$(menu "Encryption Method" "$(mounter list fs | grep encfs; mounter list fs | grep cryptofs; echo none)")
 	echo ${ENCTYPE}
 	case "${ENCTYPE}" in
 		encfs)
@@ -170,7 +170,7 @@ userconfig () {
 
 		[mM][eE][nN][uU])
 			. $(command -v menu)
-			CHOICE=$(menu "Available Users" "userconfig list")
+			CHOICE=$(menu "Available Users" "$(userconfig list)")
 			if [ "$(is_uuid ${CHOICE})" = "yes" ] ; then
 				UUID="$(echo "${CHOICE}" | awk '{ print $1 }')"
 				echo ${UUID}
