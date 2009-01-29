@@ -228,7 +228,7 @@ real_update() {
 						if [ "${FILEHASH}" != "" ] ; then
 							for filehash in ${FILEHASH}
 							do
-								echo "${FILESPEC}/evoke/misc/BIN-UPDATES/${VERSION}/${HASH}/${filehash}" 
+								echo "evoke/misc/BIN-UPDATES/${VERSION}/${HASH}/${filehash}" 
 							done
 						fi
 					done)"
@@ -238,7 +238,7 @@ real_update() {
 						do
 							realhash="$(basename ${hash})"
 							vecho "\t\tFetching ${realhash} {\n"
-							phttpget "${SERVER}" ${hash} 2>${DEVICES}/null
+							getfile ${hash} 2>${DEVICES}/null
 							if [ -f "${realhash}" ] ; then
 								vecho "\t\t\tFile exists: ${realhash}\n"
 								FILE="$(grep -Ha ^F: ${DESTDIR}/evoke/*/*/trackfile | grep ${realhash} | awk -F : '{ FILENAME=$3; "dirname " $1 | getline; print $0 "/" FILENAME; }' | head -n 1)"
@@ -321,7 +321,7 @@ fetch_full_file() {
 
 	cd "${PDOWNDIR}"
 	vecho "\t\tFetching ${FILENAME} {\n" 1>&2
-	phttpget "${SERVER}" "${FILESPEC}/evoke/${VERSION}/${FILENAME}" 2>${DEVICES}/null
+	getfile "evoke/${VERSION}/${FILENAME}" 2>${DEVICES}/null
 
 	cp "${BASENAME}" "${PDESTDIR}/"
 	cd "${STAGEDIR}"
@@ -382,7 +382,7 @@ vecho() {
 # Wrapper, as our main mirror doesn't support wdfs, so we have to fall back to phttpget
 
 getfile() {
-
+	phttpget "${SERVER}" "${FILESPEC}/${1}" 2>${DEVICES}/null
 }
 
 update() {
