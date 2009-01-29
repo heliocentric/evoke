@@ -250,17 +250,17 @@ if [ "${MODE}" = "init" ] ; then
 
 	for swap in $(mounter list swap)
 	do
-#		mounter swap:${swap} enc
+		mounter swap:${swap} enc
 	done
 
 	for entropy in $(mounter list entropy)
 	do
-#		mounter entropy:${entropy}
+		mounter entropy:${entropy}
 	done
 
 	DUMPDEV=$(mounter list dump | awk '{ print $1 }')
 
-#	mounter dump:${DUMPDEV}
+	mounter dump:${DUMPDEV}
 
 	mecho ""
 

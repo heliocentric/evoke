@@ -64,7 +64,7 @@ if [ -d "${PATCHDIR}" ] ; then
 	rm -r "${PATCHDIR}"
 fi
 
-BINUPDIR="${RELEASEDIR}/evoke/BIN-UPDATES"
+BINUPDIR="${RELEASEDIR}/evoke/misc/BIN-UPDATES"
 mkdir -p "${BINUPDIR}"
 DECOMDIR="${STAGEDIR}/decom"
 mkdir -p "${DECOMDIR}"
