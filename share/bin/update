@@ -506,13 +506,16 @@ update() {
 	fi
 
 	case "${1}" in
-		[mM][eE][nN][uU])
-			update_menu "${2}"
-		;;
 		[iI][nN][sS][tT][aA][lL][lL])
 			if [ "${3}" != "" ] ; then
 				real_update "${2}" "${3}" 2>&1
 			fi
+		;;
+		[mM][eE][nN][uU])
+			update_menu "${2}"
+		;;
+		*)
+			update_menu "${2}"
 		;;
 	esac
 	rm -r ${SCRATCHDIR}
