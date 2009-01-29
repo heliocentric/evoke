@@ -186,6 +186,12 @@ mounter () {
 				M_PROTO="$(echo "${M_PROTO}" | cut -d + -f 1)"
 			fi
 
+			# If it's in the form boot-proto, set M_BOOTABLE to "yes", then M_PROTO to the 'real' protocol.
+			
+			if [ "$( echo ${M_PROTO} | grep -)" != "" ] ; then
+				M_BOOTABLE="yes"
+				M_PROTO="$(echo "${M_PROTO}" | cut -d "-" -f 2)"
+			fi
 
 			# We handle four specifications:
 			# 	proto://URI

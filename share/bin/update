@@ -396,9 +396,23 @@ update_menu() {
 	fi
 
 	if [ ! -d "${DESTDIR}" ] ; then
-		echo "No destination directory specified!"
-		GLOBAL_ERRORCODE="65"
-		return
+		CHOICE=$(menu "Boot filesystem" "$(mounter list boot-ufs)" "q:Quit")
+		if [ "${CHOICE}" != "" ] ; then
+			case "${CHOICE}" in
+				Quit)
+					echo "No destination directory specified!"
+					GLOBAL_ERRORCODE="65"
+					return
+
+				;;
+				*)
+				;;
+			esac
+		else
+			echo "No destination directory specified!"
+			GLOBAL_ERRORCODE="65"
+			return
+		fi
 	fi
 
 	. $(command -v menu)
