@@ -48,6 +48,12 @@ fi
 if [ ! -d "${TMPDIR}" ] ; then
 	TMPDIR="/tmp"
 fi
+
+if [ ! -d "${EVOKE_MNTDIR}" ] ; then
+	EVOKE_MNTDIR="/media"
+	mkdir -p "${EVOKE_MNTDIR}"
+fi
+
 GLOBAL_ERRORCODE="0"
 
 apply_patch() {
@@ -135,7 +141,7 @@ real_update() {
 		echo "The update utility will attempt to keep the total size of files downloaded to a"
 		echo "minimum, where possible."
 		echo ""
-		echo "In the worst case, update will download ${BYTECOUNT} bytes (~ ${MB}MB)"
+		echo "In the worst case, update will download ${BYTECOUNT} bytes (~ ${MB}M)"
 		read -p "Continue? [Y/n]: " PROMPT
 	else
 		PROMPT="y"
@@ -396,6 +402,9 @@ update_menu() {
 	fi
 
 	if [ ! -d "${DESTDIR}" ] ; then
+		local DESTDIR="${EVOKE_MNTDIR}/$(dd if=/dev/random bs=4m ocunt=1 2>/dev/null | sha256 -q)"
+		mkdir -p "${DESTDIR}"
+
 		CHOICE=$(menu "Boot filesystem" "$(mounter list boot-ufs)" "q:Quit")
 		if [ "${CHOICE}" != "" ] ; then
 			case "${CHOICE}" in
@@ -406,6 +415,7 @@ update_menu() {
 
 				;;
 				*)
+					mounter "boot-ufs:${CHOICE}" "${DESTDIR}"
 				;;
 			esac
 		else
