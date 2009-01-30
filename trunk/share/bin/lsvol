@@ -149,7 +149,34 @@ list_other_urls() {
 list_all_disks() {
 	case "${OS}" in
 		*)
-			freebsd_disk_list
+			freebsd_disk_list | awk -F ":" '{
+					PROTO=$1;
+					DEVICE=$2;
+					if (PROTO ~ /ufs/) {
+						FS=" "
+						"dumpfs -m " DEVICE " | grep -v ^#" | getline;
+						for (operator = 1; operator <= NF; operator++) {
+							if ($operator == "-L") {
+								operand = ++operator;
+								ufslabel = "ufs/" $operand;
+								break;
+							}
+						}	
+
+						FS=":";
+						close("dumpfs -m " DEVICE);
+
+						if (ufslabel ~ /^$/) {
+							print PROTO ":" DEVICE;
+						} else {
+							print PROTO ":" ufslabel;
+						}
+						ufslabel = "";
+					} else {
+						print $0;
+					} 
+				}' 
+
 		;;
 	esac
 }
