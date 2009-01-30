@@ -311,7 +311,7 @@ mount_proto () {
 			if [ "${M_STYPE}" = "GEOM" ] ; then
 				if [ "${M_FILE}" != "" ] ; then
 					if [ "${@}" = "enc" ] ; then
-						geom eli onetime -d "${DEVICES}/${M_FILE}" && swapon ${DEVICES}/${M_FILE}.eli
+						geli onetime -d "${DEVICES}/${M_FILE}" && swapon ${DEVICES}/${M_FILE}.eli
 					else
 						swapon ${DEVICES}/${M_FILE}
 					fi
