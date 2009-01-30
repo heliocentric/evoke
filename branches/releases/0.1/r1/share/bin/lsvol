@@ -47,13 +47,19 @@ freebsd_disk_list() {
 				}
 			}
 		}
-		if ($2 == "PART") {
+		if ($2 == "PART" || $2 == "GPT") {
 			# FreeBSD defined values.
 	
 			if ($11 == "freebsd-ufs") {
 				print "ufs:"$3;
 			}
 			if ($11 == "freebsd-swap") {
+				print "swap:"$3;
+			}
+			if ($11 == "516e7cb6-6ecf-11d6-8ff8-00022d09712b") {
+				print "ufs:"$3;
+			}
+			if ($11 == "516e7cb5-6ecf-11d6-8ff8-00022d09712b") {
 				print "swap:"$3;
 			}
 	
@@ -78,15 +84,15 @@ freebsd_disk_list() {
 			}
 			if ($11 == "!12f31621-10a0-4a3c-a0e8-9406c2e485f0") {
 				print "boot-ufs:"$3;
-				print "ufs:"$3;
 			}
 		}
 		if ($2 == "BSD") {
 			if ($11 == "7") {
 				if ($3 ~ /a$/) { 
 					print "boot-ufs:"$3;
+				} else {
+					print "ufs:"$3;
 				}
-				print "ufs:"$3;
 	
 			}
 			if ($11 == "8") {
@@ -117,11 +123,9 @@ freebsd_disk_list() {
 		else if ($2 == "MBR") {
 			if ($11 == "4") {
 				print "boot-msdosfs:"$3;
-				print "msdosfs:"$3;
 			}
 			else if ($11 == "6") {
 				print "boot-msdosfs:"$3;
-				print "msdosfs:"$3;
 			} 
 			else if ($11 == "130") {
 				print "swap:"$3;
@@ -131,11 +135,9 @@ freebsd_disk_list() {
 			} 
 			else if ($11 == "11") {
 				print "boot-msdosfs:"$3;
-				print "msdosfs:"$3;
 			} 
 			else if ($11 == "14") {
 				print "boot-msdosfs:"$3;
-				print "msdosfs:"$3;
 			} 
 			else if ($11 == "7") {
 				print "ntfs:"$3;
@@ -153,7 +155,34 @@ list_other_urls() {
 list_all_disks() {
 	case "${OS}" in
 		*)
-			freebsd_disk_list
+			freebsd_disk_list | awk -F ":" '{
+					PROTO=$1;
+					DEVICE=$2;
+					if (PROTO ~ /ufs/) {
+						FS=" "
+						"dumpfs -m " DEVICE " | grep -v ^#" | getline;
+						for (operator = 1; operator <= NF; operator++) {
+							if ($operator == "-L") {
+								operand = ++operator;
+								ufslabel = "ufs/" $operand;
+								break;
+							}
+						}	
+
+						FS=":";
+						close("dumpfs -m " DEVICE);
+
+						if (ufslabel ~ /^$/) {
+							print PROTO ":" DEVICE;
+						} else {
+							print PROTO ":" ufslabel;
+						}
+						ufslabel = "";
+					} else {
+						print $0;
+					} 
+				}' 
+
 		;;
 	esac
 }

@@ -186,6 +186,17 @@ mounter () {
 				M_PROTO="$(echo "${M_PROTO}" | cut -d + -f 1)"
 			fi
 
+			# If it's in the form tag-proto, set the environment variable to yes, then M_PROTO to the 'real' protocol.
+			
+			if [ "$( echo ${M_PROTO} | grep -)" != "" ] ; then
+				M_PROTO="$(echo "${M_PROTO}" | cut -d "-" -f 2)"
+				M_TAG="$(echo "${M_PROTO}" | cut -d "-" -f 1)"
+				case "${M_TAG}" in	
+					[bB][oO][oO][tT])
+						M_BOOTABLE="yes"
+					;;
+				esac
+			fi
 
 			# We handle four specifications:
 			# 	proto://URI
@@ -300,7 +311,7 @@ mount_proto () {
 			if [ "${M_STYPE}" = "GEOM" ] ; then
 				if [ "${M_FILE}" != "" ] ; then
 					if [ "${@}" = "enc" ] ; then
-						geom eli onetime -d "${DEVICES}/${M_FILE}" && swapon ${DEVICES}/${M_FILE}.eli
+						geli onetime -d "${DEVICES}/${M_FILE}" && swapon ${DEVICES}/${M_FILE}.eli
 					else
 						swapon ${DEVICES}/${M_FILE}
 					fi
