@@ -12,9 +12,9 @@ priv () {
 	fi
 }
 
-FORFS="
+export FORFS="
 "
-OLDIFS=" 	
+export OLDFS=" 	
 "
 
 
@@ -38,8 +38,8 @@ do
 	export TARGET=$(echo ${target} | cut -d ":" -f 3)
 	export TARGET_ARCH="${TARGET}"
 
-	# Release (eg, 6.3-RELEASE)
-	export RELEASE=$(echo ${target} | cut -d ":" -f 4)-RELEASE
+	# Release (eg, 6.3)
+	export RELEASE=$(echo ${target} | cut -d ":" -f 4)
 
 	# Kernel ABI (eg, 7 for 7.0-RELEASE or 7.1-RELEASE)
 	export ABI=$(echo ${target} | cut -d ":" -f 2)
