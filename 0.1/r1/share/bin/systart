@@ -247,20 +247,27 @@ fi
 if [ "${MODE}" = "init" ] ; then
 
 	mecho -n "Adding swap, dump,  and entropy"
+	SWAPLIST="$(mounter list swap)"
 
-	for swap in $(mounter list swap)
-	do
-		mounter swap:${swap} enc
-	done
+	if [ "${SWAPLIST}" != "" ] ; then
+		for swap in ${SWAPLIST}
+		do
+			mounter swap:${swap} enc
+		done
+	fi
 
-	for entropy in $(mounter list entropy)
-	do
-		mounter entropy:${entropy}
-	done
+	ENTLIST="$(mounter list entropy)"
+	if [ "${ENTLIST}" != "" ] ; then
+		for entropy in ${ENTLIST}
+		do
+			mounter entropy:${entropy}
+		done
+	fi
 
-	DUMPDEV=$(mounter list dump | awk '{ print $1 }')
-
-	mounter dump:${DUMPDEV}
+	DUMPDEV=$(mounter list dump)
+	if [ "${DUMPDEV}" != "" ] ; then
+		mounter dump:${DUMPDEV}
+	fi
 
 	mecho ""
 

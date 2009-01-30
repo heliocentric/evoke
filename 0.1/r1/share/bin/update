@@ -49,6 +49,13 @@ if [ ! -d "${TMPDIR}" ] ; then
 	TMPDIR="/tmp"
 fi
 
+if [ ! -d "${EVOKE_MNTDIR}" ] ; then
+	EVOKE_MNTDIR="/media"
+	mkdir -p "${EVOKE_MNTDIR}"
+fi
+
+GLOBAL_ERRORCODE="0"
+
 apply_patch() {
 	PATCHFILE="${1}"
 	SOURCEFILE="${2}"
@@ -134,7 +141,7 @@ real_update() {
 		echo "The update utility will attempt to keep the total size of files downloaded to a"
 		echo "minimum, where possible."
 		echo ""
-		echo "In the worst case, update will download ${BYTECOUNT} bytes (~ ${MB}MB)"
+		echo "In the worst case, update will download ${BYTECOUNT} bytes (~ ${MB}M)"
 		read -p "Continue? [Y/n]: " PROMPT
 	else
 		PROMPT="y"
@@ -384,20 +391,101 @@ vecho() {
 getfile() {
 	phttpget "${SERVER}" "${FILESPEC}/${1}" 2>${DEVICES}/null
 }
+
+activater() {
+	echo "Does not exist yet"
+}
+
 update_menu() {
+	if [ "${1}" != "" ] ; then
+		local DESTDIR="${1}"
+	fi
+
+	if [ ! -d "${DESTDIR}" ] ; then
+		local DESTDIR="${EVOKE_MNTDIR}/$(dd if=/dev/random bs=4m ocunt=1 2>/dev/null | sha256 -q)"
+		mkdir -p "${DESTDIR}"
+
+		local CHOICE=$(menu "Boot filesystem" "$(mounter list boot-ufs)" "q:Quit")
+		if [ "${CHOICE}" != "" ] ; then
+			case "${CHOICE}" in
+				Quit)
+					echo "No destination directory specified!"
+					GLOBAL_ERRORCODE="65"
+					return
+
+				;;
+				*)
+					mounter "boot-ufs:${CHOICE}" "${DESTDIR}"
+				;;
+			esac
+		else
+			echo "No destination directory specified!"
+			GLOBAL_ERRORCODE="65"
+			return
+		fi
+	fi
+
 	. $(command -v menu)
 	find_mirror "evoke/misc/versionlist" "${TEMPDIR}/versionlist"
+
 	if [ -f "${TEMPDIR}/versionlist" ] ; then
 		while [ 1 != 2 ]
 		do
 			unset BRANCH
+			unset RESULT
 			unset REVISIONS
 			unset REVISION
-			clear
-			BRANCH=$(menu "Branch" "$(cut -d "/" -f 1 ${TEMPDIR}/versionlist | sort -r | uniq | grep -v ^$)")
-			REVISIONS="$(awk -F "/" -v branch="${BRANCH}" '{ if ($1 == branch) { print $2; }; }' ${TEMPDIR}/versionlist | sort -r | grep -v ^$)"
-			BRANCH=$(menu "Revision" "${REVISIONS}")
+			BRANCH=$(menu "Branch" "$(cut -d "/" -f 1 ${TEMPDIR}/versionlist | sort -r | uniq | grep -v ^$)" "$(printf "a:Activate\nq:Quit")")
+			if [ "${BRANCH}" != "" ] ; then
+				case "${BRANCH}" in
+					Quit)
+						break
+					;;
+					Activate)
+						activater
+						break
+					;;
+					*)
+						while [ 1 != 2 ]
+						do
+							unset RESULT
+							unset REVISIONS
+							unset REVISION
+
+							REVISIONS="$(awk -F "/" -v branch="${BRANCH}" '{ if ($1 == branch) { print $2; }; }' ${TEMPDIR}/versionlist | sort -r | grep -v ^$)"
+							REVISION=$(menu "Revision" "${REVISIONS}" "$(printf "a:Activate\nb:Back\nq:Quit")")
+							if [ "${REVISION}" != "" ] ; then
+								case "${REVISION}" in
+									Quit)
+										break 2
+									;;
+									Activate)
+										activater
+										break
+									;;
+									Back)
+										break
+									;;
+									*)
+										VERSION="${BRANCH}/${REVISION}"
+										real_update "${DESTDIR}" "${VERSION}"
+									;;
+								esac
+							else
+								echo "Revision not found! - Press any key to continue" 
+								read RESULT
+							fi
+						done
+					;;
+				esac
+			else
+				echo "Branch not found! - Press any key to continue" 
+				read RESULT
+			fi
 		done
+		if [ "${CHOICE}" != "" ] ; then
+			mounter umount "${DESTDIR}"
+		fi
 	fi
 }
 
@@ -447,16 +535,20 @@ update() {
 	fi
 
 	case "${1}" in
-		[mM][eE][nN][uU])
-			update_menu
-		;;
 		[iI][nN][sS][tT][aA][lL][lL])
 			if [ "${3}" != "" ] ; then
 				real_update "${2}" "${3}" 2>&1
 			fi
 		;;
+		[mM][eE][nN][uU])
+			update_menu "${2}"
+		;;
+		*)
+			update_menu "${2}"
+		;;
 	esac
 	rm -r ${SCRATCHDIR}
+	exit "${GLOBAL_ERRORCODE}"
 }
 
 update $@

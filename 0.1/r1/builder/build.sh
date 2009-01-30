@@ -12,9 +12,9 @@ priv () {
 	fi
 }
 
-FORFS="
+export FORFS="
 "
-OLDIFS=" 	
+export OLDFS=" 	
 "
 
 
@@ -38,8 +38,8 @@ do
 	export TARGET=$(echo ${target} | cut -d ":" -f 3)
 	export TARGET_ARCH="${TARGET}"
 
-	# Release (eg, 6.3-RELEASE)
-	export RELEASE=$(echo ${target} | cut -d ":" -f 4)-RELEASE
+	# Release (eg, 6.3)
+	export RELEASE=$(echo ${target} | cut -d ":" -f 4)
 
 	# Kernel ABI (eg, 7 for 7.0-RELEASE or 7.1-RELEASE)
 	export ABI=$(echo ${target} | cut -d ":" -f 2)
@@ -357,6 +357,7 @@ echo ""
 
 echo -n " * share = Generating Binary Diffs"
 ${BUILDDIR}/create-updates "${VERSION}/${REVISION}" "${BOOTDIR}${BOOTPREFIX}" ${VERSIONLIST} 1>&2
+cd "${RELEASEDIR}" && tar -cf - "evoke/misc/BIN-UPDATES/${VERSION}/${REVISION}" | tar -xvpf - -C "${BOOTDIR}/"
 echo ""
 
 echo -n " * share = Making ISO image"
@@ -385,7 +386,7 @@ echo "${ISO_SHA256}" >>CHECKSUM.SHA256
 echo "${ISO_MD5}" >>CHECKSUM.MD5
 
 mkdir -p ${RELEASEDIR}/evoke/misc
-cat "${RELEASEDIR}/evoke/misc/versionlist}" ; echo "${VERSION}/${REVISION}" | sort -r | uniq >"${TMPDIR}/mirrortest"
+(cat "${RELEASEDIR}/evoke/misc/versionlist" ; echo "${VERSION}/${REVISION}") | sort -r | uniq >"${TMPDIR}/mirrortest"
 mv "${TMPDIR}/mirrortest" "${RELEASEDIR}/evoke/misc/versionlist"
 
 if [ "${EVOKE_PUSH_MIRROR}" != "" ] ; then
@@ -400,7 +401,7 @@ if [ "${EVOKE_PUSH_MIRROR}" != "" ] ; then
 		mounter "${volume}" "${MOUNTPOINT}"
 		mkdir -p "${MOUNTPOINT}/evoke/misc"
 		tar -cf - "${VERSION}/${REVISION}" "misc/ISO-IMAGES/${VERSION}/${REVISION}" "misc/BIN-UPDATES/${VERSION}/${REVISION}" | tar -xvf - -C "${MOUNTPOINT}/evoke/"
-		cat "${MOUNTPOINT}/evoke/misc/versionlist}" ; echo "${VERSION}/${REVISION}" | sort -r | uniq >"${TMPDIR}/mirrortest"
+		( cat "${MOUNTPOINT}/evoke/misc/versionlist" ; echo "${VERSION}/${REVISION}") | sort -r | uniq >"${TMPDIR}/mirrortest"
 		mv "${TMPDIR}/mirrortest" "${MOUNTPOINT}/evoke/misc/versionlist"
 		mounter umount "${MOUNTPOINT}"
 	done
