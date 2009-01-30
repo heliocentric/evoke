@@ -179,7 +179,7 @@ verify() {
 			fi
 
 #			TIMESTAMP="$(date -j -f "%a %b %d %T %Z %Y" "`date`" "+%s")"
-			TRACKDATA="$(verify_loop $@)"
+			TRACKDATA="$(verify_loop "$@")"
 			TRACKDATA="$(printf "I:1.1:${TIMESTAMP}:${SIGNATURE_BYTES}\n${TRACKDATA}\n#")"
 			echo "${TRACKDATA}" | dd bs=512 fillchar=" " conv=sync "of=${SCRATCHDIR}/head" 2>${DEVICES}/null
 			
@@ -223,13 +223,13 @@ verify() {
 				fi
 			fi
 
-			verify_loop $@
+			verify_loop "$@"
 		fi
 	else
-		verify_loop $@
+		verify_loop "$@"
 	fi
 	rm -r "${SCRATCHDIR}"
 	exit "${ERRORCODE}"
 }
 
-verify $@
+verify "$@"
