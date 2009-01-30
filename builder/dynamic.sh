@@ -33,7 +33,7 @@ CROSSTOOLSPATH=${MAKEOBJDIRPREFIX}/${TARGET}${WORKDIR}/usr/src/tmp/usr/bin
 cp ${BUILDDIR}/lazybox.dynamic ${WORKDIR}/usr/src/rescue/rescue/Makefile
 
 # Copy kernel config to the source.
-cp ${BUILDDIR}/kernels/${RELEASE}/${TARGET} ${WORKDIR}/usr/src/sys/${TARGET}/conf/${KERNCONF}
+cp ${BUILDDIR}/targets/FreeBSD/${RELEASE}/${TARGET}/kernconf ${WORKDIR}/usr/src/sys/${TARGET}/conf/${KERNCONF}
 
 # Patch in the binary path into the kernel directly, so that loader.conf doesn't need to.
 echo "options INIT_PATH=${N_BIN}/init:/sbin/init:/stand/sysinstall" >> ${WORKDIR}/usr/src/sys/${TARGET}/conf/${KERNCONF}
@@ -105,7 +105,7 @@ libc_r.so libthr.so
 EOF
 	fi
 	# For ports, uname will return the correct values
-	UNAME_r=${RELEASE} UNAME_m=${TARGET_ARCH} UNAME_p=${TARGET_ARCH} chroot ${DESTDIR} /portbuild.sh 1>&2
+	UNAME_r=${RELEASE}-RELEASE UNAME_m=${TARGET_ARCH} UNAME_p=${TARGET_ARCH} chroot ${DESTDIR} /portbuild.sh 1>&2
 	rm ${DESTDIR}/libexec/ld-elf32.so.1
 	umount ${DESTDIR}/usr/ports/distfiles
 	umount ${DESTDIR}/usr/ports
@@ -217,6 +217,12 @@ cp -r ${DESTDIR}/lib/geom ${FSDIR}${N_LIB}
 # And then, lazybox
 cd ${WORKDIR}/rescue
 tar -cf - * | tar -xf - -C ${FSDIR}${N_BIN}/ 1>&2
+
+# run through the geom list.
+
+IFS="${FORFS}"
+for geom in $(grep -v ^# ${BUILDDIR}/targets/FreeBSD/
+IFS="${OLDFS}"
 
 # Grab the bootloader files, and place them in ${FSDIR}${N_BOOT}/
 
