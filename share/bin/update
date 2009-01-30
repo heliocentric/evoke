@@ -405,7 +405,7 @@ update_menu() {
 		local DESTDIR="${EVOKE_MNTDIR}/$(dd if=/dev/random bs=4m ocunt=1 2>/dev/null | sha256 -q)"
 		mkdir -p "${DESTDIR}"
 
-		CHOICE=$(menu "Boot filesystem" "$(mounter list boot-ufs)" "q:Quit")
+		local CHOICE=$(menu "Boot filesystem" "$(mounter list boot-ufs)" "q:Quit")
 		if [ "${CHOICE}" != "" ] ; then
 			case "${CHOICE}" in
 				Quit)
@@ -483,6 +483,9 @@ update_menu() {
 				read RESULT
 			fi
 		done
+		if [ "${CHOICE}" != "" ] ; then
+			mounter umount "${DESTDIR}"
+		fi
 	fi
 }
 
