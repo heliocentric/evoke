@@ -218,10 +218,13 @@ cp -r ${DESTDIR}/lib/geom ${FSDIR}${N_LIB}
 cd ${WORKDIR}/rescue
 tar -cf - * | tar -xf - -C ${FSDIR}${N_BIN}/ 1>&2
 
-# run through the geom list.
+# run through the geom list. We use geli because it is the only binary we explicitly need.
 
 IFS="${FORFS}"
-for geom in $(grep -v ^# ${BUILDDIR}/targets/FreeBSD/
+for geom in $(grep -v ^# ${BUILDDIR}/targets/FreeBSD/${RELEASE}/share/geomlist | grep -v ^$)
+do
+	ln ${FSDIR}${N_BIN}/geli ${FSDIR}${N_BIN}/${geom}
+done
 IFS="${OLDFS}"
 
 # Grab the bootloader files, and place them in ${FSDIR}${N_BOOT}/
