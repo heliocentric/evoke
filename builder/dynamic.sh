@@ -226,7 +226,6 @@ do
 	ln ${FSDIR}${N_BIN}/geli ${FSDIR}${N_BIN}/${geom}
 done
 IFS="${OLDFS}"
-touch "${FSDIR}${N_SHARELIB}/fstab"
 
 # Grab the bootloader files, and place them in ${FSDIR}${N_BOOT}/
 
