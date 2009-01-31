@@ -262,6 +262,7 @@ do
 done
 
 cp "${EVOKE_BUILDER_PUBLIC}" "${FSDIR}/system/share/lib/evoke_public.rsa"
+echo "/dev/md0		/	ufs	rw	1	1" >${FSDIR}/system/share/lib/fstab
 
 mkdir -p ${FSDIR}/system/share/doc
 
