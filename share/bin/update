@@ -82,7 +82,6 @@ apply_patch() {
 			rm "${TEMPDIR}/${DESTHASH}.gz" 2>/dev/null 1>/dev/null
 			gzip -9nc "${TEMPDIR}/${DESTHASH}" >"${TEMPDIR}/${DESTHASH}.gz"
 			mv "${TEMPDIR}/${DESTHASH}.gz" "${TEMPDIR}/${DESTHASH}"
-			rm "${TEMPDIR}/${DESTHASH}"
 		;;
 		*.bz2)
 		;;
@@ -432,10 +431,6 @@ update_menu() {
 			GLOBAL_ERRORCODE="65"
 			return
 		fi
-	else
-		echo "No destination directory specified!"
-		GLOBAL_ERRORCODE="65"
-		return
 	fi
 
 	. $(command -v menu)
