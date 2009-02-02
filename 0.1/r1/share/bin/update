@@ -55,6 +55,7 @@ if [ ! -d "${EVOKE_MNTDIR}" ] ; then
 fi
 
 GLOBAL_ERRORCODE="0"
+PREVDIR="$(pwd)"
 
 apply_patch() {
 	PATCHFILE="${1}"
@@ -81,6 +82,7 @@ apply_patch() {
 			rm "${TEMPDIR}/${DESTHASH}.gz" 2>/dev/null 1>/dev/null
 			gzip -9nc "${TEMPDIR}/${DESTHASH}" >"${TEMPDIR}/${DESTHASH}.gz"
 			mv "${TEMPDIR}/${DESTHASH}.gz" "${TEMPDIR}/${DESTHASH}"
+			rm "${TEMPDIR}/${DESTHASH}"
 		;;
 		*.bz2)
 		;;
@@ -402,27 +404,38 @@ update_menu() {
 	fi
 
 	if [ ! -d "${DESTDIR}" ] ; then
-		local DESTDIR="${EVOKE_MNTDIR}/$(dd if=/dev/random bs=4m ocunt=1 2>/dev/null | sha256 -q)"
-		mkdir -p "${DESTDIR}"
+		BOOTFS="$(mounter search tag=boot | cut -d : -f 2-100)"
+		if [ "${BOOTFS}" != "" ] ; then
+			local DESTDIR="${EVOKE_MNTDIR}/$(dd if=/dev/random bs=4m ocunt=1 2>/dev/null | sha256 -q)"
+			mkdir -p "${DESTDIR}"
 
-		local CHOICE=$(menu "Boot filesystem" "$(mounter list boot-ufs)" "q:Quit")
-		if [ "${CHOICE}" != "" ] ; then
-			case "${CHOICE}" in
-				Quit)
-					echo "No destination directory specified!"
-					GLOBAL_ERRORCODE="65"
-					return
+			local CHOICE=$(menu "Boot filesystem" "${BOOTFS}" "q:Quit")
+			if [ "${CHOICE}" != "" ] ; then
+				case "${CHOICE}" in
+					Quit)
+						echo "No destination directory specified!"
+						GLOBAL_ERRORCODE="65"
+						return
 
-				;;
-				*)
-					mounter "boot-ufs:${CHOICE}" "${DESTDIR}"
-				;;
-			esac
+					;;
+					*)
+						mounter "boot-ufs:${CHOICE}" "${DESTDIR}"
+					;;
+				esac
+			else
+				echo "No destination directory specified!"
+				GLOBAL_ERRORCODE="65"
+				return
+			fi
 		else
-			echo "No destination directory specified!"
+			echo "Bootable filesystems not found."
 			GLOBAL_ERRORCODE="65"
 			return
 		fi
+	else
+		echo "No destination directory specified!"
+		GLOBAL_ERRORCODE="65"
+		return
 	fi
 
 	. $(command -v menu)
@@ -547,6 +560,7 @@ update() {
 			update_menu "${2}"
 		;;
 	esac
+	cd "${PREVDIR}"
 	rm -r ${SCRATCHDIR}
 	exit "${GLOBAL_ERRORCODE}"
 }
