@@ -30,6 +30,8 @@ export BOOTPREFIX=/evoke/${VERSION}/${REVISION}
 # PRODUCTDIR is where the filesystem images are stored.
 export PRODUCTDIR=${BOOTPREFIX}/product
 
+TARGETLIST="$(cat ${BUILDDIR}/targetlist | grep -v ^$ | grep -v ^#)"
+
 for target in $(cat ${BUILDDIR}/targetlist | grep -v ^$ | grep -v ^#)
 do
 	# The TARGET and TARGET_ARCH are used by buildworld, and also internally
@@ -317,7 +319,7 @@ EOF
 echo "					[DONE]"
 
 
-echo -n " * share = Making cmdlist and modlist image"
+echo -n " * share = Making cmdlist, modlist and abi"
 
 # Easier to list it this way now.
 

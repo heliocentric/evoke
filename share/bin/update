@@ -405,7 +405,15 @@ getfile() {
 }
 
 activater() {
-	echo "Does not exist yet"
+	local PREVDIR="$(pwd)"
+	local DESTDIR="${1}"
+	cd "${DESTDIR}/evoke"
+	VERSIONLIST="$(for version in $(echo */*)
+	do
+		echo ${version}
+	done | sort -r)"
+	VERSION="$(menu "Available Versions" "${VERSIONLIST}" "b:Back")"
+	cd "${PREVDIR}"
 }
 
 update_menu() {
@@ -461,8 +469,7 @@ update_menu() {
 						break
 					;;
 					Activate)
-						activater
-						break
+						activater "${DESTDIR}"
 					;;
 					*)
 						while [ 1 != 2 ]
