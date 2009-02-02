@@ -262,6 +262,7 @@ do
 done
 
 cp "${EVOKE_BUILDER_PUBLIC}" "${FSDIR}/system/share/lib/evoke_public.rsa"
+echo "/dev/md0		/	ufs	rw	1	1" >${FSDIR}/system/share/lib/fstab
 
 mkdir -p ${FSDIR}/system/share/doc
 
@@ -357,7 +358,7 @@ echo ""
 
 echo -n " * share = Generating Binary Diffs"
 ${BUILDDIR}/create-updates "${VERSION}/${REVISION}" "${BOOTDIR}${BOOTPREFIX}" ${VERSIONLIST} 1>&2
-cd "${RELEASEDIR}" && tar -cf - "evoke/misc/BIN-UPDATES/${VERSION}/${REVISION}" | tar -xvpf - -C "${BOOTDIR}/"
+#cd "${RELEASEDIR}" && tar -cf - "evoke/misc/BIN-UPDATES/${VERSION}/${REVISION}" | tar -xvpf - -C "${BOOTDIR}/"
 echo ""
 
 echo -n " * share = Making ISO image"

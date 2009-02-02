@@ -51,18 +51,25 @@ freebsd_disk_list() {
 			# FreeBSD defined values.
 	
 			if ($11 == "freebsd-ufs") {
-				print "ufs:"$3;
+				print "boot-ufs:"$3;
 			}
 			if ($11 == "freebsd-swap") {
 				print "swap:"$3;
 			}
-			if ($11 == "516e7cb6-6ecf-11d6-8ff8-00022d09712b") {
+			if ($11 == "516e7cb4-6ecf-11d6-8ff8-00022d09712b") {
 				print "ufs:"$3;
 			}
 			if ($11 == "516e7cb5-6ecf-11d6-8ff8-00022d09712b") {
 				print "swap:"$3;
 			}
+			if ($11 == "516e7cb6-6ecf-11d6-8ff8-00022d09712b") {
+				print "boot-ufs:"$3;
+			}
+			if ($11 == "516e7cba-6ecf-11d6-8ff8-00022d09712b") {
+				print "zfs:"$3;
+			}
 	
+
 			# Our usage values.
 			if ($11 == "!4b4cf826-e53e-4b56-86b6-0f9b728e0436") {
 				print "sysconfig:"$3;
@@ -83,7 +90,7 @@ freebsd_disk_list() {
 				print "dists:"$3;
 			}
 			if ($11 == "!12f31621-10a0-4a3c-a0e8-9406c2e485f0") {
-				print "boot-ufs:"$3;
+				print "ufs:"$3;
 			}
 		}
 		if ($2 == "BSD") {
@@ -188,14 +195,18 @@ list_all_disks() {
 }
 
 find_url() {
-	for path in ${EVOKE_URLFILES}
-	do
-		if [ -d "${path}" ] ; then
-			if [ -f "${path}/${1}" ] ; then
-				grep -v "^#" "${path}/${1}" | grep -v ^$
+	if [ "${1}" = "boot" ] ; then
+		list_all_disks | grep ^boot-		
+	else
+		for path in ${EVOKE_URLFILES}
+		do
+			if [ -d "${path}" ] ; then
+				if [ -f "${path}/${1}" ] ; then
+					grep -v "^#" "${path}/${1}" | grep -v ^$
+				fi
 			fi
-		fi
-	done
+		done
+	fi
 }
 
 lsvol() {
