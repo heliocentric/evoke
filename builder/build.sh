@@ -111,7 +111,7 @@ do
 	cd ${WORKDIR}/usr/src/sys/boot/
 
 	# This changes per ${target}
-	export BOOTPATH="${BOOTPREFIX}/freebsd${ABI}/${TARGET}"
+	export BOOTPATH="${BOOTPREFIX}/FreeBSD/${RELEASE}/${TARGET}"
 	mkdir -p ${BOOTDIR}${BOOTPATH}
 
 	# Get rid of /libexec/ld-elf.so.1, and use the rtld in each arch+abi specific directory.
@@ -368,7 +368,7 @@ echo -n " * share = Making ISO image"
 # Don't ask; cdboot is the main reason why bootloader versioning was turned off for so damned long.
 
 mkdir -p ${BOOTDIR}/cdboot
-cp ${BOOTDIR}${BOOTPREFIX}/freebsd$(echo ${i386_ACTIVE} | cut -d "." -f 1)/$(echo ${i386_ACTIVE} | cut -d "/" -f 2)/cdboot ${BOOTDIR}/cdboot/i386
+cp ${BOOTDIR}${BOOTPREFIX}/FreeBSD/$(echo ${i386_ACTIVE} | cut -d "-" -f 1)/$(echo ${i386_ACTIVE} | cut -d "/" -f 2)/cdboot ${BOOTDIR}/cdboot/i386
 
 mkdir -p ${RELEASEDIR}/evoke/misc/ISO-IMAGES/${VERSION}/${REVISION}
 
