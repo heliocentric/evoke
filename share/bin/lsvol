@@ -188,14 +188,18 @@ list_all_disks() {
 }
 
 find_url() {
-	for path in ${EVOKE_URLFILES}
-	do
-		if [ -d "${path}" ] ; then
-			if [ -f "${path}/${1}" ] ; then
-				grep -v "^#" "${path}/${1}" | grep -v ^$
+	if [ "${1}" = "boot" ] ; then
+		list_all_disks | grep ^boot-		
+	else
+		for path in ${EVOKE_URLFILES}
+		do
+			if [ -d "${path}" ] ; then
+				if [ -f "${path}/${1}" ] ; then
+					grep -v "^#" "${path}/${1}" | grep -v ^$
+				fi
 			fi
-		fi
-	done
+		done
+	fi
 }
 
 lsvol() {
