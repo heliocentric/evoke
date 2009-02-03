@@ -71,25 +71,25 @@ freebsd_disk_list() {
 	
 
 			# Our usage values.
-			if ($11 == "!4b4cf826-e53e-4b56-86b6-0f9b728e0436") {
+			if ($11 ~ /4b4cf826-e53e-4b56-86b6-0f9b728e0436/) {
 				print "sysconfig:"$3;
 			}
-			if ($11 == "!fa8e2f44-6728-490a-89ae-a8e286be45af") {
+			if ($11 ~ /fa8e2f44-6728-490a-89ae-a8e286be45af/) {
 				print "dump:"$3;
 			}
-			if ($11 == "!ac4b7c4a-9c4c-4687-b55f-f51a731d36d2") {
+			if ($11 ~ /ac4b7c4a-9c4c-4687-b55f-f51a731d36d2/) {
 				print "entropy:"$3;
 			}
-			if ($11 == "!72717d60-1a4b-43e2-bca3-4418bc0669ee") {
+			if ($11 ~ /72717d60-1a4b-43e2-bca3-4418bc0669ee/) {
 				print "object:"$3;
 			}
-			if ($11 == "!0b79a13e-87f2-4238-a86d-d00bd1fce04e") {
+			if ($11 ~ /0b79a13e-87f2-4238-a86d-d00bd1fce04e/) {
 				print "buildenv:"$3;
 			}
-			if ($11 == "!83f90024-8f13-47cf-9b01-12f4af79138a") {
+			if ($11 ~ /83f90024-8f13-47cf-9b01-12f4af79138a/) {
 				print "dists:"$3;
 			}
-			if ($11 == "!12f31621-10a0-4a3c-a0e8-9406c2e485f0") {
+			if ($11 ~ /12f31621-10a0-4a3c-a0e8-9406c2e485f0/) {
 				print "ufs:"$3;
 			}
 		}
