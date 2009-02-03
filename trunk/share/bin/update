@@ -408,6 +408,11 @@ activater() {
 	local PREVDIR="$(pwd)"
 	local PDESTDIR="${1}"
 	local LDESTDIR="${1}/evoke"
+	if [ ! -d "${LDESTDIR}" ] ; then
+		echo "No evoke directory found"
+		GLOBAL_ERRORCODE="65"
+		return 65
+	fi
 	while [ 1 != 2 ]
 	do
 		cd "${LDESTDIR}"
@@ -421,54 +426,60 @@ activater() {
 				;;
 			esac
 		done | sort -r)"
-		VERSION="$(menu "Available Versions" "${VERSIONLIST}" "b:Back")"
-		if [ "${VERSION}" != "" ] ; then
-			case "${VERSION}" in
-				Back)
-					break
-				;;
-				*)
-					if [ -f "${LDESTDIR}/${VERSION}/trackfile" ] ; then
-						cd "${LDESTDIR}/${VERSION}"
-						KERNELS="$(for name in FreeBSD/*/*/loader OpenBSD/*/* Darwin/*/* NetBSD/*/* DragonFly/*/* Haiku/*/*
-								do
-									case "${name}" in
-										*/\*/\*/loader)
+		if [ "${VERSIONLIST}" = "*/*" -o "${VERSIONLIST}" = "" ] ; then
+			echo "No versions found"
+			GLOBAL_ERRORCODE="65"
+			return 65
+		else
+			VERSION="$(menu "Available Versions" "${VERSIONLIST}" "b:Back")"
+			if [ "${VERSION}" != "" ] ; then
+				case "${VERSION}" in
+					Back)
+						break
+					;;
+					*)
+						if [ -f "${LDESTDIR}/${VERSION}/trackfile" ] ; then
+							cd "${LDESTDIR}/${VERSION}"
+							KERNELS="$(for name in FreeBSD/*/*/loader OpenBSD/*/* Darwin/*/* NetBSD/*/* DragonFly/*/* Haiku/*/*
+									do
+										case "${name}" in
+											*/\*/\*/loader)
+											;;
+											*/\*/\*)
+											;;
+											*)
+												echo "${name}"
+											;;
+										esac
+									done | awk -F "/" '{ print $1 " " $2 "/" $3; }')"
+							if [ "${KERNELS}" != "" ] ; then
+								NUMKERN="$(echo "${KERNELS}" | wc -l | awk '{ print $1; }')"
+								if [ "${NUMKERN}" = "1" ] ; then
+									KERNEL="${KERNELS}"
+								else
+									KERNEL="$(menu "Kernels" "${KERNELS}" "b:Back")"
+								fi
+								if [ "${KERNEL}" != "" ] ; then
+									case "${KERNEL}" in
+										Back)
 										;;
-										*/\*/\*)
-										;;
-										*)
-											echo "${name}"
+										FreeBSD*)
+											BOOTFILE="$(echo "${KERNEL}/loader" | sed 's@\ @/@g')"
 										;;
 									esac
-								done | awk -F "/" '{ print $1 " " $2 "/" $3; }')"
-						if [ "${KERNELS}" != "" ] ; then
-							NUMKERN="$(echo "${KERNELS}" | wc -l | awk '{ print $1; }')"
-							if [ "${NUMKERN}" = "1" ] ; then
-								KERNEL="${KERNELS}"
-							else
-								KERNEL="$(menu "Kernels" "${KERNELS}" "b:Back")"
-							fi
-							if [ "${KERNEL}" != "" ] ; then
-								case "${KERNEL}" in
-									Back)
-									;;
-									FreeBSD*)
-										BOOTFILE="$(echo "${KERNEL}/loader" | sed 's@\ @/@g')"
-									;;
-								esac
-								BOOTFILE="/evoke/${VERSION}/${BOOTFILE}"
-								echo "${BOOTFILE}" >${PDESTDIR}/boot.config
-								echo ""
-								echo "${VERSION} Activated."
-								echo ""
-								read -p "Press any key to continue " PROMPT
-								break
+									BOOTFILE="/evoke/${VERSION}/${BOOTFILE}"
+									echo "${BOOTFILE}" >${PDESTDIR}/boot.config
+									echo ""
+									echo "${VERSION} Activated."
+									echo ""
+									read -p "Press any key to continue " PROMPT
+									break
+								fi
 							fi
 						fi
-					fi
-				;;
-			esac
+					;;
+				esac
+			fi
 		fi
 	done
 	cd "${PREVDIR}"
@@ -622,6 +633,14 @@ update() {
 		[iI][nN][sS][tT][aA][lL][lL])
 			if [ "${3}" != "" ] ; then
 				real_update "${2}" "${3}" 2>&1
+			fi
+		;;
+		[aA][cC][tT][iI][vV][aA][tT][eE])
+			if [ -d "${2}" ] ; then
+				activater "${2}"
+			else
+				echo "Destination directory does not exist"
+				exit 65
 			fi
 		;;
 		[mM][eE][nN][uU])
