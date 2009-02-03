@@ -408,11 +408,15 @@ activater() {
 	local PREVDIR="$(pwd)"
 	local PDESTDIR="${1}"
 	local LDESTDIR="${1}/evoke"
+	if [ -f "${LDESTDIR}/${2}/trackfile" ] ; then
+		local VERSION="${2}"
+	fi
+
 	if [ ! -d "${LDESTDIR}" ] ; then
 		echo "No evoke directory found"
-		GLOBAL_ERRORCODE="65"
 		return 65
 	fi
+
 	while [ 1 != 2 ]
 	do
 		cd "${LDESTDIR}"
@@ -428,10 +432,11 @@ activater() {
 		done | sort -r)"
 		if [ "${VERSIONLIST}" = "*/*" -o "${VERSIONLIST}" = "" ] ; then
 			echo "No versions found"
-			GLOBAL_ERRORCODE="65"
 			return 65
 		else
-			VERSION="$(menu "Available Versions" "${VERSIONLIST}" "b:Back")"
+			if [ "${VERSION}" = "" ] ; then
+				VERSION="$(menu "Available Versions" "${VERSIONLIST}" "b:Back")"
+			fi
 			if [ "${VERSION}" != "" ] ; then
 				case "${VERSION}" in
 					Back)
@@ -637,7 +642,8 @@ update() {
 		;;
 		[aA][cC][tT][iI][vV][aA][tT][eE])
 			if [ -d "${2}" ] ; then
-				activater "${2}"
+				activater "${2}" "${3}"
+				GLOBAL_ERRORCODE="${?}"
 			else
 				echo "Destination directory does not exist"
 				exit 65
