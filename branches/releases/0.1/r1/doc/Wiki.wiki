@@ -1,5 +1,8 @@
 #labels Tab
 
+== Releases ==
+ * [Release01 0.1]
+
 == Usage ==
  * [BuildEnvironment Requirements for a build environment]
  * [SystemRequirements Requirements for a running evoke system]
@@ -13,9 +16,6 @@
  * [ProgramSupport Increasing program support]
  * [ConvertBuild Convert the build from bourne to make]
  * [http://code.google.com/p/evoke/w/list?q=label:Draft Incomplete documents]
-
-== Release Notes ==
- * [Release01 0.1R1]
 
 == Command List ==
  * [Mounter mounter]
