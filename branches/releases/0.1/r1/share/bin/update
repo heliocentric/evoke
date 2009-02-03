@@ -110,7 +110,7 @@ real_update() {
 
 	VERSION="${2}"
 	find_mirror "evoke/${VERSION}/trackfile" "${TEMPDIR}/trackfile"
-	TRACKFILE="${TEMPDIR}/trackfile" OPTIONS="quiet" verify
+	TRACKFILE="${TEMPDIR}/trackfile" OPTIONS="quiet trackfile_onlyrsa" verify
 	ERRORCODE="$?"
 
 	if [ "${ERRORCODE}" = 0 ] ; then
@@ -512,6 +512,7 @@ update_menu() {
 					;;
 					*)
 						mounter "boot-ufs:${CHOICE}" "${DESTDIR}"
+						DESTDIR_IS_MOUNTED="yes"
 					;;
 				esac
 			else
@@ -593,7 +594,7 @@ update_menu() {
 				read RESULT
 			fi
 		done
-		if [ "${CHOICE}" != "" ] ; then
+		if [ "${DESTDIR_IS_MOUNTER}" = "yes" ] ; then
 			mounter umount "${DESTDIR}"
 		fi
 	fi

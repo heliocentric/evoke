@@ -39,11 +39,13 @@ if [ ! -c "${DEVICES}/null" ] ; then
 	fi
 fi
 
+
 # This works whether TRACKFILE is a device node, or a regular file.
 
 if [ "${TRACKFILE}" != "" ] ; then
 	RTRACKFILE="${TRACKFILE}"
 fi
+
 
 if [ ! -d "${PREFIX}" ] ; then
 	unset PREFIX
@@ -133,6 +135,7 @@ verify() {
 	QUIET="no"
 	WRITE="no"
 	RECURSE="yes"
+	TRACKFILE_ONLYRSA="no"
 
 	if [ "${OPTIONS}" != "" ] ; then
 		for option in ${OPTIONS}
@@ -156,12 +159,17 @@ verify() {
 				nowrite)
 					WRITE="no"
 				;;
+				trackfile_onlyrsa)
+					TRACKFILE_ONLYRSA="yes"
+				;;
 			esac
 		done
 	fi
 
 	SCRATCHDIR="${TMPDIR}/verify/$(dd if=/dev/random bs=4m count=1 2>/dev/null | sha256 -q)"
 	mkdir -p "${SCRATCHDIR}"
+
+
 	TYPES="sha256 md5"
 
 	if [ "${RTRACKFILE}" != "" ] ; then
@@ -197,8 +205,10 @@ verify() {
 			cat "${SCRATCHDIR}/head" "${SCRATCHDIR}/sign" >"${SCRATCHDIR}/trackfile"
 			cp "${SCRATCHDIR}/trackfile" "${TRACKFILE}"
 		else
-			SIGNATURE_BYTES="$(grep -a ^I: ${RTRACKFILE} | cut -d : -f 4)"
+			dd "if=${RTRACKFILE}" bs=512 "of=${SCRATCHDIR}/trackfile" 2>${DEVICES}/null
+			RTRACKFILE="${SCRATCHDIR}/trackfile"
 
+			SIGNATURE_BYTES="$(grep -a ^I: ${RTRACKFILE} | cut -d : -f 4)"
 			if [ "${SIGNATURE_BYTES}" != "" ] ; then
 				if [ "${SIGNATURE_BYTES}" != "0" ] ; then
 					PAD="$(( "${SIGNATURE_BYTES}" % 512 ))"
@@ -222,8 +232,13 @@ verify() {
 					fi
 				fi
 			fi
-
-			verify_loop "$@"
+			if [ "${TRACKFILE_ONLYRSA}" = "no" ] ; then
+				if [ "$1" = "" ] ; then
+					verify_loop $(grep -a "^F:" "${RTRACKFILE}" | cut -d : -f 2)
+				else
+					verify_loop "$@"
+				fi
+			fi
 		fi
 	else
 		verify_loop "$@"
