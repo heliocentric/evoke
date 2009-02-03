@@ -78,6 +78,7 @@ if [ ! -f "${DESTDIR}/trackfile" ] ; then
 	echo "Destination does not exist"
 	exit 3
 else
+	cd "${DESTDIR}"
 	OPTIONS="quiet" TRACKFILE="${DESTDIR}/trackfile" verify
 	ERRORCODE="$?"
 	if [ "${ERRORCODE}" = "0" ] ; then
@@ -100,6 +101,7 @@ if [ "${1}" != "" ] ; then
 		if [ ! -f "${SOURCEDIR}/trackfile" ] ; then
 			echo "Source does not exist"
 		else
+			cd "${SOURCEDIR}"
 			TRACKFILE="${SOURCEDIR}/trackfile" verify
 			ERRORCODE="$?"
 			if [ "${ERRORCODE}" = "0" ] ; then
