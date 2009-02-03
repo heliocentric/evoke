@@ -216,9 +216,10 @@ do
 	# Shouldn't tar be doing this?
 	mkdir -p ${BOOTDIR}${BOOTPATH}/defaults 1>&2
 	cd ${DESTDIR}/boot && tar -cf - --exclude loader.old * | tar -xvf - -C ${BOOTDIR}${BOOTPATH} 1>&2
-
 	# Yes, we need it twice. Why? Because only certain things in the build system are boot versioned. So it's split across two directories.
 	cd ${DESTDIR}${BOOTPATH} && tar -cf - --exclude loader.old * | tar -xvf - -C ${BOOTDIR}${BOOTPATH} 1>&2
+
+	cp ${BOOTDIR}${BOOTPATH}/pxeboot ${BOOTDIR}${BOOTPATH}/pxeboot-qemu && chmod o+w ${BOOTDIR}${BOOTPATH}/pxeboot-qemu && echo >> ${BOOTDIR}${BOOTPATH}/pxeboot-qemu
 
 	echo "				[DONE]"
 
