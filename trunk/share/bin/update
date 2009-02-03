@@ -443,7 +443,12 @@ activater() {
 									esac
 								done | awk -F "/" '{ print $1 " " $2 "/" $3; }')"
 						if [ "${KERNELS}" != "" ] ; then
-							KERNEL="$(menu "Kernels" "${KERNELS}" "b:Back")"
+							NUMKERN="$(echo "${KERNELS}" | wc -l | awk '{ print $1; }')"
+							if [ "${NUMKERN}" = "1" ] ; then
+								KERNEL="${KERNELS}"
+							else
+								KERNEL="$(menu "Kernels" "${KERNELS}" "b:Back")"
+							fi
 							if [ "${KERNEL}" != "" ] ; then
 								case "${KERNEL}" in
 									Back)
@@ -454,6 +459,10 @@ activater() {
 								esac
 								BOOTFILE="/evoke/${VERSION}/${BOOTFILE}"
 								echo "${BOOTFILE}" >${PDESTDIR}/boot.config
+								echo ""
+								echo "${VERSION} Activated."
+								echo ""
+								read -p "Press any key to continue " PROMPT
 								break
 							fi
 						fi
