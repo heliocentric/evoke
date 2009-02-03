@@ -314,6 +314,7 @@ trackfile_type="mfs_root"
 trackfile_name="${BOOTPREFIX}/trackfile"
 evoke.trackfile="md1"
 evoke.fingerprint="${FINGERPRINT}" 
+evoke.version="${VERSION}/${REVISION}"
 boot_multicons="YES"
 kern.hz=100
 EOF
