@@ -32,3 +32,6 @@
 || Name     || Change      || Description                                   ||
 || [Update update]   || *New*       || Binary patched based update utility.          ||
 || [Doc doc]      || *New*       || Documentation system with a search interface. ||
+|| [Mounter mounter]   || *New*       || Wrapper for kernel specific mount apis.          ||
+|| [Sysconfig sysconfig]      || *New*       || Utility to safely store system configuration data. ||
+|| [Verify verify]      || *New*       || File verification utility, with support for extended attributes and trackfiles. ||
