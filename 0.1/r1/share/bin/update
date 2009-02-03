@@ -82,7 +82,6 @@ apply_patch() {
 			rm "${TEMPDIR}/${DESTHASH}.gz" 2>/dev/null 1>/dev/null
 			gzip -9nc "${TEMPDIR}/${DESTHASH}" >"${TEMPDIR}/${DESTHASH}.gz"
 			mv "${TEMPDIR}/${DESTHASH}.gz" "${TEMPDIR}/${DESTHASH}"
-			rm "${TEMPDIR}/${DESTHASH}"
 		;;
 		*.bz2)
 		;;
@@ -105,6 +104,9 @@ real_update() {
 		echo "Destination directory not found."
 		exit 65
 	fi
+
+	mkdir -p ${SCRATCHDIR}/download
+	mkdir -p ${PATCHDIR}
 
 	VERSION="${2}"
 	find_mirror "evoke/${VERSION}/trackfile" "${TEMPDIR}/trackfile"
@@ -171,6 +173,9 @@ real_update() {
 					vecho "\tFILENAME=${FILENAME}\n"
 					vecho "\tPDESTDIR=${PDESTDIR}\n"
 					vecho "\tBASENAME=${BASENAME}\n"
+					if [ "${VERBOSE}" = "NO" ] ; then
+						echo "Fetching ${FILENAME}"
+					fi
 
 
 					RETVAL="$(fetch_full_file "${HASH}" "${FILENAME}" "${PDESTDIR}" "${BASENAME}")" 2>&1
@@ -196,6 +201,9 @@ real_update() {
 					PDESTDIR="${STAGEDIR}/$(dirname ${FILENAME})"
 					BASENAME="$(basename ${FILENAME})"
 					PPATCHDIR="${PATCHDIR}/${HASH}"
+					if [ "${VERBOSE}" = "NO" ] ; then
+						echo "Fetching ${FILENAME}"
+					fi
 					mkdir -p "${PPATCHDIR}"
 					mkdir -p "${PDESTDIR}"
 					vecho "Starting ${FILENAME} \{\n"
@@ -315,6 +323,8 @@ real_update() {
 			echo "Size of complete files downloaded: ${DOWNLOADSIZE}"
 			echo "Size of patch files downloaded: ${PATCHSIZE}"
 			echo "Total Size of the release: ${MB}M"
+			rm -r ${SCRATCHDIR}/download
+			rm -r ${PATCHDIR}
 		;;
 	esac
 }
@@ -395,7 +405,89 @@ getfile() {
 }
 
 activater() {
-	echo "Does not exist yet"
+	local PREVDIR="$(pwd)"
+	local PDESTDIR="${1}"
+	local LDESTDIR="${1}/evoke"
+	if [ -f "${LDESTDIR}/${2}/trackfile" ] ; then
+		local VERSION="${2}"
+	fi
+
+	if [ ! -d "${LDESTDIR}" ] ; then
+		echo "No evoke directory found"
+		return 65
+	fi
+
+	while [ 1 != 2 ]
+	do
+		cd "${LDESTDIR}"
+		VERSIONLIST="$(for version in $(echo */*)
+		do
+			case "${version}" in 
+				misc*)
+				;;
+				*)
+					echo ${version}
+				;;
+			esac
+		done | sort -r)"
+		if [ "${VERSIONLIST}" = "*/*" -o "${VERSIONLIST}" = "" ] ; then
+			echo "No versions found"
+			return 65
+		else
+			if [ "${VERSION}" = "" ] ; then
+				VERSION="$(menu "Available Versions" "${VERSIONLIST}" "b:Back")"
+			fi
+			if [ "${VERSION}" != "" ] ; then
+				case "${VERSION}" in
+					Back)
+						break
+					;;
+					*)
+						if [ -f "${LDESTDIR}/${VERSION}/trackfile" ] ; then
+							cd "${LDESTDIR}/${VERSION}"
+							KERNELS="$(for name in FreeBSD/*/*/loader OpenBSD/*/* Darwin/*/* NetBSD/*/* DragonFly/*/* Haiku/*/*
+									do
+										case "${name}" in
+											*/\*/\*/loader)
+											;;
+											*/\*/\*)
+											;;
+											*)
+												echo "${name}"
+											;;
+										esac
+									done | awk -F "/" '{ print $1 " " $2 "/" $3; }')"
+							if [ "${KERNELS}" != "" ] ; then
+								NUMKERN="$(echo "${KERNELS}" | wc -l | awk '{ print $1; }')"
+								if [ "${NUMKERN}" = "1" ] ; then
+									KERNEL="${KERNELS}"
+								else
+									KERNEL="$(menu "Kernels" "${KERNELS}" "b:Back")"
+								fi
+								if [ "${KERNEL}" != "" ] ; then
+									case "${KERNEL}" in
+										Back)
+										;;
+										FreeBSD*)
+											BOOTFILE="$(echo "${KERNEL}/loader" | sed 's@\ @/@g')"
+										;;
+									esac
+									BOOTFILE="/evoke/${VERSION}/${BOOTFILE}"
+									echo "${BOOTFILE}" >${PDESTDIR}/boot.config
+									echo ""
+									echo "${VERSION} Activated."
+									echo ""
+									read -p "Press any key to continue " PROMPT
+									break
+								fi
+							fi
+						fi
+					;;
+				esac
+			fi
+		fi
+	done
+	cd "${PREVDIR}"
 }
 
 update_menu() {
@@ -432,10 +524,6 @@ update_menu() {
 			GLOBAL_ERRORCODE="65"
 			return
 		fi
-	else
-		echo "No destination directory specified!"
-		GLOBAL_ERRORCODE="65"
-		return
 	fi
 
 	. $(command -v menu)
@@ -455,8 +543,7 @@ update_menu() {
 						break
 					;;
 					Activate)
-						activater
-						break
+						activater "${DESTDIR}"
 					;;
 					*)
 						while [ 1 != 2 ]
@@ -473,7 +560,7 @@ update_menu() {
 										break 2
 									;;
 									Activate)
-										activater
+										activater "${DESTDIR}"
 										break
 									;;
 									Back)
@@ -482,6 +569,16 @@ update_menu() {
 									*)
 										VERSION="${BRANCH}/${REVISION}"
 										real_update "${DESTDIR}" "${VERSION}"
+										local RETVAL="${?}"
+										if [ "${RETVAL}" = "0" ] ; then
+											echo "Activate ${VERSION} now?"
+											read -p "[Y/n]: " PROMPT
+											case "${PROMPT}" in
+												[yY])
+													activater "${DESTDIR}" "${VERSION}"
+												;;
+											esac
+										fi
 									;;
 								esac
 							else
@@ -551,6 +648,15 @@ update() {
 		[iI][nN][sS][tT][aA][lL][lL])
 			if [ "${3}" != "" ] ; then
 				real_update "${2}" "${3}" 2>&1
+			fi
+		;;
+		[aA][cC][tT][iI][vV][aA][tT][eE])
+			if [ -d "${2}" ] ; then
+				activater "${2}" "${3}"
+				GLOBAL_ERRORCODE="${?}"
+			else
+				echo "Destination directory does not exist"
+				exit 65
 			fi
 		;;
 		[mM][eE][nN][uU])
