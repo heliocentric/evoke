@@ -135,6 +135,7 @@ verify() {
 	QUIET="no"
 	WRITE="no"
 	RECURSE="yes"
+	TRACKFILE_ONLYRSA="no"
 
 	if [ "${OPTIONS}" != "" ] ; then
 		for option in ${OPTIONS}
@@ -157,6 +158,9 @@ verify() {
 				;;
 				nowrite)
 					WRITE="no"
+				;;
+				trackfile_onlyrsa)
+					TRACKFILE_ONLYRSA="yes"
 				;;
 			esac
 		done
@@ -228,8 +232,13 @@ verify() {
 					fi
 				fi
 			fi
-
-			verify_loop "$@"
+			if [ "${TRACKFILE_ONLYRSA}" = "no" ] ; then
+				if [ "$@" = "" ] ; then
+					verify_loop $(grep -a "^F:" "${RTRACKFILE}" | cut -d : -f 2)
+				else
+					verify_loop "$@"
+				fi
+			fi
 		fi
 	else
 		verify_loop "$@"
