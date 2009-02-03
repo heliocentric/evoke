@@ -221,29 +221,6 @@ mkdir -p ${EVOKE_CURUSER}
 
 mecho ""
 
-SC_PART=${EVOKE_SCDEVICE}
-
-if [ "$(is_uuid ${SC_PART})" = "no" ] ; then
-	SC_PART=$(sysconfig menu)
-	export EVOKE_SCDEVICE=${SC_PART} >/dev/null
-fi
-
-if [ "${SC_PART}" != "" ] ; then
-	sysconfig extract ${SC_PART}
-fi
-
-DEFUSER=${EVOKE_USERCONFIG}
-
-if [ "$(is_uuid ${DEFUSER})" = "no" ] ; then
-	DEFUSER=$(userconfig menu)
-	export EVOKE_USERCONFIG=${DEFUSER} >/dev/null
-fi
-
-if [ "${DEFUSER}" != "" ] ; then
-	userconfig login ${DEFUSER}
-fi
-
-
 if [ "${MODE}" = "init" ] ; then
 
 	mecho -n "Adding swap, dump,  and entropy"
@@ -280,6 +257,30 @@ if [ "${MODE}" = "init" ] ; then
 	watchdogd -I/mem/pid/watchdogd.pid
 	mecho ""
 fi
+
+SC_PART=${EVOKE_SCDEVICE}
+
+if [ "$(is_uuid ${SC_PART})" = "no" ] ; then
+	SC_PART=$(sysconfig menu)
+	export EVOKE_SCDEVICE=${SC_PART} >/dev/null
+fi
+
+if [ "${SC_PART}" != "" ] ; then
+	sysconfig extract ${SC_PART}
+fi
+
+DEFUSER=${EVOKE_USERCONFIG}
+
+if [ "$(is_uuid ${DEFUSER})" = "no" ] ; then
+	DEFUSER=$(userconfig menu)
+	export EVOKE_USERCONFIG=${DEFUSER} >/dev/null
+fi
+
+if [ "${DEFUSER}" != "" ] ; then
+	userconfig login ${DEFUSER}
+fi
+
+
 mecho -n "Generating files"
 RPASSWD='$1$1QgK4Xsg$.PInGIAb4c0nznxpRkUPk.'
 
