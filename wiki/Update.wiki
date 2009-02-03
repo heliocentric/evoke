@@ -16,7 +16,18 @@
 
 == Description ==
 
-Stub, as the program does nothing.
+Update is a binary update utility, that aggressively tries to grab the correct files for the chosen release, and falls back on grabbing full files.
+
+== Feature List ==
+
+ * install - Installs the release in the second argument, to the directory of the first argument.
+ * activate - Activates the release in the second argument, to the directory of the first argument.
+ * menu - Draws a menu for choosing the releases, and activating them.
+
+== Required Files ==
+
+ * /usr/bin/bspatch - base
+    bspatch is the utility we use to apply the binary patches.
 
 == Implementation ==
 
