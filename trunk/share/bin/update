@@ -569,6 +569,16 @@ update_menu() {
 									*)
 										VERSION="${BRANCH}/${REVISION}"
 										real_update "${DESTDIR}" "${VERSION}"
+										local RETVAL="${?}"
+										if [ "${RETVAL}" = "0" ] ; then
+											echo "Activate ${VERSION} now?"
+											read -p "[Y/n]: " PROMPT
+											case "${PROMPT}" in
+												[yY])
+													activater "${DESTDIR}" "${VERSION}"
+												;;
+											esac
+										fi
 									;;
 								esac
 							else
