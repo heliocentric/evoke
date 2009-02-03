@@ -30,5 +30,5 @@
 ==== Programs ====
 
 || Name     || Change      || Description                                   ||
-|| Update   || *New*       || Binary patched based update utility.          ||
-|| Doc      || *New*       || Documentation system with a search interface. ||
+|| [Update update]   || *New*       || Binary patched based update utility.          ||
+|| [Doc doc]      || *New*       || Documentation system with a search interface. ||
