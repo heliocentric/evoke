@@ -406,13 +406,62 @@ getfile() {
 
 activater() {
 	local PREVDIR="$(pwd)"
-	local DESTDIR="${1}"
-	cd "${DESTDIR}/evoke"
-	VERSIONLIST="$(for version in $(echo */*)
+	local PDESTDIR="${1}"
+	local LDESTDIR="${1}/evoke"
+	while [ 1 != 2 ]
 	do
-		echo ${version}
-	done | sort -r)"
-	VERSION="$(menu "Available Versions" "${VERSIONLIST}" "b:Back")"
+		cd "${LDESTDIR}"
+		VERSIONLIST="$(for version in $(echo */*)
+		do
+			case "${version}" in 
+				misc*)
+				;;
+				*)
+					echo ${version}
+				;;
+			esac
+		done | sort -r)"
+		VERSION="$(menu "Available Versions" "${VERSIONLIST}" "b:Back")"
+		if [ "${VERSION}" != "" ] ; then
+			case "${VERSION}" in
+				Back)
+					break
+				;;
+				*)
+					if [ -f "${LDESTDIR}/${VERSION}/trackfile" ] ; then
+						cd "${LDESTDIR}/${VERSION}"
+						KERNELS="$(for name in FreeBSD/*/*/loader OpenBSD/*/* Darwin/*/* NetBSD/*/* DragonFly/*/* Haiku/*/*
+								do
+									case "${name}" in
+										*/\*/\*/loader)
+										;;
+										*/\*/\*)
+										;;
+										*)
+											echo "${name}"
+										;;
+									esac
+								done | awk -F "/" '{ print $1 " " $2 "/" $3; }')"
+						if [ "${KERNELS}" != "" ] ; then
+							KERNEL="$(menu "Kernels" "${KERNELS}" "b:Back")"
+							if [ "${KERNEL}" != "" ] ; then
+								case "${KERNEL}" in
+									Back)
+									;;
+									FreeBSD*)
+										BOOTFILE="$(echo "${KERNEL}/loader" | sed 's@\ @/@g')"
+									;;
+								esac
+								BOOTFILE="/evoke/${VERSION}/${BOOTFILE}"
+								echo "${BOOTFILE}" >${PDESTDIR}/boot.config
+								break
+							fi
+						fi
+					fi
+				;;
+			esac
+		fi
+	done
 	cd "${PREVDIR}"
 }
 
@@ -486,7 +535,7 @@ update_menu() {
 										break 2
 									;;
 									Activate)
-										activater
+										activater "${DESTDIR}"
 										break
 									;;
 									Back)
