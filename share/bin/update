@@ -110,7 +110,7 @@ real_update() {
 
 	VERSION="${2}"
 	find_mirror "evoke/${VERSION}/trackfile" "${TEMPDIR}/trackfile"
-	TRACKFILE="${TEMPDIR}/trackfile" OPTIONS="quiet" verify
+	TRACKFILE="${TEMPDIR}/trackfile" OPTIONS="quiet trackfile_onlyrsa" verify
 	ERRORCODE="$?"
 
 	if [ "${ERRORCODE}" = 0 ] ; then
