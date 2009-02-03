@@ -233,7 +233,7 @@ verify() {
 				fi
 			fi
 			if [ "${TRACKFILE_ONLYRSA}" = "no" ] ; then
-				if [ "$@" = "" ] ; then
+				if [ "$1" = "" ] ; then
 					verify_loop $(grep -a "^F:" "${RTRACKFILE}" | cut -d : -f 2)
 				else
 					verify_loop "$@"
