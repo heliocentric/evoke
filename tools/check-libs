@@ -1,11 +1,15 @@
 #!/bin/sh
 
 
+if [ "${1}" = "" ] ; then
+	exit 65
+fi
+
 cd /usr/local
 
 for file in $(echo lib/* libexec/* bin/* sbin/*)
 do
-	LIBCHECK="$(readelf -d "${file}" 2>/dev/null | grep NEEDED | grep libc.so.7)"
+	LIBCHECK="$(readelf -d "${file}" 2>/dev/null | grep NEEDED | grep ${1})"
 	if [ "${LIBCHECK}" != "" ] ; then
 		grep -R "${file}" /var/db/pkg/*/+CONTENTS | sed 's@/var/db/pkg/@@g' | cut -d / -f 1
 	fi
