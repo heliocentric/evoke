@@ -1,5 +1,5 @@
 #summary 0.1 Release Notes
-#labels Release
+#labels Release, Doc
 <wiki:comment>
 	type: release-doc
 	author: heliocentric
