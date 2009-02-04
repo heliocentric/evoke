@@ -76,7 +76,7 @@ if [ "${BUILD_PORTS}" != "" ] ; then
 	cp ${BUILDDIR}/varlist ${DESTDIR}/
 	cp ${BUILDDIR}/portlist ${DESTDIR}/
 	cp /etc/resolv.conf ${DESTDIR}/etc/
-
+	ln -s usr/share/misc ${DESTDIR}/config
 	# We'll share ports and port dist files, as they don't change.
 	mkdir -p ${DESTDIR}/usr/ports
 
