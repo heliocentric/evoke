@@ -594,7 +594,7 @@ update_menu() {
 				read RESULT
 			fi
 		done
-		if [ "${DESTDIR_IS_MOUNTER}" = "yes" ] ; then
+		if [ "${DESTDIR_IS_MOUNTED}" = "yes" ] ; then
 			mounter umount "${DESTDIR}"
 		fi
 	fi
