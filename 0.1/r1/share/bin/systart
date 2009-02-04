@@ -223,7 +223,7 @@ mecho ""
 
 if [ "${MODE}" = "init" ] ; then
 
-	mecho -n "Adding swap, dump,  and entropy"
+	mecho "Adding swap, dump,  and entropy"
 	SWAPLIST="$(mounter list swap)"
 
 	if [ "${SWAPLIST}" != "" ] ; then
@@ -245,8 +245,6 @@ if [ "${MODE}" = "init" ] ; then
 	if [ "${DUMPDEV}" != "" ] ; then
 		mounter dump:${DUMPDEV}
 	fi
-
-	mecho ""
 
 	mecho -n "Starting system daemons"
 	# Always start powerd if available, some machines do not have proper heat management
