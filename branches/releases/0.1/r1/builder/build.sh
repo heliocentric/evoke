@@ -16,7 +16,8 @@ export FORFS="
 "
 export OLDFS=" 	
 "
-
+export SVNDATE="$(svn info --xml | awk '/<date>/, /<\/date>/' | sed 's@<date>@@g' | sed 's@</date>@@~g' | sed 's@T@ @g' | cut -d '.' -f 1)"
+export TRACKFILE_DATE="$(date -j -f "%Y-%m-%dT%H:%M:%S" "${SVNDATE}" "+%s")"
 
 # BOOTDIR is the 'boot' directory; it's the root of the cd image
 export BOOTDIR=${OBJDIR}/bdir
@@ -215,9 +216,10 @@ do
 	# Shouldn't tar be doing this?
 	mkdir -p ${BOOTDIR}${BOOTPATH}/defaults 1>&2
 	cd ${DESTDIR}/boot && tar -cf - --exclude loader.old * | tar -xvf - -C ${BOOTDIR}${BOOTPATH} 1>&2
-
 	# Yes, we need it twice. Why? Because only certain things in the build system are boot versioned. So it's split across two directories.
 	cd ${DESTDIR}${BOOTPATH} && tar -cf - --exclude loader.old * | tar -xvf - -C ${BOOTDIR}${BOOTPATH} 1>&2
+
+	cp ${BOOTDIR}${BOOTPATH}/pxeboot ${BOOTDIR}${BOOTPATH}/pxeboot-qemu && chmod o+w ${BOOTDIR}${BOOTPATH}/pxeboot-qemu && echo >> ${BOOTDIR}${BOOTPATH}/pxeboot-qemu
 
 	echo "				[DONE]"
 
@@ -312,6 +314,7 @@ trackfile_type="mfs_root"
 trackfile_name="${BOOTPREFIX}/trackfile"
 evoke.trackfile="md1"
 evoke.fingerprint="${FINGERPRINT}" 
+evoke.version="${VERSION}/${REVISION}"
 boot_multicons="YES"
 kern.hz=100
 EOF
