@@ -1,0 +1,12 @@
+#!/bin/sh
+
+
+cd /usr/local
+
+for file in $(echo lib/* libexec/* bin/* sbin/*)
+do
+	LIBCHECK="$(readelf -d "${file}" 2>/dev/null | grep NEEDED | grep libc.so.7)"
+	if [ "${LIBCHECK}" != "" ] ; then
+		grep -R "${file}" /var/db/pkg/*/+CONTENTS | sed 's@/var/db/pkg/@@g' | cut -d / -f 1
+	fi
+done | sort | uniq
