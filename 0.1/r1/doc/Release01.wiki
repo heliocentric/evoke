@@ -13,6 +13,7 @@
 
  * installer needs to be able to install to a thumb drive.
  * 6.4 and 7.1 for i386 need to be on the image.
+ * port builds need to be fixed.
 
 == Revisions ==
 
@@ -29,12 +30,12 @@
 
 ==== Programs ====
 
-|| Name				|| Change	|| Description						||
-|| [Systart systart]		|| *New*	|| System startup program				||
-|| [Update update]		|| *New*	|| Binary patched based update utility.			||
-|| [Doc doc]			|| *New*	|| Documentation system with a search interface.	||
-|| [Mounter mounter]		|| *New*	|| Wrapper for kernel specific mount apis.		||
-|| [Sysconfig sysconfig]	|| *New*	|| Utility to safely store system configuration data.	||
-|| [Userconfig userconfig]	|| *New*	|| Utility to support login and user management.	||
-|| [Verify verify]		|| *New*	|| File verification utility, with support for extended attributes and trackfiles. ||
-|| [Filetype filetype]		|| *New*	|| Utility to identify the type of a specified file, and supports extended attribute based caching. ||
+|| Name				|| Change	|| Description												||
+|| [Systart systart]		|| *New*	|| System startup program										||
+|| [Update update]		|| *New*	|| Binary patched based update utility.									||
+|| [Doc doc]			|| *New*	|| Documentation system with a search interface.							||
+|| [Mounter mounter]		|| *New*	|| Wrapper for kernel specific mount apis.								||
+|| [Sysconfig sysconfig]	|| *New*	|| Utility to safely store system configuration data.							||
+|| [Userconfig userconfig]	|| *New*	|| Utility to support login and user management.							||
+|| [Verify verify]		|| *New*	|| File verification utility, with support for extended attributes and trackfiles.			||
+|| [Filetype filetype]		|| *New*	|| Utility to identify the type of a specified file, and supports extended attribute based caching.	||
