@@ -40,7 +40,7 @@ if [ ! -c "${DEVICES}/null" ] ; then
 fi
 
 if [ ! -d "${STAGEDIR}" ] ; then
-	STAGEDIR="/tmp/$(dd if=${DEVICES}/random bs=1m count=1 2>${DEVICES}/null | sha256 -q)/stagedir"
+	STAGEDIR="/tmp/update/$(dd if=${DEVICES}/random bs=1m count=1 2>${DEVICES}/null | sha256 -q)/stagedir"
 	mkdir -p "${STAGEDIR}"
 fi
 
@@ -179,6 +179,24 @@ if [ "${1}" != "" ] ; then
 		shift
 	done
 
+	# Generate a trackfile for supporting http without webdav, and tftp.
+
+	for filespec in ${DEST_TRACKFILE}
+	do
+		DESTHASH="$(echo "${filespec}" | cut -d : -f 3)"
+		DESTPATH="${PATCHDIR}/${DESTHASH}"
+		if [ -d "${DESTPATH}" ] ; then
+			cd "${DESTPATH}"
+			HASHFILELIST="$(echo *)"
+			if [ "${HASHFILELIST}" != "" -a "${HASHFILELIST}" != "*" ] ; then
+				OPTIONS="write quiet" TRACKFILE="${TESTDIR}/${DESTHASH}" verify ${HASHFILELIST}
+				mv ${TESTDIR}/${DESTHASH} ${DESTPATH}/trackfile
+			fi
+		fi
+	done
+
 	mkdir -p "${BINUPDIR}/${DEST}"
 	cd "${PATCHDIR}" && tar -cf - * | tar -xvpf - -C "${BINUPDIR}/${DEST}" 2>/dev/null >/dev/null
 fi
+
+rm -r "${STAGEDIR}"
