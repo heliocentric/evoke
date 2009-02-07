@@ -362,25 +362,79 @@ find_mirror() {
 	FILENAME="${1}"
 	OUTFILENAME="${2}"
 	cd ${TEMPDIR}
-
 	unset RETVAL
-
+	file="$(basename "${FILENAME}")"
 	for mirrorurl in $(sed -e 's/#.*$//g' ${TEMPDIR}/mirrorlist)
 	do
-		server="$(echo "${mirrorurl}" | sed 's_http://__g' | cut -d "/" -f 1)"
-		filespec="/$(echo "${mirrorurl}" | sed 's_http://__g' | cut -d "/" -f 2-200)"
-		rfilespec="${filespec}/${FILENAME}"
-		phttpget "${server}" "${rfilespec}" 2>${DEVICES}/null
-		file="$(basename "${rfilespec}")"
-		if [ -r "${file}" ] ; then
-			RETVAL="0"
-			SERVER="${server}"
-			FILESPEC="${filespec}"
-			break
-		else
-			RETVAL="65"
-		fi
+		vecho "Grabbing file ${FILENAME} \(${file}\) from ${mirrorurl} {\n"
+		protocol="$(echo "${mirrorurl}" | cut -d ":" -f 1)"
+		case "${protocol}" in
+			http)
+				server="$(echo "${mirrorurl}" | sed 's_http://__g' | cut -d "/" -f 1)"
+				filespec="/$(echo "${mirrorurl}" | sed 's_http://__g' | cut -d "/" -f 2-200)"
+				rfilespec="${filespec}/${FILENAME}"
+				phttpget "${server}" "${rfilespec}" 2>${DEVICES}/null
+				if [ -r "${file}" ] ; then
+					vecho "\tpassed\n"
+					vecho "}\n"
+					RETVAL="0"
+					PROTOCOL="http"
+					SERVER="${server}"
+					FILESPEC="${filespec}"
+					break
+				else
+					vecho "\tfailed\n"
+					vecho "}\n"
+					RETVAL="65"
+				fi
+			;;
+			tftp)
+				server="$(echo "${mirrorurl}" | sed 's_tftp://__g' | cut -d "/" -f 1)"
+				filespec="/$(echo "${mirrorurl}" | sed 's_tftp://__g' | cut -d "/" -f 2-200)"
+				rfilespec="${filespec}/${FILENAME}"
+				printf "binary\nget ${rfilespec}\n" | tftp "${server}" 2>${DEVICES}/null >${DEVICES}/null
+				filesize="$(stat -f '%z' ${file})"
+				if [ "${filesize}" -gt "0" ] ; then
+					vecho "\tpassed\n"
+					vecho "}\n"
+					RETVAL="0"
+					PROTOCOL="tftp"
+					SERVER="${server}"
+					FILESPEC="${filespec}"
+					break
+				else
+					vecho "\tfailed\n"
+					vecho "}\n"
+					RETVAL="65"
+				fi
+			;;
+			*)
+				MIRROR_MOUNTPOINT="${EVOKE_MNTDIR}/$(dd if=/dev/random bs=4m count=1 2>${DEVICES}/null | sha256 -q)"
+				mkdir -p "${MIRROR_MOUNTPOINT}"
+				OPTIONS="readonly" mounter "${mirrorurl}" "${MIRROR_MOUNTPOINT}"
+				M_ERRORCODE="${?}"
+				if [ "${M_ERRORCODE}" = "0" ] ; then
+					if [ -r "${MIRROR_MOUNTPOINT}/${FILENAME}" ] ; then
+						vecho "\tpassed\n"
+						vecho "}\n"
+
+						RETVAL="0"
+						PROTOCOL="${protocol}"
+						cp "${MIRROR_MOUNTPOINT}/${FILENAME}" "${file}"
+						break
+					else
+						vecho "\tmounter fallback: failed\n"
+						vecho "\n}"
+						mounter unmount "${MIRROR_MOUNTPOINT}"
+						RETVAL="65"
+					fi
+				else
+					RETVAL="65"
+				fi
+			;;
+		esac
 	done
+
 	if [ "${RETVAL}" = "0" ] ; then
 		if [ "${TEMPDIR}/${file}" != "${OUTFILENAME}" ] ; then
 			mv "${file}" "${OUTFILENAME}"
@@ -389,6 +443,7 @@ find_mirror() {
 		echo "No usable mirrors found. Bailing out."
 		exit 65
 	fi
+
 	unset RETVAL
 }
 
@@ -401,7 +456,29 @@ vecho() {
 # Wrapper, as our main mirror doesn't support wdfs, so we have to fall back to phttpget
 
 getfile() {
-	phttpget "${SERVER}" "${FILESPEC}/${1}" 2>${DEVICES}/null
+
+	filename="$(basename "${1}")"
+
+	case "${PROTOCOL}" in
+		http)
+			phttpget "${SERVER}" "${FILESPEC}/${1}" 2>${DEVICES}/null
+		;;
+		tftp)
+			printf "binary\nget ${FILESPEC}/${1}\n" | tftp "${SERVER}" 2>${DEVICES}/null >${DEVICES}/null
+			filesize="$(stat -f '%z' ${filename})"
+
+			if [ "${filesize}" = "0" ] ; then
+				rm "${filename}"
+			fi
+		;;
+		*)
+			if [ -r "${MIRROR_MOUNTPOINT}/${1}" ] ; then
+				RETVAL="0"
+				cp "${MIRROR_MOUNTPOINT}/${1}" "${filename}"
+			fi
+			
+		;;
+	esac
 }
 
 activater() {
@@ -669,6 +746,10 @@ update() {
 	esac
 	cd "${PREVDIR}"
 	rm -r ${SCRATCHDIR}
+	if [ "${MIRROR_MOUNTPOINT}" != "" ] ; then
+		mounter unmount "${MIRROR_MOUNTPOINT}"
+		rmdir "${MIRROR_MOUNTPOINT}"
+	fi
 	exit "${GLOBAL_ERRORCODE}"
 }
 
