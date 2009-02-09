@@ -55,7 +55,6 @@ if [ ! -d "${EVOKE_MNTDIR}" ] ; then
 fi
 
 GLOBAL_ERRORCODE="0"
-PREVDIR="$(pwd)"
 
 apply_patch() {
 	PATCHFILE="${1}"
@@ -678,6 +677,8 @@ update_menu() {
 }
 
 update() {
+	PREVDIR="$(pwd)"
+
 	SCRATCHDIR="${TMPDIR}/update/$(dd if=/dev/random bs=4m count=1 2>${DEVICES}/null | sha256 -q)"
 	mkdir -p "${SCRATCHDIR}"
 	TEMPDIR="${SCRATCHDIR}/tmp"
