@@ -28,7 +28,6 @@ options 	GEOM_SHSEC
 options 	GEOM_STRIPE
 options 	GEOM_SUNLABEL
 options 	GEOM_UZIP
-options 	GEOM_VOL
 device		crypto
 device		cryptodev
 device		speaker
