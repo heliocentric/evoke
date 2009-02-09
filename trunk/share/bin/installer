@@ -122,13 +122,31 @@ evoke_chooser() {
 # Disk partitioning function
 partdisk() {
 	RESULT=$(menu "Choose Disk" "$(mounter list disk)")
-	echo -n "Do you want to use the entire disk? [yN]"
+	echo -n "Do you want to use the entire disk? [yN]: "
 	read ANSWER
 	case "${1}" in
 		evoke)
 			case "${ANSWER}" in
 				[yY])
 					dd if=/dev/zero bs=4m count=1 of=${DEVICES}/${RESULT} 2>${DEVICES}/null
+					gpt create ${DEVICES}/${RESULT}
+					gpt boot ${DEVICES}/${RESULT}
+					gpt add -s 4096 -t 4b4cf826-e53e-4b56-86b6-0f9b728e0436 ${DEVICES}/${RESULT}
+
+					SIZE="$(sysctl -b kern.geom.conftxt | awk -v RESULT=${RESULT} '{ if ($3 == RESULT) { print $4; } }')"
+					echo -n "Do you want to create a swap partition? [yN]: "
+					read SWAP
+
+					if [ "${SIZE}" -le "512000000" ] ; then
+						gpt add ${DEVICES}/${RESULT}
+					else
+						case "${SWAP}" in
+							yY)
+							;;
+							*)
+							;;
+						esac
+					fi
 					
 				;;
 				[nN])
