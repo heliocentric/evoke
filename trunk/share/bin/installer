@@ -134,18 +134,24 @@ partdisk() {
 					gpt add -s 4096 -t 4b4cf826-e53e-4b56-86b6-0f9b728e0436 ${DEVICES}/${RESULT}
 
 					SIZE="$(sysctl -b kern.geom.conftxt | awk -v RESULT=${RESULT} '{ if ($3 == RESULT) { print $4; } }')"
-					echo -n "Do you want to create a swap partition? [yN]: "
-					read SWAP
 
-					if [ "${SIZE}" -le "512000000" ] ; then
+					if [ "${SIZE}" -le "512099328" ] ; then
+
 						gpt add ${DEVICES}/${RESULT}
+
 					else
-						case "${SWAP}" in
-							yY)
-							;;
-							*)
-							;;
-						esac
+						gpt add -s 1000000 ${DEVICES}/${RESULT}
+
+						if [ "${SIZE}" -gt "1024099328" ] ; then
+							echo -n "Do you want to create a swap partition? [yN]: "
+							read SWAP
+							case "${SWAP}" in
+								yY)
+									gpt add -s 1000000 -t swap ${DEVICES}/${RESULT}
+								;;
+							esac
+						fi
+						gpt add -t 12f31621-10a0-4a3c-a0e8-9406c2e485f0 ${DEVICES}/${RESULT}
 					fi
 					
 				;;
