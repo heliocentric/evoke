@@ -1,5 +1,4 @@
 # Magic data for KMimeMagic (originally for file(1) command)
-# $Id$
 #
 # Note on adding additional MIME types:
 #
@@ -27,10 +26,18 @@
 #    Column #3: contents of data to match
 #    Column #4: MIME type of result
 #    Column #5: MIME encoding of result (optional)
+#
+# $Id$
+
 
 #------------------------------------------------------------------------------
 # Localstuff:  file(1) magic for locally observed files
 # Add any locally observed files here.
+
+# Evoke specific files
+0       string          I:1.1              text/vnd.evoke-trackfile.1.1
+0       string          I:trackfile:1.2    text/vnd.evoke-trackfile.1.2
+
 
 # Real Audio (Magic .ra\0375)
 0	belong		0x2e7261fd	audio/x-pn-realaudio
