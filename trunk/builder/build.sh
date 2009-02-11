@@ -220,7 +220,7 @@ do
 	cd ${DESTDIR}${BOOTPATH} && tar -cf - --exclude loader.old * | tar -xvf - -C ${BOOTDIR}${BOOTPATH} 1>&2
 
 	cp ${BOOTDIR}${BOOTPATH}/pxeboot ${BOOTDIR}${BOOTPATH}/pxeboot-qemu && chmod o+w ${BOOTDIR}${BOOTPATH}/pxeboot-qemu && echo >> ${BOOTDIR}${BOOTPATH}/pxeboot-qemu
-
+	mv "${BOOTDIR}${BOOTPATH}/pxeboot-qemu" "${BOOTDIR}${BOOTPATH}/pxeboot"
 	echo "				[DONE]"
 
 done
