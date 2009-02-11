@@ -317,8 +317,8 @@ real_update() {
 			cd "${DESTDIR}/evoke/${VERSION}"
 			unset TRACKFILE
 			OPTIONS="write" verify *
-			PATCHSIZE="$(blocksize $(("$(du -d 0 ${PATCHDIR} | awk '{ print $1 }')" * "1024")))"
-			DOWNLOADSIZE="$(blocksize $(("$(du -d 0 ${SCRATCHDIR}/download | awk '{ print $1 }')" * "1024")))"
+			PATCHSIZE="$(blocksize $(("$(du -d 0 ${PATCHDIR} | awk '{ print $1 }')" * "512")))"
+			DOWNLOADSIZE="$(blocksize $(("$(du -d 0 ${SCRATCHDIR}/download | awk '{ print $1 }')" * "512")))"
 			echo "Size of complete files downloaded: ${DOWNLOADSIZE}"
 			echo "Size of patch files downloaded: ${PATCHSIZE}"
 			echo "Total Size of the release: ${TOTALSIZE}"
