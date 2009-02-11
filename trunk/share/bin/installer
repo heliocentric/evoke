@@ -49,6 +49,10 @@ if [ "${CONT}" != "y" ] ; then
 	exit
 fi
 
+rand() {
+	echo "$(dd if=/dev/random bs=4m count=1 2>${DEVICES}/null | md5 -q | cut -b 1-31)"
+}
+
 main_installer () {
 	until [ "${BREAKOUT}" = "yes" ] 
 	do
@@ -153,6 +157,9 @@ partdisk() {
 						fi
 						gpt add -t 12f31621-10a0-4a3c-a0e8-9406c2e485f0 ${DEVICES}/${RESULT}
 					fi
+					BOOTHASH=$(rand)
+					BOOTDEVICE="$(mounter list boot-ufs | grep "${RESULT}" | head -n 1)"
+					newfs -L "${BOOTHASH}" "${DEVICES}/${BOOTDEVICE}"
 					
 				;;
 				[nN])
@@ -168,7 +175,7 @@ partdisk() {
 					bsdlabel -wB ${DEVICES}/${RESULT}s1
 					bsdlabel -e ${DEVICES}/${RESULT}s1
 					if [ -c "${DEVICES}/${RESULT}s1a" ] ; then
-						ROOTHASH=$(dd if=/dev/random bs=4m count=1 2>${DEVICES}/null | md5 -q | cut -b 1-31)
+						ROOTHASH=$(rand)
 						ROOTFS="${RESULT}s1a"
 					fi
 					newfs -L ${ROOTHASH} ${DEVICES}/${ROOTFS}
