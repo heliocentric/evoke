@@ -27,6 +27,12 @@
 
 # Generic wrappers so that installer will work on FreeBSD.
 
+FORFS="
+"
+
+OLDFS=" 	
+"
+
 if [ ! -c "${DEVICES}/null" ] ; then
 	if [ -c "/dev/null" ] ; then
 		DEVICES=/dev
@@ -112,15 +118,8 @@ evoke_chooser() {
 			partdisk evoke
 		;;
 	esac
-	if [ "${ROOTFS}" = "" ] ; then
-		clear
-		ROOTFS=$(menu "Choose Root Filesystem" "$(mounter list boot-ufs)")
-	fi
-	if [ "${EVOKE_SYSCONFIG}" = "" ] ; then
-		clear
-		EVOKE_SYSCONFIG=$(sysconfig menu)
-	fi
-	mounter ufs:${ROOTFS} ${DESTDIR}
+	mounter "ufs:ufs/${BOOTHASH}" "${DESTDIR}"
+	update menu
 }
 
 # Disk partitioning function
@@ -150,17 +149,26 @@ partdisk() {
 							echo -n "Do you want to create a swap partition? [yN]: "
 							read SWAP
 							case "${SWAP}" in
-								yY)
+								[yY])
 									gpt add -s 1000000 -t swap ${DEVICES}/${RESULT}
 								;;
 							esac
 						fi
 						gpt add -t 12f31621-10a0-4a3c-a0e8-9406c2e485f0 ${DEVICES}/${RESULT}
 					fi
-					BOOTHASH=$(rand)
+					BOOTHASH="$(rand)"
 					BOOTDEVICE="$(mounter list boot-ufs | grep "${RESULT}" | head -n 1)"
 					newfs -L "${BOOTHASH}" "${DEVICES}/${BOOTDEVICE}"
-					
+					FSLIST="$(mounter list ufs | grep "${RESULT}")"
+					if [ "${FSLIST}" != "" ] ; then
+						IFS="${FORFS}"
+						for device in ${FSLIST}
+						do
+							FSHASH="$(rand)"
+							newfs -L "${FSHASH}" "${DEVICES}/${device}"
+						done
+						IFS="${OLDFS}"
+					fi
 				;;
 				[nN])
 					echo "Not currently Implemented"	
