@@ -167,7 +167,7 @@ list_all_disks() {
 					DEVICE=$2;
 					if (PROTO ~ /ufs/) {
 						FS=" "
-						"dumpfs -m " DEVICE " | grep -v ^#" | getline;
+						"dumpfs -m " DEVICE " 2>/dev/null | grep -v ^#" | getline;
 						for (operator = 1; operator <= NF; operator++) {
 							if ($operator == "-L") {
 								operand = ++operator;
