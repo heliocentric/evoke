@@ -567,40 +567,47 @@ activater() {
 }
 
 update_menu() {
+
 	if [ "${1}" != "" ] ; then
 		local DESTDIR="${1}"
 	fi
 
 	if [ ! -d "${DESTDIR}" ] ; then
-		BOOTFS="$(mounter search tag=boot | cut -d : -f 2-100)"
-		if [ "${BOOTFS}" != "" ] ; then
-			local DESTDIR="${EVOKE_MNTDIR}/$(dd if=/dev/random bs=4m count=1 2>/dev/null | sha256 -q)"
-			mkdir -p "${DESTDIR}"
-
-			local CHOICE=$(menu "Boot filesystem" "${BOOTFS}" "q:Quit")
-			if [ "${CHOICE}" != "" ] ; then
-				case "${CHOICE}" in
-					Quit)
-						echo "No destination directory specified!"
-						GLOBAL_ERRORCODE="65"
-						return
-
-					;;
-					*)
-						mounter "boot-ufs:${CHOICE}" "${DESTDIR}"
-						DESTDIR_IS_MOUNTED="yes"
-					;;
-				esac
+		if [ -f "${DEVICES}/ufs/${BOOTHASH}" ] ; then
+			BOOTDEVICE="ufs/${BOOTHASH}"
+		else
+			BOOTFS="$(mounter search tag=boot | cut -d : -f 2-100)"
+			if [ "${BOOTFS}" != "" ] ; then
+				local CHOICE=$(menu "Boot filesystem" "${BOOTFS}" "q:Quit")
+				if [ "${CHOICE}" != "" ] ; then
+					case "${CHOICE}" in
+						Quit)
+							echo "No destination directory specified!"
+							GLOBAL_ERRORCODE="65"
+							return
+	
+						;;
+						*)
+							BOOTDEVICE="${CHOICE}"
+						;;
+					esac
+				else
+					echo "No destination directory specified!"
+					GLOBAL_ERRORCODE="65"
+					return
+				fi
 			else
-				echo "No destination directory specified!"
+				echo "Bootable filesystems not found."
 				GLOBAL_ERRORCODE="65"
 				return
 			fi
-		else
-			echo "Bootable filesystems not found."
-			GLOBAL_ERRORCODE="65"
-			return
 		fi
+
+		local DESTDIR="${EVOKE_MNTDIR}/$(dd if=/dev/random bs=4m count=1 2>/dev/null | sha256 -q)"
+		mkdir -p "${DESTDIR}"
+		mounter "boot-ufs:${BOOTDEVICE}" "${DESTDIR}"
+		DESTDIR_IS_MOUNTED="yes"
+
 	fi
 
 	. $(command -v menu)
