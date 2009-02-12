@@ -196,6 +196,12 @@ partdisk() {
 }
 
 freebsd_installer() {
+	export SOURCEDIR=${EVOKE_MNTDIR}/$(dd if=/dev/random bs=4m count=1 2>/dev/null | sha256 -q)
+	export DESTDIR=${EVOKE_MNTDIR}/$(dd if=/dev/random bs=4m count=1 2>/dev/null | sha256 -q)
+
+	mkdir -p ${SOURCEDIR}
+	mkdir -p ${DESTDIR}
+
 	unset BREAKOUT
 	export FTPURLS="ftp.freebsd.org/pub/FreeBSD/releases
 			ftp-archive.freebsd.org/pub/FreeBSD-Archive/old-releases"
@@ -249,30 +255,13 @@ EOF
 cat >>${DESTDIR}/etc/fstab << EOF
 /dev/ufs/${ROOTHASH}	/	ufs	rw,noatime	1	1
 EOF
+	mounter unmount ${DESTDIR}
+	mounter unmount ${SOURCEDIR}
+	rmdir ${SOURCEDIR}
+	rmdir ${DESTDIR}
+	rmdir ${RSRCDIR}
+
 }
-
-evoke_installer() {
-}
-
-# Main program. Note, we use random sha256 hashes, so that installer 
-# can theoretically be run on a multi-user system
-# Due to other reasons, it can't, but it's not /our/ fault.
-# Not like we can unlink device nodes until we are done, 
-# then relink it, causing exclusivity for our process and it's children.
-# 
-# Give the admin the option, and hope to hell they are smart enough not 
-# to run installer on the same device nodes.
-
-export SOURCEDIR=${EVOKE_MNTDIR}/$(dd if=/dev/random bs=4m count=1 2>/dev/null | sha256 -q)
-export DESTDIR=${EVOKE_MNTDIR}/$(dd if=/dev/random bs=4m count=1 2>/dev/null | sha256 -q)
-
-mkdir -p ${SOURCEDIR}
-mkdir -p ${DESTDIR}
 
 main_installer
 #freebsd_installer
-mounter unmount ${DESTDIR}
-mounter unmount ${SOURCEDIR}
-rmdir ${SOURCEDIR}
-rmdir ${DESTDIR}
-rmdir ${RSRCDIR}
