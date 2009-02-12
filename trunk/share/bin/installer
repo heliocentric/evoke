@@ -118,7 +118,7 @@ evoke_chooser() {
 			partdisk evoke
 		;;
 	esac
-	update menu
+	BOOTHASH="${BOOTHASH}" update menu
 }
 
 # Disk partitioning function
