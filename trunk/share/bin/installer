@@ -118,7 +118,6 @@ evoke_chooser() {
 			partdisk evoke
 		;;
 	esac
-	mounter "ufs:ufs/${BOOTHASH}" "${DESTDIR}"
 	update menu
 }
 
