@@ -110,13 +110,23 @@ mexit () {
 	# XXX helio an ISTRANSPORT check is needed here, and mdconfig/ggatec destruction should be implemented.
 }
 
+
+vecho() {
+	if [ "${VERBOSE}" = "YES" ] ; then
+		printf "$@"
+	fi
+}
+
 normal_fsck() {
 	FSCK_BIN="${1}"
 	DEVICE="${2}"
 
 	command -v "${FSCK_BIN}" >${DEVICES}/null 
+	vecho "${FSCK_BIN}\n"
+	vecho "${DEVICE}\n"
 
 	if [ "$?" != "127" ] ; then
+		echo "${FSCK_BIN}" -p "${DEVICES}/${DEVICE}"
 		"${FSCK_BIN}" -p "${DEVICES}/${DEVICE}"
 		case $? in
 	                0)
@@ -531,6 +541,7 @@ msdosfs_mount () {
 	echo_config
 	if [ "${M_STYPE}" = "GEOM" ] ; then
 		if [ -c "${DEVICES}/${M_FILE}" ] ; then
+			vecho normal_fsck fsck_msdosfs "${M_FILE}\n"
 			normal_fsck fsck_msdosfs "${M_FILE}"
 			rmount -t ${M_PROTO} ${DEVICES}/${M_FILE} ${M_DESTINATION}
 		else
@@ -932,6 +943,23 @@ list_proto () {
 # It's static, and could be shared, but isn't for other reasons.
 
 mounter_command () {
+
+	QUIET="yes"
+
+	if [ "${OPTIONS}" != "" ] ; then
+		for option in ${OPTIONS}
+		do
+			case "${option}" in
+				quiet)
+					QUIET="yes"
+				;;
+				verbose)
+					QUIET="no"
+				;;
+			esac
+		done
+	fi
+
 	case "${1}" in
 		[uU][nN][mM][oO][uU][nN][tT])
 			unmount_handler "${2}"
@@ -977,5 +1005,3 @@ mounter_command () {
 	esac
 }
 mounter $@
-
-
