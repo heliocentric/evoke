@@ -1,0 +1,19 @@
+#summary Long term design goals
+#labels Phase-Design,Featured
+
+== Key ==
+
+|| Level	|| Description											||
+|| 0		|| No work has been done									||
+|| 1		|| Data which is written to disk uses the format specified, but no programs truly 'use' it	||
+|| 2		|| Support is feature complete.									||
+
+== Goals ==
+
+|| Description											|| Release	|| Level?	||
+|| Multiple installed versions. 								|| 0.1		|| 2		||
+|| Multiple binary targets, including abis and architectures					|| 0.1		|| 2		||
+|| Single shared root filesystem.								|| 0.1		|| 2		||
+|| UUID user identification, instead of serialized ids						|| 0.1		|| 1		||
+|| Authentication daemon based user management							|| N/A		|| 0		||
+|| Ubiquitous use of RSA and DSA based identity verification instead of plaintext passwords	|| N/A		|| 0		||
