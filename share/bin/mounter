@@ -439,7 +439,7 @@ mount_proto () {
 				dists)
 					M_PTYPE="DEV"
 					prep_transport
-					dists_mount
+					ufs_mount
 				;;
 				ufs)
 					M_PTYPE="DEV"
@@ -560,7 +560,7 @@ ufs_mount () {
 	if [ "${M_STYPE}" = "GEOM" ] ; then
 		if [ -c "${DEVICES}/${M_FILE}" ] ; then
 			normal_fsck fsck_ffs "${M_FILE}"
-			rmount -t ${M_PROTO} ${DEVICES}/${M_FILE} ${M_DESTINATION}
+			rmount -t ufs ${DEVICES}/${M_FILE} ${M_DESTINATION}
 		else
 			mexit 9
 		fi
@@ -807,21 +807,7 @@ object_mount () {
 	if [ "${M_STYPE}" = "GEOM" ] ; then
 		if [ -c "${DEVICES}/${M_FILE}" ] ; then
 			newfs ${DEVICES}/${M_FILE} >&2
-			rmount ${DEVICES}/${M_FILE} ${M_DESTINATION}
-		else
-			mexit 9
-		fi
-	else
-		mexit 8
-	fi
-}
-# distfile store wrapper.
-
-dists_mount () {
-	echo_config
-	if [ "${M_STYPE}" = "GEOM" ] ; then
-		if [ -c "${DEVICES}/${M_FILE}" ] ; then
-			rmount ${DEVICES}/${M_FILE} ${M_DESTINATION}
+			ufs_mount
 		else
 			mexit 9
 		fi
