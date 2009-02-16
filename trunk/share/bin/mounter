@@ -126,7 +126,7 @@ normal_fsck() {
 	vecho "${DEVICE}\n"
 
 	if [ "$?" != "127" ] ; then
-		echo "${FSCK_BIN}" -p "${DEVICES}/${DEVICE}"
+		vecho "${FSCK_BIN}" -p "${DEVICES}/${DEVICE}"
 		"${FSCK_BIN}" -p "${DEVICES}/${DEVICE}"
 		case $? in
 	                0)
@@ -451,6 +451,16 @@ mount_proto () {
 					prep_transport
 					msdosfs_mount
 				;;
+				ext2fs)
+					M_PTYPE="DEV"
+					prep_transport
+					ext2fs_mount
+				;;
+				ext3fs)
+					M_PTYPE="DEV"
+					prep_transport
+					ext2fs_mount
+				;;
 				*)
 					M_PTYPE="DEV"
 					prep_transport
@@ -541,7 +551,6 @@ msdosfs_mount () {
 	echo_config
 	if [ "${M_STYPE}" = "GEOM" ] ; then
 		if [ -c "${DEVICES}/${M_FILE}" ] ; then
-			vecho normal_fsck fsck_msdosfs "${M_FILE}\n"
 			normal_fsck fsck_msdosfs "${M_FILE}"
 			rmount -t ${M_PROTO} ${DEVICES}/${M_FILE} ${M_DESTINATION}
 		else
@@ -561,6 +570,20 @@ ufs_mount () {
 		if [ -c "${DEVICES}/${M_FILE}" ] ; then
 			normal_fsck fsck_ffs "${M_FILE}"
 			rmount -t ufs ${DEVICES}/${M_FILE} ${M_DESTINATION}
+		else
+			mexit 9
+		fi
+	else
+		mexit 8
+	fi
+}
+
+ext2fs_mount () {
+	echo_config
+	if [ "${M_STYPE}" = "GEOM" ] ; then
+		if [ -c "${DEVICES}/${M_FILE}" ] ; then
+			normal_fsck e2fsck "${M_FILE}"
+			rmount -t ext2fs ${DEVICES}/${M_FILE} ${M_DESTINATION}
 		else
 			mexit 9
 		fi
