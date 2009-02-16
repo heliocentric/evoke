@@ -188,7 +188,7 @@ verify() {
 
 #			TIMESTAMP="$(date -j -f "%a %b %d %T %Z %Y" "`date`" "+%s")"
 			TRACKDATA="$(verify_loop "$@")"
-			TRACKDATA="$(printf "I:1.1:${TRACKFILE_DATE}:${SIGNATURE_BYTES}\n${TRACKDATA}\n#")"
+			TRACKDATA="$(printf "I:trackfile:1.2:${TRACKFILE_DATE}:${SIGNATURE_BYTES}\n${TRACKDATA}\n#")"
 			echo "${TRACKDATA}" | dd bs=512 fillchar=" " conv=sync "of=${SCRATCHDIR}/head" 2>${DEVICES}/null
 			
 			if [ -r "${TRACKFILE_PRIVATE_KEY}" ] ; then
@@ -208,7 +208,7 @@ verify() {
 			dd "if=${RTRACKFILE}" bs=512 "of=${SCRATCHDIR}/trackfile" 2>${DEVICES}/null
 			RTRACKFILE="${SCRATCHDIR}/trackfile"
 
-			SIGNATURE_BYTES="$(grep -a ^I: ${RTRACKFILE} | cut -d : -f 4)"
+			SIGNATURE_BYTES="$(grep -a ^I: ${RTRACKFILE} | cut -d : -f 5)"
 			if [ "${SIGNATURE_BYTES}" != "" ] ; then
 				if [ "${SIGNATURE_BYTES}" != "0" ] ; then
 					PAD="$(( "${SIGNATURE_BYTES}" % 512 ))"

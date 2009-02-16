@@ -110,13 +110,23 @@ mexit () {
 	# XXX helio an ISTRANSPORT check is needed here, and mdconfig/ggatec destruction should be implemented.
 }
 
+
+vecho() {
+	if [ "${VERBOSE}" = "YES" ] ; then
+		printf "$@"
+	fi
+}
+
 normal_fsck() {
 	FSCK_BIN="${1}"
 	DEVICE="${2}"
 
 	command -v "${FSCK_BIN}" >${DEVICES}/null 
+	vecho "${FSCK_BIN}\n"
+	vecho "${DEVICE}\n"
 
 	if [ "$?" != "127" ] ; then
+		vecho "${FSCK_BIN}" -p "${DEVICES}/${DEVICE}"
 		"${FSCK_BIN}" -p "${DEVICES}/${DEVICE}"
 		case $? in
 	                0)
@@ -429,7 +439,7 @@ mount_proto () {
 				dists)
 					M_PTYPE="DEV"
 					prep_transport
-					dists_mount
+					ufs_mount
 				;;
 				ufs)
 					M_PTYPE="DEV"
@@ -440,6 +450,16 @@ mount_proto () {
 					M_PTYPE="DEV"
 					prep_transport
 					msdosfs_mount
+				;;
+				ext2fs)
+					M_PTYPE="DEV"
+					prep_transport
+					ext2fs_mount
+				;;
+				ext3fs)
+					M_PTYPE="DEV"
+					prep_transport
+					ext2fs_mount
 				;;
 				*)
 					M_PTYPE="DEV"
@@ -549,7 +569,21 @@ ufs_mount () {
 	if [ "${M_STYPE}" = "GEOM" ] ; then
 		if [ -c "${DEVICES}/${M_FILE}" ] ; then
 			normal_fsck fsck_ffs "${M_FILE}"
-			rmount -t ${M_PROTO} ${DEVICES}/${M_FILE} ${M_DESTINATION}
+			rmount -t ufs ${DEVICES}/${M_FILE} ${M_DESTINATION}
+		else
+			mexit 9
+		fi
+	else
+		mexit 8
+	fi
+}
+
+ext2fs_mount () {
+	echo_config
+	if [ "${M_STYPE}" = "GEOM" ] ; then
+		if [ -c "${DEVICES}/${M_FILE}" ] ; then
+			normal_fsck e2fsck "${M_FILE}"
+			rmount -t ext2fs ${DEVICES}/${M_FILE} ${M_DESTINATION}
 		else
 			mexit 9
 		fi
@@ -796,21 +830,7 @@ object_mount () {
 	if [ "${M_STYPE}" = "GEOM" ] ; then
 		if [ -c "${DEVICES}/${M_FILE}" ] ; then
 			newfs ${DEVICES}/${M_FILE} >&2
-			rmount ${DEVICES}/${M_FILE} ${M_DESTINATION}
-		else
-			mexit 9
-		fi
-	else
-		mexit 8
-	fi
-}
-# distfile store wrapper.
-
-dists_mount () {
-	echo_config
-	if [ "${M_STYPE}" = "GEOM" ] ; then
-		if [ -c "${DEVICES}/${M_FILE}" ] ; then
-			rmount ${DEVICES}/${M_FILE} ${M_DESTINATION}
+			ufs_mount
 		else
 			mexit 9
 		fi
@@ -932,6 +952,23 @@ list_proto () {
 # It's static, and could be shared, but isn't for other reasons.
 
 mounter_command () {
+
+	QUIET="yes"
+
+	if [ "${OPTIONS}" != "" ] ; then
+		for option in ${OPTIONS}
+		do
+			case "${option}" in
+				quiet)
+					QUIET="yes"
+				;;
+				verbose)
+					QUIET="no"
+				;;
+			esac
+		done
+	fi
+
 	case "${1}" in
 		[uU][nN][mM][oO][uU][nN][tT])
 			unmount_handler "${2}"
@@ -977,5 +1014,3 @@ mounter_command () {
 	esac
 }
 mounter $@
-
-

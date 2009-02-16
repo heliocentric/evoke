@@ -4,6 +4,7 @@
  * [Release01 0.1]
 
 == Usage ==
+ * [Config Configuration variables for site.conf and local.conf]
  * [BuildEnvironment Requirements for a build environment]
  * [SystemRequirements Requirements for a running evoke system]
  * [Target Idealized Target Environment]
@@ -11,6 +12,8 @@
 
 == Design Notes ==
  * [GUIDList Reserved UUID list]
+ * [Goals Long Term Goals]
+ * [Attributes List of reserved extended attributes]
 
 == Projects ==
  * [ProgramSupport Increasing program support]

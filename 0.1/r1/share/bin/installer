@@ -27,6 +27,12 @@
 
 # Generic wrappers so that installer will work on FreeBSD.
 
+FORFS="
+"
+
+OLDFS=" 	
+"
+
 if [ ! -c "${DEVICES}/null" ] ; then
 	if [ -c "/dev/null" ] ; then
 		DEVICES=/dev
@@ -48,6 +54,10 @@ read -p "Continue? [yN]: " CONT
 if [ "${CONT}" != "y" ] ; then
 	exit
 fi
+
+rand() {
+	echo "$(dd if=/dev/random bs=4m count=1 2>${DEVICES}/null | md5 -q | cut -b 1-31)"
+}
 
 main_installer () {
 	until [ "${BREAKOUT}" = "yes" ] 
@@ -108,34 +118,62 @@ evoke_chooser() {
 			partdisk evoke
 		;;
 	esac
-	if [ "${ROOTFS}" = "" ] ; then
-		clear
-		ROOTFS=$(menu "Choose Root Filesystem" "$(mounter list boot-ufs)")
-	fi
-	if [ "${EVOKE_SYSCONFIG}" = "" ] ; then
-		clear
-		EVOKE_SYSCONFIG=$(sysconfig menu)
-	fi
-	mounter ufs:${ROOTFS} ${DESTDIR}
+	BOOTHASH="${BOOTHASH}" update menu
 }
 
 # Disk partitioning function
 partdisk() {
 	RESULT=$(menu "Choose Disk" "$(mounter list disk)")
-	echo -n "Do you want to use the entire disk? [yN]"
+	echo -n "Do you want to use the entire disk? [yN]: "
 	read ANSWER
 	case "${1}" in
 		evoke)
 			case "${ANSWER}" in
 				[yY])
 					dd if=/dev/zero bs=4m count=1 of=${DEVICES}/${RESULT} 2>${DEVICES}/null
-					fdisk -IB ${DEVICES}/${RESULT}
-					bsdlabel -wB ${DEVICES}/${RESULT}s1
+					gpt create ${DEVICES}/${RESULT}
+					gpt boot ${DEVICES}/${RESULT}
+					gpt add -s 4096 -t 4b4cf826-e53e-4b56-86b6-0f9b728e0436 ${DEVICES}/${RESULT}
+
+					SIZE="$(sysctl -b kern.geom.conftxt | awk -v RESULT=${RESULT} '{ if ($3 == RESULT) { print $4; } }')"
+
+					if [ "${SIZE}" -le "512099328" ] ; then
+
+						gpt add ${DEVICES}/${RESULT}
+
+					else
+						gpt add -s 1000000 ${DEVICES}/${RESULT}
+
+						if [ "${SIZE}" -gt "1024099328" ] ; then
+							echo -n "Do you want to create a swap partition? [yN]: "
+							read SWAP
+							case "${SWAP}" in
+								[yY])
+									gpt add -s 1000000 -t swap ${DEVICES}/${RESULT}
+								;;
+							esac
+						fi
+						gpt add -t 12f31621-10a0-4a3c-a0e8-9406c2e485f0 ${DEVICES}/${RESULT}
+					fi
+					BOOTHASH="$(rand)"
+					BOOTDEVICE="$(mounter list boot-ufs | grep "${RESULT}" | head -n 1)"
+					newfs -L "${BOOTHASH}" "${DEVICES}/${BOOTDEVICE}"
+					FSLIST="$(mounter list ufs | grep "${RESULT}")"
+					if [ "${FSLIST}" != "" ] ; then
+						IFS="${FORFS}"
+						for device in ${FSLIST}
+						do
+							FSHASH="$(rand)"
+							newfs -L "${FSHASH}" "${DEVICES}/${device}"
+						done
+						IFS="${OLDFS}"
+					fi
 				;;
 				[nN])
 					echo "Not currently Implemented"	
 				;;
-		break;
+			esac
+		;;
 		freebsd)
 			case "${ANSWER}" in
 				[yY])
@@ -144,7 +182,7 @@ partdisk() {
 					bsdlabel -wB ${DEVICES}/${RESULT}s1
 					bsdlabel -e ${DEVICES}/${RESULT}s1
 					if [ -c "${DEVICES}/${RESULT}s1a" ] ; then
-						ROOTHASH=$(dd if=/dev/random bs=4m count=1 2>${DEVICES}/null | md5 -q | cut -b 1-31)
+						ROOTHASH=$(rand)
 						ROOTFS="${RESULT}s1a"
 					fi
 					newfs -L ${ROOTHASH} ${DEVICES}/${ROOTFS}
@@ -153,11 +191,17 @@ partdisk() {
 					echo "Not currently Implemented"	
 				;;
 			esac
-		break;
+		;;
 	esac
 }
 
 freebsd_installer() {
+	export SOURCEDIR=${EVOKE_MNTDIR}/$(dd if=/dev/random bs=4m count=1 2>/dev/null | sha256 -q)
+	export DESTDIR=${EVOKE_MNTDIR}/$(dd if=/dev/random bs=4m count=1 2>/dev/null | sha256 -q)
+
+	mkdir -p ${SOURCEDIR}
+	mkdir -p ${DESTDIR}
+
 	unset BREAKOUT
 	export FTPURLS="ftp.freebsd.org/pub/FreeBSD/releases
 			ftp-archive.freebsd.org/pub/FreeBSD-Archive/old-releases"
@@ -211,30 +255,13 @@ EOF
 cat >>${DESTDIR}/etc/fstab << EOF
 /dev/ufs/${ROOTHASH}	/	ufs	rw,noatime	1	1
 EOF
+	mounter unmount ${DESTDIR}
+	mounter unmount ${SOURCEDIR}
+	rmdir ${SOURCEDIR}
+	rmdir ${DESTDIR}
+	rmdir ${RSRCDIR}
+
 }
-
-evoke_installer() {
-}
-
-# Main program. Note, we use random sha256 hashes, so that installer 
-# can theoretically be run on a multi-user system
-# Due to other reasons, it can't, but it's not /our/ fault.
-# Not like we can unlink device nodes until we are done, 
-# then relink it, causing exclusivity for our process and it's children.
-# 
-# Give the admin the option, and hope to hell they are smart enough not 
-# to run installer on the same device nodes.
-
-export SOURCEDIR=${EVOKE_MNTDIR}/$(dd if=/dev/random bs=4m count=1 2>/dev/null | sha256 -q)
-export DESTDIR=${EVOKE_MNTDIR}/$(dd if=/dev/random bs=4m count=1 2>/dev/null | sha256 -q)
-
-mkdir -p ${SOURCEDIR}
-mkdir -p ${DESTDIR}
 
 main_installer
 #freebsd_installer
-mounter unmount ${DESTDIR}
-mounter unmount ${SOURCEDIR}
-rmdir ${SOURCEDIR}
-rmdir ${DESTDIR}
-rmdir ${RSRCDIR}

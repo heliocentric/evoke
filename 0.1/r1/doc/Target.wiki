@@ -13,7 +13,7 @@ Runs a dhcp and tftp server, and provides pxe boot functionality, or it's equiva
 features are:
 
   * It boots off of the same drive that tftp then serves out for pxe functionality.
-  * All configuration is kept in a seperate nvram partition/drive/etc.
+  * All configuration is kept in a seperate sysconfig partition/drive/etc.
   * The version of evoke the boot server boots is determined by it's boot.config. 
   * The version of evoke the clients boot is determined by the dhcp configuration, so the version can be host or network specific.
 
@@ -25,8 +25,7 @@ Installing a new host should be as simple as enabling DHCP boot services, and up
 key into the firmware. This step is necessary to ensure that the boot code recieved by the dhcp server is signed 
 and verified as being legitimate.
 
-Once evoke has booted, it contacts the boot server to recieve it's configuration options, and changes the nvram 
-partition (or creates one if it does not exist) to reflect any changes from the boot server.
+Once evoke has booted, it contacts the boot server to recieve it's site specific configuration options.
 
 == Upgrading/Updating ==
 
