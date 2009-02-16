@@ -19,5 +19,6 @@
 || Split the released system files, from the site or machine specific files.					|| 0.1	|| 2	||
 || Store system configuration information out of band of the boot filesystem, in a fault tolerant manner.	|| 0.1	|| 3	||
 || UUID user identification, instead of serialized ids.								|| 0.1	|| 1	||
+|| Replace a tty based subsystem around ioctls, with a generalized console daemon.				|| N/A	|| 0	||
 || Authentication daemon based user management.									|| N/A	|| 0	||
 || Ubiquitous use of RSA and DSA based identity verification instead of plaintext passwords.			|| N/A	|| 0	||
