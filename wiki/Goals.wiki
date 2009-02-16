@@ -39,4 +39,4 @@
 || Description																	|| Ver	|| #	||
 || Replace a tty subsystem based around ioctls, with a generalized console daemon.								|| N/A	|| 0	||
 || Use file descripters 3 and 4 as 'consin' and 'consout', and replace the outdated use of ioctls on /dev/tty with a 'console protocol'		|| N/A	|| 0	||
-|| Console protocol needs inline mouse event support, and should be grow some of the advanced key features that right now rely on an X server	|| N/A	|| 0	||
+|| Console protocol needs inline mouse event support, and should grow some of the advanced key features that right now rely on an X server	|| N/A	|| 0	||
