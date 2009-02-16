@@ -134,8 +134,8 @@ do
 	# Patch these files to our paths, so they don't collide.
 	# This is the bulk of the boot loader versioning support.
 	sed -i .bak "s@/boot/device.hints@${BOOTPATH}/device.hints@g" ${WORKDIR}/usr/src/sys/boot/forth/loader.conf 1>&2
+	sed -i .bak "s@/boot/loader.conf.local@/evoke/site.conf@g" ${WORKDIR}/usr/src/sys/boot/forth/loader.conf 1>&2
 	sed -i .bak "s@/boot/loader.conf@${BOOTPREFIX}/loader.conf@g" ${WORKDIR}/usr/src/sys/boot/forth/loader.conf 1>&2
-	sed -i .bak "s@/boot/loader.conf.local@${BOOTPREFIX}/loader.conf.local@g" ${WORKDIR}/usr/src/sys/boot/forth/loader.conf 1>&2
 	for file in $(cat ${ROOTDIR}/bootlist)
 	do
 	    # This works for most.
@@ -220,7 +220,7 @@ do
 	cd ${DESTDIR}${BOOTPATH} && tar -cf - --exclude loader.old * | tar -xvf - -C ${BOOTDIR}${BOOTPATH} 1>&2
 
 	cp ${BOOTDIR}${BOOTPATH}/pxeboot ${BOOTDIR}${BOOTPATH}/pxeboot-qemu && chmod o+w ${BOOTDIR}${BOOTPATH}/pxeboot-qemu && echo >> ${BOOTDIR}${BOOTPATH}/pxeboot-qemu
-
+	mv "${BOOTDIR}${BOOTPATH}/pxeboot-qemu" "${BOOTDIR}${BOOTPATH}/pxeboot"
 	echo "				[DONE]"
 
 done
@@ -313,7 +313,8 @@ trackfile_load="YES"
 trackfile_type="mfs_root"
 trackfile_name="${BOOTPREFIX}/trackfile"
 evoke.trackfile="md1"
-evoke.fingerprint="${FINGERPRINT}" 
+evoke.fingerprint="${FINGERPRINT}"
+evoke.moused="yes"
 evoke.version="${VERSION}/${REVISION}"
 boot_multicons="YES"
 kern.hz=100
