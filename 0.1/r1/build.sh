@@ -29,8 +29,8 @@
 export i386_ACTIVE="6.4-RELEASE/i386"
 
 # Evoke Version
-export VERSION="HEAD"
-export REVISION="r$(svnversion)"
+export VERSION="0.1"
+export REVISION="r1"
 
 # Release Engineer
 export ENGINEER="Dylan Cochran"
