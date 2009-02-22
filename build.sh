@@ -26,7 +26,7 @@
 # $Id$
 
 # Our build targets for the root.fs image.
-export i386_ACTIVE="6.4-RELEASE/i386"
+export i386_ACTIVE="7.1-RELEASE/i386"
 
 # Evoke Version
 export VERSION="HEAD"
@@ -51,7 +51,7 @@ swapon swapoff swapinfo syslogd tail tar tcsh tftp tftpd top umount
 uniq unlink usbdevs vidcontrol whoami zcat sort pfctl du makefs 
 mount_msdosfs getextattr setextattr devinfo newfs_msdos stat dirname lsvfs
 rtsol egrep mount_cd9660 rmdir gpt watchdogd tr file bsdiff bspatch
-openssl phttpget basename dumpfs command wc sleep telnetd
+openssl phttpget basename dumpfs command wc sleep
 "
 
 # List of kernel objects in base that will be on the image. Ports modules
