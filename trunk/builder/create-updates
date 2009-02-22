@@ -150,6 +150,7 @@ if [ "${1}" != "" ] ; then
 	
 							PATCHFILE="${PATCHDIR}/${DESTHASH}/${SOURCEHASH}"
 							mkdir -p ${PATCHDIR}/${DESTHASH}/
+							echo "Generating ${RFILE} -> ${DFILE}"
 							bsdiff "${RFILE}" "${DFILE}" "${PATCHFILE}"
 							PATCHSIZE="$(stat -f '%z' ${PATCHFILE})"
 							if [ "${PATCHSIZE}" -ge "${DESTSIZE}" ] ; then
