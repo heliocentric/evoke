@@ -363,7 +363,7 @@ tar -cf - * | tar -xf - -C ${RELEASEDIR}${BOOTPREFIX}/
 echo ""
 
 echo -n " * share = Generating Binary Diffs"
-${BUILDDIR}/create-updates "${VERSION}/${REVISION}" "${BOOTDIR}${BOOTPREFIX}" ${VERSIONLIST} 1>&2
+update create "${VERSION}/${REVISION}" "${BOOTDIR}${BOOTPREFIX}" ${VERSIONLIST} 1>&2
 #cd "${RELEASEDIR}" && tar -cf - "evoke/misc/BIN-UPDATES/${VERSION}/${REVISION}" | tar -xvpf - -C "${BOOTDIR}/"
 echo ""
 
