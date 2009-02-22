@@ -136,7 +136,7 @@ do
 	sed -i .bak "s@/boot/device.hints@${BOOTPATH}/device.hints@g" ${WORKDIR}/usr/src/sys/boot/forth/loader.conf 1>&2
 	sed -i .bak "s@/boot/loader.conf.local@/evoke/site.conf@g" ${WORKDIR}/usr/src/sys/boot/forth/loader.conf 1>&2
 	sed -i .bak "s@/boot/loader.conf@${BOOTPREFIX}/loader.conf@g" ${WORKDIR}/usr/src/sys/boot/forth/loader.conf 1>&2
-	for file in $(cat ${ROOTDIR}/bootlist)
+	for file in $(cat ${BUILDDIR}/bootlist)
 	do
 	    # This works for most.
 	    sed -i .bak "s@/boot/@${BOOTPATH}/@g" ${WORKDIR}${file} 1>&2
