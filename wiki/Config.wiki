@@ -11,3 +11,4 @@
 || evoke.sysconfig	|| The UUID of the sysconfig partitions.					||
 || evoke.userconfig	|| The UUID of the auto-logged in user.						||
 || evoke.sshkey		|| SSH public key (warning, do not use in an untrusted pxeboot environment).	||
+|| evoke.useonly	|| If there is only one sysconfig or userconfig to specify, use that.		||
