@@ -566,7 +566,7 @@ activater() {
 	cd "${PREVDIR}"
 }
 
-create-updates () {
+create_updates () {
 	if [ "${1}" = "" ] ; then
 		echo "Error: No version set"
 		exit 5
@@ -909,7 +909,8 @@ update() {
 			update_menu "${2}"
 		;;
 		[cC][rR][eE][aA][tT][eE])
-			create_updates "${2}"
+			shift
+			create_updates "${@}"
 		;;
 		*)
 			update_menu "${2}"

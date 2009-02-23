@@ -407,7 +407,8 @@ if [ "${MODE}" = "init" ] ; then
 	#UsePrivilegeSeparation no                       
 	#UseDNS no
 	#PidFile ${EVOKE_PIDDIR}/sshd.pid
-	#PasswordAuthentication yes
+	#PasswordAuthentication no
+	#ChallengeResponseAuthentication no
 	#PermitEmptyPasswords no
 	#ForceCommand tcsh
 	#EOF
