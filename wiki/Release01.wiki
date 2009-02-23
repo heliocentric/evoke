@@ -20,6 +20,14 @@
 
 == Features ==
 
+=== SSH ===
+
+Like the pilot, 0.1 supports ssh, however because evoke is currently single user, the ssh daemon is disabled. To enable it, add the following to /evoke/site.conf:
+
+  evoke.sshkey="ssh-rsa AAAAB3NzaC1yc2EAAAABI...."
+
+Where the key is your public key. Currently, this method is an administrative interface that only supports a single public key. It is not recommended to use this feature in a pxeboot environment unless the hardware of both the boot server, the client, and all networking infrastructure is completely secured.
+
 === Changes to Previous Releases ===
 
 N/A
