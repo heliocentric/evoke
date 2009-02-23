@@ -49,6 +49,10 @@ if [ ! -d "${TMPDIR}" ] ; then
 	TMPDIR="/tmp"
 fi
 
+if [ ! -d "${RELEASEDIR}" ] ; then
+	RELEASEDIR="/releases"
+fi
+
 if [ ! -d "${EVOKE_MNTDIR}" ] ; then
 	EVOKE_MNTDIR="/media"
 	mkdir -p "${EVOKE_MNTDIR}"
