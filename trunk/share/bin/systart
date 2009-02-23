@@ -400,6 +400,10 @@ fi
 
 if [ "${EVOKE_SSHKEY}" != "" ] ; then
 	echo "Starting sshd"
+
+	mkdir -p ${HOME}/.ssh
+	echo "${EVOKE_SSHKEY}" >>${HOME/.ssh/authorized_keys
+
 	ln -s . ${EVOKE_LIBDIR}/ssh
 
 	if [ ! -f "${EVOKE_CURUSER}/sshd/hostkey" ] ; then
