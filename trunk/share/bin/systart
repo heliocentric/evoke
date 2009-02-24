@@ -156,6 +156,7 @@ if [ "${MODE}" = "init" ] ; then
 	export EVOKE_SSHKEY="$(kenv -q evoke.sshkey)"
 	export EVOKE_VERSION="$(kenv -q evoke.version)"
 	export EVOKE_USEONLY="$(kenv -q evoke.useonly)"
+	export EVOKE_MONITOR="$(kenv -q evoke.monitor)"
 
 	echo "Verifying root filesystem"
 	ROOTDEV=${DEVICES}/$(mount | awk '{ if ($3 == "/") { print $1 } }')
@@ -293,6 +294,7 @@ mkdir -p ${HOME}
 
 echo "root:*:0:0::0:0:Super-User:${HOME}:/bin/tcsh" >>${EVOKE_LIBDIR}/master.passwd
 echo "nobody:*:1:1::0:0:nobody:${EVOKE_NULLDIR}:${DEVICES}/null" >>${EVOKE_LIBDIR}/master.passwd
+echo "monitor:*:2:2::0:0:Evoke Monitoring Daemon (ganglia):${EVOKE_NULLDIR}:${DEVICES}/null" >>${EVOKE_LIBDIR}/master.passwd
 echo "wheel:*:0:" >>${EVOKE_LIBDIR}/group
 echo "operator:*:5:" >>${EVOKE_LIBDIR}/group
 
@@ -435,6 +437,13 @@ EOF
 
 	/bin/sshd -f ${EVOKE_CFGDIR}/sshd.conf 2>${DEVICES}/null
 fi
+
+case "${EVOKE_MONITOR}" in
+	[yY][eE][sS])
+		gmond -t | sed '/include/d' | sed 's/ganglia/monitor/g' >${EVOKE_LIBDIR}/gmond.conf
+		gmond -c ${EVOKE_LIBDIR}/gmond.conf
+	;;
+esac
 
 cd /
 tcsh
