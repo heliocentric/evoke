@@ -402,7 +402,7 @@ if [ "${EVOKE_SSHKEY}" != "" ] ; then
 	echo "Starting sshd"
 
 	mkdir -p ${HOME}/.ssh
-	echo "${EVOKE_SSHKEY}" >>${HOME/.ssh/authorized_keys
+	echo "${EVOKE_SSHKEY}" >>${HOME}/.ssh/authorized_keys
 
 	ln -s . ${EVOKE_LIBDIR}/ssh
 
