@@ -373,6 +373,8 @@ echo -n " * share = Making ISO image"
 
 mkdir -p ${BOOTDIR}/cdboot
 cp ${BOOTDIR}${BOOTPREFIX}/FreeBSD/$(echo ${i386_ACTIVE} | cut -d "-" -f 1)/$(echo ${i386_ACTIVE} | cut -d "/" -f 2)/cdboot ${BOOTDIR}/cdboot/i386
+mkdir -p ${BOOTDIR}/evoke/misc
+echo "${VERSION}/${REVISION}" >${BOOTDIR}/evoke/misc/versionlist
 
 mkdir -p ${RELEASEDIR}/evoke/misc/ISO-IMAGES/${VERSION}/${REVISION}
 
