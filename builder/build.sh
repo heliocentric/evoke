@@ -108,6 +108,19 @@ do
 
 	echo -n " * ${target} = Patching World"
 
+
+	# Before we do anything else, apply all diffs in the shared directory for the release.
+
+	PATCHLIST="$(echo ${BUILDDIR}/targets/FreeBSD/${RELEASE}/share/patches/*)"
+	if [ "${PATCHLIST}" != "" ] ; then
+		cd ${WORKDIR}/usr/src
+
+		for patchfile in ${PATCHLIST}
+		do
+			patch <"${patchfile}" >&2
+		done
+	fi
+
 	# Ok, we need to patch around some hard coded paths in src/
 	cd ${WORKDIR}/usr/src/sys/boot/
 
