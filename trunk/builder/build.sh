@@ -16,7 +16,7 @@ export FORFS="
 "
 export OLDFS=" 	
 "
-export SVNDATE="$(svn info --xml | awk '/<date>/, /<\/date>/' | sed 's@<date>@@g' | sed 's@</date>@@~g' | sed 's@T@ @g' | cut -d '.' -f 1)"
+export SVNDATE="$(svn info --xml | awk '/<date>/, /<\/date>/' | sed 's@<date>@@g' | sed 's@</date>@@g' | sed 's@T@ @g' | cut -d '.' -f 1)"
 export TRACKFILE_DATE="$(date -j -f "%Y-%m-%dT%H:%M:%S" "${SVNDATE}" "+%s")"
 
 # BOOTDIR is the 'boot' directory; it's the root of the cd image
