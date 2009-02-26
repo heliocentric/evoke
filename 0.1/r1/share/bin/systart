@@ -50,11 +50,6 @@ list_if () {
    done
 }
 
-mecho () {
-	if [ "${VERBOSE}" != "no" ] ; then
-		echo $@
-	fi
-}
 case "${1}" in
 	autoboot)
 		MODE="init"		
@@ -112,10 +107,25 @@ if [ "${MODE}" = "init" ] ; then
 			esac
 		;;
 	esac
+	case "$(kenv -q loaddev)" in
+		cd*)
+			EVOKE_BOOTMODE="cdboot"
+		;;
+		pxe*)
+			EVOKE_BOOTMODE="pxeboot"
+		;;
+		disk*)
+			EVOKE_BOOTMODE="diskboot"
+		;;
+		*)
+			EVOKE_BOOTMODE="jailer"
+		;;
+	esac
+
 fi
 
 
-mecho -n "Merging directories"
+echo "Merging directories"
 
 sh /system/share/bin/merger /system/ /
 
@@ -127,7 +137,6 @@ sh /system/share/bin/merger /system/ /
 
 mount_nullfs -o union,ro /system/share/bin/ /bin/
 export PATH=/bin
-mecho ""
 
 # The fastest root filesystem consistancy check in history.
 # Since the probability that random corruption will cause changes to
@@ -144,22 +153,24 @@ if [ "${MODE}" = "init" ] ; then
 	export EVOKE_MOUSED="$(kenv -q evoke.moused)"
 	export EVOKE_USERCONFIG="$(kenv -q evoke.userconfig)"
 	export EVOKE_SCDEVICE="$(kenv -q evoke.sysconfig)"
-	mecho -n "Verifying root filesystem"
-	ROOTFINGERPRINT=${EVOKE_FINGERPRINT}
+	export EVOKE_SSHKEY="$(kenv -q evoke.sshkey)"
+	export EVOKE_VERSION="$(kenv -q evoke.version)"
+	export EVOKE_USEONLY="$(kenv -q evoke.useonly)"
+	export EVOKE_MONITOR="$(kenv -q evoke.monitor)"
+
+	echo "Verifying root filesystem"
 	ROOTDEV=${DEVICES}/$(mount | awk '{ if ($3 == "/") { print $1 } }')
-	if [ "${ROOTFINGERPRINT}" != "" ] ; then
-		if [ "${ROOTFINGERPRINT}" != "$(sha256 -q ${ROOTDEV})" ] ; then
-			mecho "[FAILED]"
+	if [ "${EVOKE_FINGERPRINT}" != "" ] ; then
+		if [ "${EVOKE_FINGERPRINT}" != "$(sha256 -q ${ROOTDEV})" ] ; then
 			reboot
 		fi
 	fi
-	mount -o update,async ${ROOTDEV} /
-
-	mecho ""
+	# Don't need a writable /
+	# mount -o update,async ${ROOTDEV} /
 
 fi
 
-mecho -n "Creating /mem"
+echo "Creating /mem"
 
 
 # Memory store
@@ -219,11 +230,9 @@ export EVOKE_CURUSER=/mem/curuser
 mkdir -p ${EVOKE_CURUSER}
 
 
-mecho ""
-
 if [ "${MODE}" = "init" ] ; then
 
-	mecho "Adding swap, dump,  and entropy"
+	echo "Adding swap, dump,  and entropy"
 	SWAPLIST="$(mounter list swap)"
 
 	if [ "${SWAPLIST}" != "" ] ; then
@@ -246,14 +255,13 @@ if [ "${MODE}" = "init" ] ; then
 		mounter dump:${DUMPDEV}
 	fi
 
-	mecho -n "Starting system daemons"
+	echo "Starting system daemons"
 	# Always start powerd if available, some machines do not have proper heat management
 	# and it can be an issue. 
 	#
 	# Do not remove under penalty of death!
 	powerd >${DEVICES}/null 2>${DEVICES}/null
 	watchdogd -I/mem/pid/watchdogd.pid
-	mecho ""
 fi
 
 SC_PART=${EVOKE_SCDEVICE}
@@ -279,14 +287,14 @@ if [ "${DEFUSER}" != "" ] ; then
 fi
 
 
-mecho -n "Generating files"
-RPASSWD='$1$1QgK4Xsg$.PInGIAb4c0nznxpRkUPk.'
+echo "Generating files"
 
 export HOME=${EVOKE_MEMDIR}/home
 mkdir -p ${HOME}
 
-echo "root:${RPASSWD}:0:0::0:0:Super-User:${HOME}:/bin/tcsh" >>${EVOKE_LIBDIR}/master.passwd
-echo "nobody:NOTREALPASSWORD:1:1::0:0:nobody:${EVOKE_NULLDIR}:${DEVICES}/null" >>${EVOKE_LIBDIR}/master.passwd
+echo "root:*:0:0::0:0:Super-User:${HOME}:/bin/tcsh" >>${EVOKE_LIBDIR}/master.passwd
+echo "nobody:*:1:1::0:0:nobody:${EVOKE_NULLDIR}:${DEVICES}/null" >>${EVOKE_LIBDIR}/master.passwd
+echo "monitor:*:2:2::0:0:Evoke Monitoring Daemon (ganglia):${EVOKE_NULLDIR}:${DEVICES}/null" >>${EVOKE_LIBDIR}/master.passwd
 echo "wheel:*:0:" >>${EVOKE_LIBDIR}/group
 echo "operator:*:5:" >>${EVOKE_LIBDIR}/group
 
@@ -298,10 +306,9 @@ echo "/bin/sh" >>${EVOKE_LIBDIR}/shells
 cd /config
 file -C -i -m magic
 
-mecho ""
 
 if [ "${MODE}" = "init" ] ; then
-	mecho -n "Configuring network"
+	echo "Configuring network"
 	IF="$(kenv -q boot.netif.name)"
 	if [ "${IF}" = "" ] ; then
 		IF="$(list_if | head -n 1)"
@@ -357,25 +364,26 @@ if [ "${MODE}" = "init" ] ; then
 
 	else
 
-	# If /anything/ is missing, dhclient it. Where else are we going to get it from?
+		# If /anything/ is missing, dhclient it. Where else are we going to get it from?
 
 		dhclient ${IF} >${DEVICES}/null 2>/${DEVICES}/null
 	fi
-	mecho ""
-	if [ "${EVOKE_MOUSED}" != "" ] ; then
-		mecho -n "Starting moused"
-		cd ${DEVICES}
-		# Auto configure moused (note, it is disabled by default as it does slow 
-		# down the boot a bit.)
-		for i in ums* psm*
-		do
-			moused -p ${DEVICES}/${i} -3 -I ${EVOKE_PIDDIR}/${i}.pid 2>${DEVICES}/null
-		done
-		for ttyv in ${DEVICES}/ttyv* ; do
-			vidcontrol < ${ttyv} -m on
-		done
-		mecho ""
-	fi
+	case "${EVOKE_MOUSED}" in
+		[yY][eE][sS])
+			echo "Starting moused"
+			cd ${DEVICES}
+			# Auto configure moused (note, it is disabled by default as it does slow 
+			# down the boot a bit.)
+			for i in ums* psm*
+			do
+				moused -p ${DEVICES}/${i} -3 -I ${EVOKE_PIDDIR}/${i}.pid 2>${DEVICES}/null
+			done
+			for ttyv in ${DEVICES}/ttyv* ; do
+				vidcontrol < ${ttyv} -m on
+			done
+		;;
+	esac
+fi
 
 	# syslogd is currently unnecessary, may uncomment later
 
@@ -392,41 +400,49 @@ if [ "${MODE}" = "init" ] ; then
 	#syslogd -ss -f ${EVOKE_CFGDIR}/syslogd.conf -P ${EVOKE_PIDDIR}/syslogd.pid -p ${EVOKE_RUNDIR}/log
 	#echo "[DONE]"
 
-	# Also removed because it was deemed unnecessary. 
-	# Note: might be useful to make it tunables, but default off
+if [ "${EVOKE_SSHKEY}" != "" ] ; then
+	echo "Starting sshd"
 
-	#echo -n "Starting sshd							"
-	#ln -s . ${EVOKE_LIBDIR}/ssh
-	#ssh-keygen -t dsa -f ${EVOKE_LIBDIR}/ssh_key -N '' >${DEVICES}/null 2>${DEVICES}/null
+	mkdir -p ${HOME}/.ssh
+	echo "${EVOKE_SSHKEY}" >>${HOME}/.ssh/authorized_keys
+
+	ln -s . ${EVOKE_LIBDIR}/ssh
+
+	if [ ! -f "${EVOKE_CURUSER}/sshd/hostkey" ] ; then
+		mkdir -p "${EVOKE_CURUSER}/sshd"
+		ssh-keygen -t rsa -f "${EVOKE_CURUSER}/sshd/hostkey" -N '' >${DEVICES}/null 2>${DEVICES}/null
+	fi
 
 	# Don't change these under penalty of death!
 
-	#cat >${EVOKE_LIBDIR}/sshd.conf << "EOF"
-	#HostKey ${EVOKE_CFGDIR}/ssh_key
-	#PermitRootLogin yes
-	#UsePrivilegeSeparation no                       
-	#UseDNS no
-	#PidFile ${EVOKE_PIDDIR}/sshd.pid
-	#PasswordAuthentication yes
-	#PermitEmptyPasswords no
-	#ForceCommand tcsh
-	#EOF
-	#cat >${EVOKE_LIBDIR}/ssh_config << "EOF"
-	#StrictHostKeyChecking no
-	#EOF
-	#/bin/sshd -f ${EVOKE_CFGDIR}/sshd.conf 2>${DEVICES}/null
-	#echo "[DONE]"
+	cat >${EVOKE_LIBDIR}/sshd.conf << EOF
+HostKey ${EVOKE_CURUSER}/sshd/hostkey
+PermitRootLogin yes
+UsePrivilegeSeparation no                       
+UseDNS no
+PidFile ${EVOKE_PIDDIR}/sshd.pid
+PasswordAuthentication no
+ChallengeResponseAuthentication no
+PermitEmptyPasswords no
+ForceCommand tcsh
 
-	# ftpd is unnecessary, rather have only ssh.
+EOF
 
-	#echo -n "Starting ftpd							"
-	#echo "ftp	21/tcp" >>${EVOKE_LIBDIR}/services
-	#cat >${EVOKE_LIBDIR}/ftpusers << EOF
-	# blah
-	#EOF
-	#ftpd -D -d -p ${EVOKE_PIDDIR}/ftpd.pid
-	#echo "[DONE]"
+	cat >${EVOKE_LIBDIR}/ssh_config << "EOF"
+
+StrictHostKeyChecking no
+
+EOF
+
+	/bin/sshd -f ${EVOKE_CFGDIR}/sshd.conf 2>${DEVICES}/null
 fi
+
+case "${EVOKE_MONITOR}" in
+	[yY][eE][sS])
+		gmond -t | sed '/include/d' | sed 's/ganglia/monitor/g' >${EVOKE_LIBDIR}/gmond.conf
+		gmond -c ${EVOKE_LIBDIR}/gmond.conf
+	;;
+esac
 
 cd /
 tcsh

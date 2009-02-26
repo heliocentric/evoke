@@ -28,7 +28,16 @@
 || Authentication daemon based user management.									|| N/A		|| 0	||
 || Ubiquitous use of RSA and DSA based identity verification instead of plaintext passwords.			|| N/A		|| 0	||
 
-== Networking ==
+== Basic Networking ==
+
+|| Description													|| Version	|| #	||
+|| IPv4 DHCP based autoconfiguration										|| 0.1		|| 4	||
+|| IPv4 Manual configuration											|| N/A		|| 0	||
+|| Storing information usually gained via rtadv in a DHCPv4 packet.						|| N/A		|| 0	||
+|| IPv6 rtadv based autoconfiguration										|| N/A		|| 0	||
+|| Support for all applicable DHCP based options.								|| N/A		|| 0	||
+
+== Advanced Networking ==
 
 || Description													|| Version	|| #	||
 || Support multiple 'networks' with their own authentication, policies, and their own root ssl cert		|| N/A		|| 0	||
