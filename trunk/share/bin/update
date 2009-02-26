@@ -484,6 +484,24 @@ getfile() {
 	esac
 }
 
+
+# Unmount the mirror.
+
+unmount_mirror() {
+
+	filename="$(basename "${1}")"
+
+	case "${PROTOCOL}" in
+		http)
+		;;
+		tftp)
+		;;
+		*)
+			mounter unmount "${MIRROR_MOUNTPOINT}/${1}"
+		;;
+	esac
+}
+
 activater() {
 	local PREVDIR="$(pwd)"
 	local PDESTDIR="${1}"
@@ -841,8 +859,9 @@ update_menu() {
 				read RESULT
 			fi
 		done
+		umount_mirror
 		if [ "${DESTDIR_IS_MOUNTED}" = "yes" ] ; then
-			mounter umount "${DESTDIR}"
+			mounter unmount "${DESTDIR}"
 		fi
 	fi
 }
