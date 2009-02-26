@@ -69,7 +69,7 @@ done
 
 mkdir ${PACKAGES}
 
-for port in $(cat /portlist | cut -d : -f 3  | sort | uniq)
+for port in $( (grep ^B /portlist ; grep ^M /portlist) | cut -d : -f 3  | sort | uniq)
 do
 	cd /usr/ports/${port}/
 	make package-recursive
