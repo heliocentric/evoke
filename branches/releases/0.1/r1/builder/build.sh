@@ -16,7 +16,7 @@ export FORFS="
 "
 export OLDFS=" 	
 "
-export SVNDATE="$(svn info --xml | awk '/<date>/, /<\/date>/' | sed 's@<date>@@g' | sed 's@</date>@@~g' | sed 's@T@ @g' | cut -d '.' -f 1)"
+export SVNDATE="$(svn info --xml | awk '/<date>/, /<\/date>/' | sed 's@<date>@@g' | sed 's@</date>@@g' | sed 's@T@ @g' | cut -d '.' -f 1)"
 export TRACKFILE_DATE="$(date -j -f "%Y-%m-%dT%H:%M:%S" "${SVNDATE}" "+%s")"
 
 # BOOTDIR is the 'boot' directory; it's the root of the cd image
@@ -108,6 +108,19 @@ do
 
 	echo -n " * ${target} = Patching World"
 
+
+	# Before we do anything else, apply all diffs in the shared directory for the release.
+
+	PATCHLIST="$(echo ${BUILDDIR}/targets/FreeBSD/${RELEASE}/share/patches/*)"
+	if [ "${PATCHLIST}" != "" ] ; then
+		cd ${WORKDIR}/usr/src
+
+		for patchfile in ${PATCHLIST}
+		do
+			patch <"${patchfile}" >&2
+		done
+	fi
+
 	# Ok, we need to patch around some hard coded paths in src/
 	cd ${WORKDIR}/usr/src/sys/boot/
 
@@ -136,7 +149,7 @@ do
 	sed -i .bak "s@/boot/device.hints@${BOOTPATH}/device.hints@g" ${WORKDIR}/usr/src/sys/boot/forth/loader.conf 1>&2
 	sed -i .bak "s@/boot/loader.conf.local@/evoke/site.conf@g" ${WORKDIR}/usr/src/sys/boot/forth/loader.conf 1>&2
 	sed -i .bak "s@/boot/loader.conf@${BOOTPREFIX}/loader.conf@g" ${WORKDIR}/usr/src/sys/boot/forth/loader.conf 1>&2
-	for file in $(cat ${ROOTDIR}/bootlist)
+	for file in $(cat ${BUILDDIR}/bootlist)
 	do
 	    # This works for most.
 	    sed -i .bak "s@/boot/@${BOOTPATH}/@g" ${WORKDIR}${file} 1>&2
@@ -363,7 +376,7 @@ tar -cf - * | tar -xf - -C ${RELEASEDIR}${BOOTPREFIX}/
 echo ""
 
 echo -n " * share = Generating Binary Diffs"
-${BUILDDIR}/create-updates "${VERSION}/${REVISION}" "${BOOTDIR}${BOOTPREFIX}" ${VERSIONLIST} 1>&2
+update create "${VERSION}/${REVISION}" "${BOOTDIR}${BOOTPREFIX}" ${VERSIONLIST} 1>&2
 #cd "${RELEASEDIR}" && tar -cf - "evoke/misc/BIN-UPDATES/${VERSION}/${REVISION}" | tar -xvpf - -C "${BOOTDIR}/"
 echo ""
 
@@ -373,6 +386,8 @@ echo -n " * share = Making ISO image"
 
 mkdir -p ${BOOTDIR}/cdboot
 cp ${BOOTDIR}${BOOTPREFIX}/FreeBSD/$(echo ${i386_ACTIVE} | cut -d "-" -f 1)/$(echo ${i386_ACTIVE} | cut -d "/" -f 2)/cdboot ${BOOTDIR}/cdboot/i386
+mkdir -p ${BOOTDIR}/evoke/misc
+echo "${VERSION}/${REVISION}" >${BOOTDIR}/evoke/misc/versionlist
 
 mkdir -p ${RELEASEDIR}/evoke/misc/ISO-IMAGES/${VERSION}/${REVISION}
 

@@ -49,6 +49,10 @@ if [ ! -d "${TMPDIR}" ] ; then
 	TMPDIR="/tmp"
 fi
 
+if [ ! -d "${RELEASEDIR}" ] ; then
+	RELEASEDIR="/releases"
+fi
+
 if [ ! -d "${EVOKE_MNTDIR}" ] ; then
 	EVOKE_MNTDIR="/media"
 	mkdir -p "${EVOKE_MNTDIR}"
@@ -480,6 +484,24 @@ getfile() {
 	esac
 }
 
+
+# Unmount the mirror.
+
+unmount_mirror() {
+
+	filename="$(basename "${1}")"
+
+	case "${PROTOCOL}" in
+		http)
+		;;
+		tftp)
+		;;
+		*)
+			mounter unmount "${MIRROR_MOUNTPOINT}/${1}"
+		;;
+	esac
+}
+
 activater() {
 	local PREVDIR="$(pwd)"
 	local PDESTDIR="${1}"
@@ -564,6 +586,166 @@ activater() {
 		fi
 	done
 	cd "${PREVDIR}"
+}
+
+create_updates () {
+	if [ "${1}" = "" ] ; then
+		echo "Error: No version set"
+		exit 5
+	fi
+
+	DEST="${1}"
+
+	shift
+
+	DESTDIR="${1}"
+
+
+	if [ -d "${PATCHDIR}" ] ; then
+		rm -r "${PATCHDIR}"
+	fi
+
+	BINUPDIR="${RELEASEDIR}/evoke/misc/BIN-UPDATES"
+	mkdir -p "${BINUPDIR}"
+	DECOMDIR="${STAGEDIR}/decom"
+	mkdir -p "${DECOMDIR}"
+	TESTDIR="${STAGEDIR}/test"
+	mkdir -p "${TESTDIR}"
+	PATCHDIR="${STAGEDIR}/patch"
+	mkdir -p "${PATCHDIR}"
+
+
+	if [ ! -f "${DESTDIR}/trackfile" ] ; then
+		echo "Destination does not exist"
+		exit 3
+	else
+		cd "${DESTDIR}"
+		OPTIONS="quiet" TRACKFILE="${DESTDIR}/trackfile" verify
+		ERRORCODE="$?"
+		if [ "${ERRORCODE}" = "0" ] ; then
+			DEST_TRACKFILE="$(grep -a ^F: ${DESTDIR}/trackfile)"
+		else
+			echo "Destination Integrity check failed"
+			exit 3
+		fi
+	fi
+
+	shift
+
+
+	if [ "${1}" != "" ] ; then
+		while [ "${1}" != "" ] 
+		do
+			SOURCE="${1}"
+			SOURCEDIR="${RELEASEDIR}/evoke/${SOURCE}"
+			if [ ! -f "${SOURCEDIR}/trackfile" ] ; then
+				echo "Source does not exist"
+			else
+				cd "${SOURCEDIR}"
+				OPTIONS="quiet" TRACKFILE="${SOURCEDIR}/trackfile" verify
+				ERRORCODE="$?"
+				if [ "${ERRORCODE}" = "0" ] ; then
+					SOURCE_TRACKFILE="$(grep -a ^F: ${SOURCEDIR}/trackfile)"
+				else
+					echo "Source Integrity check failed"
+					break
+				fi
+				IFS="${FORFS}"
+				for filespec in ${DEST_TRACKFILE}
+				do
+					FILENAME="$(echo "${filespec}" | cut -d : -f 2)"
+					DESTHASH="$(echo "${filespec}" | cut -d : -f 3)"
+					DESTSIZE="$(echo "${filespec}" | cut -d : -f 4)"
+					DESTFILE="${DESTDIR}/${FILENAME}"
+					
+					SOURCE_FILESPEC_LIST="$(echo "${SOURCE_TRACKFILE}" | grep "^F:${FILENAME}")"
+	
+					for source_filespec in ${SOURCE_FILESPEC_LIST}
+					do
+						SOURCEFILE="${SOURCEDIR}/$(echo "${source_filespec}" | cut -d ":" -f 2)"
+						SOURCEHASH="$(echo "${source_filespec}" | cut -d ":" -f 3)"
+						if [ -f "${SOURCEFILE}" ] ; then
+							REALHASH="$(sha256 -q "${SOURCEFILE}")"
+							if [ "${REALHASH}" = "${SOURCEHASH}" ] ; then
+								case "${SOURCEFILE}" in
+									*.gz)
+										mkdir -p "${DECOMDIR}"
+										gunzip -9nc "${SOURCEFILE}" >"${DECOMDIR}/${SOURCEHASH}"
+										RFILE="${DECOMDIR}/${SOURCEHASH}"
+									;;
+									*)
+										RFILE="${SOURCEFILE}"
+									;;
+								esac
+		
+								case "${DESTFILE}" in
+									*.gz)
+										mkdir -p "${DECOMDIR}"
+										gunzip -9nc "${DESTFILE}" >"${DECOMDIR}/${DESTHASH}"
+										DFILE="${DECOMDIR}/${DESTHASH}"
+									;;
+									*)
+										DFILE="${DESTFILE}"
+									;;
+								esac
+		
+								PATCHFILE="${PATCHDIR}/${DESTHASH}/${SOURCEHASH}"
+								mkdir -p ${PATCHDIR}/${DESTHASH}/
+								echo "Generating ${RFILE} -> ${DFILE}"
+								bsdiff "${RFILE}" "${DFILE}" "${PATCHFILE}"
+								PATCHSIZE="$(stat -f '%z' ${PATCHFILE})"
+								if [ "${PATCHSIZE}" -ge "${DESTSIZE}" ] ; then
+									rm "${PATCHFILE}"
+								else
+									mkdir -p "${TESTDIR}"
+									bspatch "${RFILE}" "${TESTDIR}/${DESTHASH}" "${PATCHFILE}"	
+									case "${DESTFILE}" in
+										*.gz)
+											mkdir -p "${DECOMDIR}"
+											rm "${TESTDIR}/${DESTHASH}.gz" 2>/dev/null 1>/dev/null	
+											gzip -9nc "${TESTDIR}/${DESTHASH}" >"${TESTDIR}/${DESTHASH}.gz"
+											mv "${TESTDIR}/${DESTHASH}.gz" "${TESTDIR}/${DESTHASH}"
+										;;
+										*.bz2)
+										;;
+										*)
+										RFILE="${FILENAME}"
+										;;
+									esac
+									REALHASH="$(sha256 -q "${TESTDIR}/${DESTHASH}")"
+									if [ "${REALHASH}" != "${DESTHASH}" ] ; then
+										echo "Patch failed"
+										exit 4
+									fi
+								fi
+							fi
+						fi
+					done
+				done
+			fi
+			IFS="${OLDFS}"
+			shift
+		done
+
+		# Generate a trackfile for supporting http without webdav, and tftp.
+
+		for filespec in ${DEST_TRACKFILE}
+		do
+			DESTHASH="$(echo "${filespec}" | cut -d : -f 3)"
+			DESTPATH="${PATCHDIR}/${DESTHASH}"
+			if [ -d "${DESTPATH}" ] ; then
+				cd "${DESTPATH}"
+				HASHFILELIST="$(echo *)"
+				if [ "${HASHFILELIST}" != "" -a "${HASHFILELIST}" != "*" ] ; then
+					OPTIONS="write quiet" TRACKFILE="${TESTDIR}/${DESTHASH}" verify ${HASHFILELIST}
+					mv ${TESTDIR}/${DESTHASH} ${DESTPATH}/trackfile
+				fi
+			fi
+		done
+
+		mkdir -p "${BINUPDIR}/${DEST}"
+		cd "${PATCHDIR}" && tar -cf - * | tar -xvpf - -C "${BINUPDIR}/${DEST}" 2>/dev/null >/dev/null
+	fi
 }
 
 update_menu() {
@@ -677,8 +859,9 @@ update_menu() {
 				read RESULT
 			fi
 		done
+		umount_mirror
 		if [ "${DESTDIR_IS_MOUNTED}" = "yes" ] ; then
-			mounter umount "${DESTDIR}"
+			mounter unmount "${DESTDIR}"
 		fi
 	fi
 }
@@ -748,6 +931,10 @@ update() {
 		[mM][eE][nN][uU])
 			update_menu "${2}"
 		;;
+		[cC][rR][eE][aA][tT][eE])
+			shift
+			create_updates "${@}"
+		;;
 		*)
 			update_menu "${2}"
 		;;
@@ -762,4 +949,3 @@ update() {
 }
 
 update $@
-

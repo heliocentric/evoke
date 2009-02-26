@@ -12,9 +12,21 @@
 == Todo ==
 
  * installer needs to be able to install to a thumb drive.
+    * Does not support installing from a cd drive, this is a vital piece of functionality.
+    * Needs to disable/unmount all swap/filesystems on the target device node, if they are mounted/enabled.
+    * Better handling of mirror urls. This way installer can fall back from cd, to tftp, etc.
+    * Probably means we need a mirror menu somewhere.
  * 6.4 and 7.1 for i386 need to be on the image.
 
 == Features ==
+
+=== SSH ===
+
+Like the pilot, 0.1 supports ssh, however because evoke is currently single user, the ssh daemon is disabled. To enable it, add the following to /evoke/site.conf:
+
+  evoke.sshkey="ssh-rsa AAAAB3NzaC1yc2EAAAABI...."
+
+Where the key is your public key. Currently, this method is an administrative interface that only supports a single public key. It is not recommended to use this feature in a pxeboot environment unless the hardware of both the boot server, the client, and all networking infrastructure is completely secured.
 
 === Changes to Previous Releases ===
 

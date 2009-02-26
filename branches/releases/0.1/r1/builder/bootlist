@@ -41,4 +41,4 @@
 /usr/src/sys/boot/sparc64/loader/Makefile
 /usr/src/sys/boot/sparc64/boot1/boot1.c
 /usr/src/sys/conf/kern.post.mk
-
+/usr/src/sys/boot/i386/gptboot/gptboot.c
