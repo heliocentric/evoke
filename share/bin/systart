@@ -415,8 +415,7 @@ if [ "${EVOKE_SSHKEY}" != "" ] ; then
 
 	# Don't change these under penalty of death!
 
-	cat >${EVOKE_LIBDIR}/sshd.conf << "EOF"
-
+	cat >${EVOKE_LIBDIR}/sshd.conf << EOF
 HostKey ${EVOKE_CURUSER}/sshd/hostkey
 PermitRootLogin yes
 UsePrivilegeSeparation no                       
