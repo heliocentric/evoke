@@ -293,14 +293,14 @@ echo "Generating files"
 export HOME=${EVOKE_MEMDIR}/home
 mkdir -p ${HOME}
 
-echo "root:*:0:0::0:0:Super-User:${HOME}:/bin/tcsh" >>${EVOKE_LIBDIR}/master.passwd
-echo "nobody:*:1:1::0:0:nobody:${EVOKE_NULLDIR}:${DEVICES}/null" >>${EVOKE_LIBDIR}/master.passwd
-echo "monitor:*:2:2::0:0:Evoke Monitoring Daemon (ganglia):${EVOKE_NULLDIR}:${DEVICES}/null" >>${EVOKE_LIBDIR}/master.passwd
+echo "root:*:0:0:default:0:0:Super-User:${HOME}:/bin/tcsh" >>${EVOKE_LIBDIR}/master.passwd
+echo "nobody:*:1:1:defau;t:0:0:nobody:${EVOKE_NULLDIR}:${DEVICES}/null" >>${EVOKE_LIBDIR}/master.passwd
+echo "monitor:*:2:2:default:0:0:Evoke Monitoring Daemon (ganglia):${EVOKE_NULLDIR}:${DEVICES}/null" >>${EVOKE_LIBDIR}/master.passwd
 echo "wheel:*:0:" >>${EVOKE_LIBDIR}/group
 echo "operator:*:5:" >>${EVOKE_LIBDIR}/group
 
 pwd_mkdb -i -p -d ${EVOKE_LIBDIR} ${EVOKE_LIBDIR}/master.passwd 2>${DEVICES}/null
-cap_mkdb -f ${EVOKE_LIBDIR}/login.conf.db ${EVOKE_CFGDIR}/login.conf
+cap_mkdb -f ${EVOKE_LIBDIR}/login.conf ${EVOKE_CFGDIR}/login.conf
 echo "/bin/tcsh" >>${EVOKE_LIBDIR}/shells
 echo "/bin/csh" >>${EVOKE_LIBDIR}/shells
 echo "/bin/sh" >>${EVOKE_LIBDIR}/shells
