@@ -76,11 +76,13 @@ main_installer () {
 		case "${CHOICE}" in
 			2)
 				evoke_chooser
-				evoke_installer
 			;;
 			1)
 				freebsd_chooser
 				freebsd_installer
+			;;
+			[aA])
+				update activate
 			;;
 			[qQ])
 				BREAKOUT="yes"
@@ -264,4 +266,3 @@ EOF
 }
 
 main_installer
-#freebsd_installer

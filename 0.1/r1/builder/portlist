@@ -18,9 +18,9 @@ B:vacfs:devel/plan9port:
 B:vcat:devel/plan9port:
 B:unvac:devel/plan9port:
 #B:Xorg:x11/xorg:
-B:uuid:misc/ossp-uuid:
 B:e2fsck:sysutils/e2fsprogs:
 B:mke2fs:sysutils/e2fsprogs:
 B:gmond:sysutils/ganglia-monitor-core:
 B:mkisofs:sysutils/cdrtools:
 B:cdrecord:sysutils/cdrtools:
+B:uuidgen:misc/e2fsprogs-libuuid:

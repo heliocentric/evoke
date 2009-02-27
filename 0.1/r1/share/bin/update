@@ -489,15 +489,15 @@ getfile() {
 
 unmount_mirror() {
 
-	filename="$(basename "${1}")"
-
 	case "${PROTOCOL}" in
 		http)
 		;;
 		tftp)
 		;;
 		*)
-			mounter unmount "${MIRROR_MOUNTPOINT}/${1}"
+			echo "${MIRROR_MOUNTPOINT}"
+			mounter unmount "${MIRROR_MOUNTPOINT}"
+			rmdir "${MIRROR_MOUNTPOINT}"
 		;;
 	esac
 }
@@ -747,9 +747,34 @@ create_updates () {
 		cd "${PATCHDIR}" && tar -cf - * | tar -xvpf - -C "${BINUPDIR}/${DEST}" 2>/dev/null >/dev/null
 	fi
 }
+choose_boot() {
+	BOOTFS="$(mounter search tag=boot | cut -d : -f 2-100)"
+	if [ "${BOOTFS}" != "" ] ; then
+		local CHOICE=$(menu "Boot filesystem" "${BOOTFS}" "q:Quit")
+		if [ "${CHOICE}" != "" ] ; then
+			case "${CHOICE}" in
+				Quit)
+					echo "No destination directory specified!"
+					GLOBAL_ERRORCODE="65"
+					return
+				;;
+				*)
+					echo "${CHOICE}"
+				;;
+			esac
+		else
+			echo "No destination directory specified!"
+			GLOBAL_ERRORCODE="65"
+			return
+		fi
+	else
+		echo "Bootable filesystems not found."
+		GLOBAL_ERRORCODE="65"
+		return
+	fi
+}
 
 update_menu() {
-
 	if [ "${1}" != "" ] ; then
 		local DESTDIR="${1}"
 	fi
@@ -758,29 +783,8 @@ update_menu() {
 		if [ -f "${DEVICES}/ufs/${BOOTHASH}" ] ; then
 			BOOTDEVICE="ufs/${BOOTHASH}"
 		else
-			BOOTFS="$(mounter search tag=boot | cut -d : -f 2-100)"
-			if [ "${BOOTFS}" != "" ] ; then
-				local CHOICE=$(menu "Boot filesystem" "${BOOTFS}" "q:Quit")
-				if [ "${CHOICE}" != "" ] ; then
-					case "${CHOICE}" in
-						Quit)
-							echo "No destination directory specified!"
-							GLOBAL_ERRORCODE="65"
-							return
-	
-						;;
-						*)
-							BOOTDEVICE="${CHOICE}"
-						;;
-					esac
-				else
-					echo "No destination directory specified!"
-					GLOBAL_ERRORCODE="65"
-					return
-				fi
-			else
-				echo "Bootable filesystems not found."
-				GLOBAL_ERRORCODE="65"
+			BOOTDEVICE="$(choose_boot)"
+			if [ "${BOOTDEVICE}" = "" ] ; then
 				return
 			fi
 		fi
@@ -859,9 +863,11 @@ update_menu() {
 				read RESULT
 			fi
 		done
-		umount_mirror
+		cd ${PREVDIR}
 		if [ "${DESTDIR_IS_MOUNTED}" = "yes" ] ; then
+			echo "${DESTDIR}"
 			mounter unmount "${DESTDIR}"
+			rmdir "${DESTDIR}"
 		fi
 	fi
 }
@@ -924,8 +930,18 @@ update() {
 				activater "${2}" "${3}"
 				GLOBAL_ERRORCODE="${?}"
 			else
-				echo "Destination directory does not exist"
-				exit 65
+				FS="$(choose_boot)"
+				if [ "${FS}" = "" ] ; then
+					echo "Destination directory does not exist"
+					GLOBAL_ERRORCODE=65
+				else
+					local DESTDIR="${EVOKE_MNTDIR}/$(dd if=/dev/random bs=4m count=1 2>/dev/null | sha256 -q)"
+					mkdir -p "${DESTDIR}"
+					mounter "boot-ufs:${FS}" "${DESTDIR}"
+					activater "${DESTDIR}"
+					mounter "unmount" "${DESTDIR}"
+					rmdir "${DESTDIR}"
+				fi
 			fi
 		;;
 		[mM][eE][nN][uU])
@@ -941,10 +957,7 @@ update() {
 	esac
 	cd "${PREVDIR}"
 	rm -r ${SCRATCHDIR}
-	if [ "${MIRROR_MOUNTPOINT}" != "" ] ; then
-		mounter unmount "${MIRROR_MOUNTPOINT}"
-		rmdir "${MIRROR_MOUNTPOINT}"
-	fi
+	unmount_mirror
 	exit "${GLOBAL_ERRORCODE}"
 }
 

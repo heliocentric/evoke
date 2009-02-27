@@ -91,7 +91,7 @@ create () {
 			ESCAPE="no"
 			until [ "${ESCAPE}" = "yes" ]
 			do
-				UUID="$(uuid -v 4)"
+				UUID="$(uuidgen)"
 				if [ ! -d "${EVOKE_SYSCFG}/${UUID}" ] ; then
 					ESCAPE="yes"
 				fi
