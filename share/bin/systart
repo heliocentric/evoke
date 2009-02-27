@@ -424,7 +424,7 @@ PasswordAuthentication no
 ChallengeResponseAuthentication no
 PermitEmptyPasswords no
 ForceCommand tcsh
-
+UsePAM no
 EOF
 
 	cat >${EVOKE_LIBDIR}/ssh_config << "EOF"
