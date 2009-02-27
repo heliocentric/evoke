@@ -1,3 +1,4 @@
+
 #!/bin/sh
 # Copyright 2007-2009 Dylan Cochran
 # All rights reserved
@@ -385,22 +386,20 @@ if [ "${MODE}" = "init" ] ; then
 	esac
 fi
 
+if [ "${EVOKE_SSHKEY}" != "" ] ; then
+
 	# syslogd is currently unnecessary, may uncomment later
 
-	#echo -n "Starting syslogd"
-	#echo "syslog		514/udp" >> ${EVOKE_LIBDIR}/services
-	#echo "" >${EVOKE_DBDIR}/log
-	#cat >${EVOKE_LIBDIR}/syslogd.conf << EOF
-	#33*.notice;authpriv.none;kern.debug;*.info;*.crit;*.err	${EVOKE_DBDIR}/log
-	#!ftpd
-	#*.*	${EVOKE_DBDIR}/log
-	#!sshd
-	#*.*	${EVOKE_DBDIR}/log
-	#EOF
-	#syslogd -ss -f ${EVOKE_CFGDIR}/syslogd.conf -P ${EVOKE_PIDDIR}/syslogd.pid -p ${EVOKE_RUNDIR}/log
-	#echo "[DONE]"
+	echo "Starting syslogd"
+	echo "syslog		514/udp" >> ${EVOKE_LIBDIR}/services
+	echo "" >${EVOKE_DBDIR}/log
+	cat >${EVOKE_LIBDIR}/syslogd.conf << EOF
+33*.notice;authpriv.none;kern.debug;*.info;*.crit;*.err	${EVOKE_DBDIR}/log
+!sshd
+*.*	${EVOKE_DBDIR}/log
+EOF
+	syslogd -ss -f ${EVOKE_CFGDIR}/syslogd.conf -P ${EVOKE_PIDDIR}/syslogd.pid -p ${EVOKE_RUNDIR}/log
 
-if [ "${EVOKE_SSHKEY}" != "" ] ; then
 	echo "Starting sshd"
 
 	mkdir -p ${HOME}/.ssh
@@ -425,7 +424,7 @@ PasswordAuthentication no
 ChallengeResponseAuthentication no
 PermitEmptyPasswords no
 ForceCommand tcsh
-
+UsePAM no
 EOF
 
 	cat >${EVOKE_LIBDIR}/ssh_config << "EOF"
