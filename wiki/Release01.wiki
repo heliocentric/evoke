@@ -16,7 +16,7 @@
     * update needs to use the trackfiles for each patch directory. This way it doesn't need to hammer the remote system.
     * Better handling of mirror urls. This way installer can fall back from cd, to tftp, etc.
     * Probably means we need a mirror menu somewhere.
- * 6.4 and 7.1 for i386 need to be on the image.
+ * 7.1 for i386 need to be on the image.
 
 == Features ==
 
@@ -72,8 +72,7 @@ N/A
 
 ==== Targets ====
 
- * FreeBSD 6.4-RELEASE-p3/i386
- * FreeBSD 7.1-RELEASE-p2/i386
+ * FreeBSD 7.1-RELEASE-p3/i386
 
 ==== Security Updates ====
 
