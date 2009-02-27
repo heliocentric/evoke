@@ -28,6 +28,16 @@ Like the pilot, 0.1 supports ssh, however because evoke is currently single user
 
 Where the key is your public key. Currently, this method is an administrative interface that only supports a single public key. It is not recommended to use this feature in a pxeboot environment unless the hardware of both the boot server, the client, and all networking infrastructure is completely secured.
 
+=== Install ===
+
+Evoke supports a basic installer, intended for use with dedicated hard drives or thumb drives. Shared systems (with freebsd, windows, etc) are currently not supported with installer. This includes resizing partitions, adding boot menus, etc. Please do not use on those drives, thank you.
+
+To access the installer, type:
+
+  installer
+
+And choose the 'Install Evoke' menu entry.
+
 === Update ===
 
 Evoke now supports an update utility. To access, simply type:
