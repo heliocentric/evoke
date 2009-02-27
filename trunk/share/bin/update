@@ -177,12 +177,9 @@ real_update() {
 					vecho "\tFILENAME=${FILENAME}\n"
 					vecho "\tPDESTDIR=${PDESTDIR}\n"
 					vecho "\tBASENAME=${BASENAME}\n"
-					if [ "${VERBOSE}" = "NO" ] ; then
-						echo "Fetching ${FILENAME}"
-					fi
 
 
-					RETVAL="$(fetch_full_file "${HASH}" "${FILENAME}" "${PDESTDIR}" "${BASENAME}" "${SIZE}")" 2>&1
+					RETVAL="$(fetch_full_file "${HASH}" "${FILENAME}" "${PDESTDIR}" "${BASENAME}" "${SIZE}")"
 
 					if [ "${RETVAL}" != "0" ] ; then
 						unset RETVAL
@@ -206,9 +203,6 @@ real_update() {
 					PDESTDIR="${STAGEDIR}/$(dirname ${FILENAME})"
 					BASENAME="$(basename ${FILENAME})"
 					PPATCHDIR="${PATCHDIR}/${HASH}"
-					if [ "${VERBOSE}" = "NO" ] ; then
-						echo "Fetching ${FILENAME}"
-					fi
 					mkdir -p "${PPATCHDIR}"
 					mkdir -p "${PDESTDIR}"
 					vecho "Starting ${FILENAME} \{\n"
@@ -221,7 +215,7 @@ real_update() {
 							SFILENAME="$(echo ${MATCHED_LINE} | cut -d ":" -f 2)"
 							FILEPATH="${DESTDIR}/evoke/${version}/${SFILENAME}"
 							vecho "\t\t${FILEPATH} {\n"
-							cp "${FILEPATH}" "${STAGEDIR}/${FILENAME}"
+							cat "${FILEPATH}" | piper "${FILENAME}" "${SIZE}" >${STAGEDIR}/${FILENAME}
 							sh -c "cd ${STAGEDIR} && TRACKFILE="${TEMPDIR}/trackfile" OPTIONS="quiet" verify "${FILENAME}""
 							RETVAL=$?
 							if [ "${RETVAL}" = "0" ] ; then
@@ -260,7 +254,7 @@ real_update() {
 						do
 							realhash="$(basename ${hash})"
 							vecho "\t\tFetching ${realhash} {\n"
-							getfile ${hash} 2>${DEVICES}/null
+							getfile "${hash}" "${realhash}"
 							if [ -f "${realhash}" ] ; then
 								vecho "\t\t\tFile exists: ${realhash}\n"
 								FILE="$(grep -Ha ^F: ${DESTDIR}/evoke/*/*/trackfile | grep ${realhash} | awk -F : '{ FILENAME=$3; "dirname " $1 | getline; print $0 "/" FILENAME; }' | head -n 1)"
@@ -346,7 +340,7 @@ fetch_full_file() {
 
 	cd "${PDOWNDIR}"
 	vecho "\t\tFetching ${FILENAME} {\n" 1>&2
-	getfile "evoke/${VERSION}/${FILENAME}" "${SIZE}" 2>${DEVICES}/null
+	getfile "evoke/${VERSION}/${FILENAME}" "${FILENAME}" "${SIZE}"
 
 	cp "${BASENAME}" "${PDESTDIR}/"
 	cd "${STAGEDIR}"
@@ -480,7 +474,15 @@ vecho() {
 
 
 piper() {
-	dd
+	if [ "${USE_PV}" = "yes" ] ; then
+		if [ "${2}" = "" ] ; then
+			pv --name "${1}"
+		else
+			pv -s "${2}" --name "${1}"
+		fi
+	else
+		dd
+	fi
 }
 
 # Wrapper, as our main mirror doesn't support wdfs, so we have to fall back to fetch
@@ -488,31 +490,33 @@ piper() {
 getfile() {
 
 	filename="$(basename "${1}")"
-	size="${2}"
+	realfile="${2}"
+	size="${3}"
 
 	case "${PROTOCOL}" in
 		http)
-			fetch -q -o - "http://${SERVER}/${FILESPEC}/${1}" | piper "${1}" >${filename} 2>${DEVICES}/null
+			fetch -q -o - "http://${SERVER}/${FILESPEC}/${1}" 2>${DEVICES}/null | piper "${realfile}" "${size}" >${filename}
 		;;
 		ftp)
-			fetch -q -o - "ftp://${SERVER}/${FILESPEC}/${1}" | piper "${1}" >${filename} 2>${DEVICES}/null
+			fetch -q -o - "ftp://${SERVER}/${FILESPEC}/${1}" 2>${DEVICES}/null | piper "${realfile}" "${size}" >${filename}
 		;;
 		tftp)
 			printf "binary\nget ${FILESPEC}/${1}\n" | tftp "${SERVER}" 2>${DEVICES}/null >${DEVICES}/null
-			filesize="$(stat -f '%z' ${filename})"
-
-			if [ "${filesize}" = "0" ] ; then
-				rm "${filename}"
-			fi
 		;;
 		*)
 			if [ -r "${MIRROR_MOUNTPOINT}/${1}" ] ; then
 				RETVAL="0"
-				cat "${MIRROR_MOUNTPOINT}/${1}" | piper "${1}" >${filename}
+				cat "${MIRROR_MOUNTPOINT}/${1}" 2>${DEVICES}/null | piper "${realfile}" "${size}" >${filename}
 			fi
 			
 		;;
 	esac
+
+	filesize="$(stat -f '%z' ${filename})"
+
+	if [ "${filesize}" = "0" ] ; then
+		rm "${filename}"
+	fi
 }
 
 
