@@ -302,7 +302,7 @@ sysconfig () {
 					break="yes"
 				fi
 			done
-			UUID=$(uuid -v 4)
+			UUID=$(uuidgen)
 	
 			# the size of each entry in the log, in sectors
 			SC_ENTRYSIZE=$((${SC_SECTORCOUNT} / ${CONFIGLOG}))

@@ -489,15 +489,15 @@ getfile() {
 
 unmount_mirror() {
 
-	filename="$(basename "${1}")"
-
 	case "${PROTOCOL}" in
 		http)
 		;;
 		tftp)
 		;;
 		*)
-			mounter unmount "${MIRROR_MOUNTPOINT}/${1}"
+			echo "${MIRROR_MOUNTPOINT}"
+			mounter unmount "${MIRROR_MOUNTPOINT}"
+			rmdir "${MIRROR_MOUNTPOINT}"
 		;;
 	esac
 }
@@ -864,8 +864,8 @@ update_menu() {
 			fi
 		done
 		cd ${PREVDIR}
-		unmount_mirror
 		if [ "${DESTDIR_IS_MOUNTED}" = "yes" ] ; then
+			echo "${DESTDIR}"
 			mounter unmount "${DESTDIR}"
 			rmdir "${DESTDIR}"
 		fi
@@ -957,10 +957,7 @@ update() {
 	esac
 	cd "${PREVDIR}"
 	rm -r ${SCRATCHDIR}
-	if [ "${MIRROR_MOUNTPOINT}" != "" ] ; then
-		mounter unmount "${MIRROR_MOUNTPOINT}"
-		rmdir "${MIRROR_MOUNTPOINT}"
-	fi
+	unmount_mirror
 	exit "${GLOBAL_ERRORCODE}"
 }
 
