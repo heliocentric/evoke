@@ -167,6 +167,7 @@ real_update() {
 					vecho "Starting ${FILENAME} \{\n"
 					vecho "\tFetching full files \{\n"
 
+					SIZE="$(echo "${filespec}" | cut -d ":" -f 4)"
 					HASH="$(echo "${filespec}" | cut -d ":" -f 3)"
 					FILENAME="$(echo "${filespec}" | cut -d ":" -f 2)"
 					PDESTDIR="${STAGEDIR}/$(dirname ${FILENAME})"
@@ -181,7 +182,7 @@ real_update() {
 					fi
 
 
-					RETVAL="$(fetch_full_file "${HASH}" "${FILENAME}" "${PDESTDIR}" "${BASENAME}")" 2>&1
+					RETVAL="$(fetch_full_file "${HASH}" "${FILENAME}" "${PDESTDIR}" "${BASENAME}" "${SIZE}")" 2>&1
 
 					if [ "${RETVAL}" != "0" ] ; then
 						unset RETVAL
@@ -199,6 +200,7 @@ real_update() {
 					cd "${DESTDIR}/evoke/"
 					# let's see if HASH matches any already existing file.
 
+					SIZE="$(echo "${filespec}" | cut -d ":" -f 4)"
 					HASH="$(echo "${filespec}" | cut -d ":" -f 3)"
 					FILENAME="$(echo "${filespec}" | cut -d ":" -f 2)"
 					PDESTDIR="${STAGEDIR}/$(dirname ${FILENAME})"
@@ -289,7 +291,7 @@ real_update() {
 
 					vecho "\tGrabbing full file {\n"
 					# Ok, fall back on grabbing the file.
-					RETVAL="$(fetch_full_file "${HASH}" "${FILENAME}" "${PDESTDIR}" "${BASENAME}")"
+					RETVAL="$(fetch_full_file "${HASH}" "${FILENAME}" "${PDESTDIR}" "${BASENAME}" "${SIZE}")"
 	
 					vecho "\t}\n"
 					if [ "${RETVAL}" != "0" ] ; then
@@ -337,13 +339,14 @@ fetch_full_file() {
 	local FILENAME="${2}"
 	local PDESTDIR="${3}"
 	local BASENAME="${4}"
+	local SIZE="${5}"
 	
 	local PDOWNDIR="${DOWNDIR}/${HASH}"
 	mkdir -p "${PDOWNDIR}"
 
 	cd "${PDOWNDIR}"
 	vecho "\t\tFetching ${FILENAME} {\n" 1>&2
-	getfile "evoke/${VERSION}/${FILENAME}" 2>${DEVICES}/null
+	getfile "evoke/${VERSION}/${FILENAME}" "${SIZE}" 2>${DEVICES}/null
 
 	cp "${BASENAME}" "${PDESTDIR}/"
 	cd "${STAGEDIR}"
@@ -376,12 +379,31 @@ find_mirror() {
 				server="$(echo "${mirrorurl}" | sed 's_http://__g' | cut -d "/" -f 1)"
 				filespec="/$(echo "${mirrorurl}" | sed 's_http://__g' | cut -d "/" -f 2-200)"
 				rfilespec="${filespec}/${FILENAME}"
-				phttpget "${server}" "${rfilespec}" 2>${DEVICES}/null
+				fetch -q "http://${server}/${rfilespec}" 2>${DEVICES}/null
 				if [ -r "${file}" ] ; then
 					vecho "\tpassed\n"
 					vecho "}\n"
 					RETVAL="0"
 					PROTOCOL="http"
+					SERVER="${server}"
+					FILESPEC="${filespec}"
+					break
+				else
+					vecho "\tfailed\n"
+					vecho "}\n"
+					RETVAL="65"
+				fi
+			;;
+			ftp)
+				server="$(echo "${mirrorurl}" | sed 's_ftp://__g' | cut -d "/" -f 1)"
+				filespec="/$(echo "${mirrorurl}" | sed 's_ftp://__g' | cut -d "/" -f 2-200)"
+				rfilespec="${filespec}/${FILENAME}"
+				fetch -q "ftp://${server}/${rfilespec}" 2>${DEVICES}/null
+				if [ -r "${file}" ] ; then
+					vecho "\tpassed\n"
+					vecho "}\n"
+					RETVAL="0"
+					PROTOCOL="ftp"
 					SERVER="${server}"
 					FILESPEC="${filespec}"
 					break
@@ -456,15 +478,24 @@ vecho() {
 	fi
 }
 
-# Wrapper, as our main mirror doesn't support wdfs, so we have to fall back to phttpget
+
+piper() {
+	dd
+}
+
+# Wrapper, as our main mirror doesn't support wdfs, so we have to fall back to fetch
 
 getfile() {
 
 	filename="$(basename "${1}")"
+	size="${2}"
 
 	case "${PROTOCOL}" in
 		http)
-			phttpget "${SERVER}" "${FILESPEC}/${1}" 2>${DEVICES}/null
+			fetch -q -o - "http://${SERVER}/${FILESPEC}/${1}" | piper "${1}" >${filename} 2>${DEVICES}/null
+		;;
+		ftp)
+			fetch -q -o - "ftp://${SERVER}/${FILESPEC}/${1}" | piper "${1}" >${filename} 2>${DEVICES}/null
 		;;
 		tftp)
 			printf "binary\nget ${FILESPEC}/${1}\n" | tftp "${SERVER}" 2>${DEVICES}/null >${DEVICES}/null
@@ -477,7 +508,7 @@ getfile() {
 		*)
 			if [ -r "${MIRROR_MOUNTPOINT}/${1}" ] ; then
 				RETVAL="0"
-				cp "${MIRROR_MOUNTPOINT}/${1}" "${filename}"
+				cat "${MIRROR_MOUNTPOINT}/${1}" | piper "${1}" >${filename}
 			fi
 			
 		;;
@@ -891,7 +922,7 @@ update() {
 	if [ "${EVOKE_UPDATE_MIRROR}" = "" ] ; then
 		MOUNTER_EVOKE_LIST="$(mounter search tag=evoke)"
 		if [ "${MOUNTER_EVOKE_LIST}" = "" ] ; then
-			phttpget evoke.googlecode.com /svn/info/mirrorlist 2>${DEVICES}/null
+			fetch -q http://evoke.googlecode.com/svn/info/mirrorlist 2>${DEVICES}/null
 			if [ ! -f mirrorlist ] ; then
 				echo "Unable to fetch mirrorlist, Network connection down?"
 				exit 65
