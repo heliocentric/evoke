@@ -28,6 +28,18 @@ Like the pilot, 0.1 supports ssh, however because evoke is currently single user
 
 Where the key is your public key. Currently, this method is an administrative interface that only supports a single public key. It is not recommended to use this feature in a pxeboot environment unless the hardware of both the boot server, the client, and all networking infrastructure is completely secured.
 
+=== Update ===
+
+Evoke now supports an update utility. To access, simply type:
+
+  update
+
+This will list your bootable filesystems, and allow you to choose the release to update to. If you want to specify a directory to update, type:
+
+  update /directory
+
+Caveat: The Activate menu entry only activates systems that boot directly off of the filesystem. Not netbooting systems.
+
 === Changes to Previous Releases ===
 
 N/A
