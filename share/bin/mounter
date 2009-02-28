@@ -849,7 +849,10 @@ sysconfig_mount () {
 # Wrapper for the real mount binary. Set default options here 
 
 rmount () {
-	local ROPTIONS="acls,noatime"
+	local ROPTIONS="noatime"
+	if [ "${M_PROTO}" = "ufs" ] ; then
+		ROPTIONS="${ROPTIONS},acls"
+	fi
 	for option in "${OPTIONS}"
 	do
 		case "${option}" in
