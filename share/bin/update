@@ -879,7 +879,9 @@ update_menu() {
 											echo "Activate ${VERSION} now?"
 											read -p "[Y/n]: " PROMPT
 											case "${PROMPT}" in
-												[yY])
+												[nN])
+												;;
+												*)	
 													activater "${DESTDIR}" "${VERSION}"
 												;;
 											esac
@@ -987,7 +989,7 @@ update() {
 			create_updates "${@}"
 		;;
 		*)
-			update_menu "${2}"
+			update_menu "${1}"
 		;;
 	esac
 	cd "${PREVDIR}"

@@ -178,9 +178,9 @@ resolve_libs() {
 
 
 cd ${DESTDIR}/mnt/bin/
-for lib in $(resolve_libs ${PROGS} ${DESTDIR}/mnt/lib/pam*.so.?)
+for lib in $(resolve_libs ${PROGS} pam*.so.?)
 do
-	tar -cf - $(basename ${lib}) | tar -xf - -C ${FSDIR}${N_LIB}
+	cat $(basename ${lib}) >${FSDIR}${N_LIB}/${lib}
 	ln -s $(basename ${lib}) ${FSDIR}${N_LIB}/$(echo $(basename ${lib}) | cut -d "." -f 1-2)
 done
 
