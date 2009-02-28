@@ -425,6 +425,7 @@ if [ "${EVOKE_PUSH_MIRROR}" != "" ] ; then
 		tar -cf - "${VERSION}/${REVISION}" "misc/ISO-IMAGES/${VERSION}/${REVISION}" "misc/BIN-UPDATES/${VERSION}/${REVISION}" | tar -xvf - -C "${MOUNTPOINT}/evoke/"
 		( cat "${MOUNTPOINT}/evoke/misc/versionlist" ; echo "${VERSION}/${REVISION}") | sort -r | uniq >"${TMPDIR}/mirrortest"
 		mv "${TMPDIR}/mirrortest" "${MOUNTPOINT}/evoke/misc/versionlist"
+		ln -sf ${REVISION} ${MOUNTPOINT}/evoke/${VERSION}/rHEAD
 		mounter umount "${MOUNTPOINT}"
 	done
 fi
