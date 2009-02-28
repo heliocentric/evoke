@@ -6,7 +6,6 @@ options		MAC
 options		GDB
 options		KDB
 options		DDB
-nodevice	ehci
 options		AUDIT
 options		MAC
 options         SC_PIXEL_MODE
