@@ -762,7 +762,7 @@ ssh_mount () {
 	echo_config
 	if [ "${M_STYPE}" = "URI" ] ; then
 		local SSHFS_OPTIONS="-o workaround=all -o idmap=user -o transform_symlinks"
-		local SSHFS_OPTIONS="${SSHFS_OPTIONS} -o follow_symlinks -o compression=yes"
+		local SSHFS_OPTIONS="${SSHFS_OPTIONS} -o push_symlinks_in -o compression=yes"
 		if [ "${M_PORT}" != "" ] ; then
 			local SSHFS_OPTIONS="${SSHFS_OPTIONS} -o port=${M_PORT}"
 		fi
