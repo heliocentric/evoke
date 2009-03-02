@@ -1,6 +1,6 @@
 --- sys/kern/kern_environment.c	2009-02-20 12:31:36.000000000 -0500
-+++ sys/kern/kern_environment.c	2009-03-01 14:37:24.000000000 -0500
-@@ -293,22 +293,31 @@
++++ sys/kern/kern_environment.c	2009-03-02 14:50:37.000000000 -0500
+@@ -293,22 +293,33 @@
  char *
  getenv(const char *name)
  {
@@ -35,6 +35,8 @@
 +					free(ret, M_KENV);
 +					ret = NULL;
 +					tsleep(cp, 0, "kenvsl", 1);
++				} else {
++					break;
 +				}
 +			} else {
 +				mtx_unlock(&kenv_lock);
