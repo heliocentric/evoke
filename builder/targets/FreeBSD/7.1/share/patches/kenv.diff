@@ -30,7 +30,7 @@
 +				ret = malloc(len, M_KENV, M_WAITOK | M_ZERO);
 +				strncpy(ret, cp, len);
 +				/* If the last byte of ret is non-zero, then we lost the race, sleep and try again. */
-+				if (ret[len + 1] = '\x00') {
++				if (ret[len + 1] == '\x00') {
 +					break;
 +				}
 +			} else {
