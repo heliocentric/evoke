@@ -117,7 +117,7 @@ do
 
 		for patchfile in ${PATCHLIST}
 		do
-			patch <"${patchfile}" >&2
+			patch -p0 <"${patchfile}" >&2
 		done
 	fi
 
