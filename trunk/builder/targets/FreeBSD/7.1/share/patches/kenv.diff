@@ -30,7 +30,7 @@
 +				mtx_unlock(&kenv_lock);
 +				ret = malloc(len, M_KENV, M_WAITOK | M_ZERO);
 +				strncpy(ret, cp, len);
-+				/* If the last byte of ret is zero, then we won the race, sleep and try again. */
++				/* If the last byte of ret is zero, then we won the race */
 +				if (ret[len + 1] == '\x00') {
 +					break;
 +				}
