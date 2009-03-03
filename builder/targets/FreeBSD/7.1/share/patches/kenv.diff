@@ -1,13 +1,14 @@
 --- sys/kern/kern_environment.c	2009-02-20 12:31:36.000000000 -0500
-+++ sys/kern/kern_environment.c	2009-03-03 09:44:13.000000000 -0500
-@@ -293,21 +293,31 @@
++++ sys/kern/kern_environment.c	2009-03-03 13:21:29.000000000 -0500
+@@ -293,22 +293,32 @@
  char *
  getenv(const char *name)
  {
 -	char buf[KENV_MNAMELEN + 1 + KENV_MVALLEN + 1];
  	char *ret, *cp;
+-	int len;
++	int len = 0;
 +	int count = 0;
- 	int len;
  
  	if (dynamic_kenv) {
 -		mtx_lock(&kenv_lock);
@@ -21,7 +22,7 @@
 -		} else {
 -			mtx_unlock(&kenv_lock);
 +		while (count <= 5) {
-+			ret = NULL;
+ 			ret = NULL;
 +			mtx_lock(&kenv_lock);
 +			cp = _getenv_dynamic(name, NULL);
 +			if (cp != NULL) {
@@ -29,17 +30,18 @@
 +				mtx_unlock(&kenv_lock);
 +				ret = malloc(len, M_KENV, M_WAITOK | M_ZERO);
 +				strncpy(ret, cp, len);
-+				/* If the last byte of ret is non-zero, then we lost the race, sleep and try again. */
++				/* If the last byte of ret is zero, then we won the race, sleep and try again. */
 +				if (ret[len + 1] == '\x00') {
 +					break;
 +				}
 +			} else {
 +				mtx_unlock(&kenv_lock);
++				ret = NULL;
 +				break;
 +			}
 +			count++;
 +			free(ret, M_KENV);
 +			tsleep(cp, 0, "kenvsl", 1);
- 			ret = NULL;
  		}
  	} else
+ 		ret = _getenv_static(name);
