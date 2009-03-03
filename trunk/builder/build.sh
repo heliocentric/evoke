@@ -202,7 +202,11 @@ do
 	# Grab port modules and copy them to the kernel directory.
 	for file in $(grep ^M ${BUILDDIR}/portlist | cut -d : -f 2)
 	do
-		cp ${DESTDIR}/usr/local/modules/${file}.ko ./
+		if [ -f ${DESTDIR}/usr/local/modules/${file}.ko ] ; then
+			cp ${DESTDIR}/usr/local/modules/${file}.ko ./
+		else
+			cp ${DESTDIR}/boot/modules/${file}.ko ./
+		fi
 	done
 
 #	gzip -9 kernel
