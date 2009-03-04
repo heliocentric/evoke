@@ -14,7 +14,7 @@
 
 All source code in the evoke tree is copyright of the respected authors, and licensed under the following two clause BSD license:
 
-<code>
+<pre>
 Redistribution and use in source and binary forms, with or without
 modification, are permitted providing that the following conditions
 are met:
@@ -35,7 +35,7 @@ HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
 STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
 IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
-</code>
+</pre>
 
 == Binaries ==
 
@@ -43,7 +43,7 @@ Binary images may contain binaries built from source distributed under the follo
 licenses:
 
 === devel/plan9port ===
-<code>
+<pre>
 The bulk of this software is derived from Plan 9 and is thus distributed
 under the Lucent Public License, Version 1.02, reproduced below.
 
@@ -295,11 +295,11 @@ the intellectual property laws of the United States of America. No
 party to this Agreement will bring a legal action under this Agreement
 more than one year after the cause of action arose. Each party waives
 its rights to a jury trial in any resulting litigation.
-</code>
+</pre>
 
 === sysutils/makefs ===
 
-<code>
+<pre>
 Copyright 2003 Colin Percival
 Portions Copyright (c) 1980, 1982, 1986-1995
     The Regents of the University of California
@@ -349,12 +349,12 @@ DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
 THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-</code>
+</pre>
 === Artistic License 2.0 ===
 
   * sysutils/pv
 
-<code>
+<pre>
 This package is free software, and is being distributed under the terms
 of the Artistic License 2.0.
 
@@ -527,7 +527,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ----------------------------------------------------------
 
-</code>
+</pre>
 
 === GPL v2 ===
 
@@ -541,7 +541,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   * sysutils/fusefs-sshfs
   * sysutils/fusefs-wdfs
 
-<code>
+<pre>
                     GNU GENERAL PUBLIC LICENSE
                        Version 2, June 1991
 
@@ -822,14 +822,14 @@ PROGRAMS), EVEN IF SUCH HOLDER OR OTHER PARTY HAS BEEN ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGES.
 
                      END OF TERMS AND CONDITIONS
-</code>
+</pre>
 
 === GPL v3 ===
 
   * editors/nano
   * sysutils/fusefs-encfs
 
-<code>
+<pre>
                     GNU GENERAL PUBLIC LICENSE
                        Version 3, 29 June 2007
 
@@ -1451,4 +1451,4 @@ Program, unless a warranty or assumption of liability accompanies a
 copy of the Program in return for a fee.
 
                      END OF TERMS AND CONDITIONS
-</code>
+</pre>
