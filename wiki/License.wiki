@@ -39,7 +39,8 @@ POSSIBILITY OF SUCH DAMAGE.
 
 == Binaries ==
 
-Binary images contain binaries licensed under the following licenses:
+Binary images may contain binaries built from source distributed under the following 
+licenses:
 
 === devel/plan9port ===
 <code>
