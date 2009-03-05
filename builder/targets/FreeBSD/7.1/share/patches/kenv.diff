@@ -31,9 +31,9 @@
 +				ret = malloc(len, M_KENV, M_WAITOK | M_ZERO);
 +				strncpy(ret, cp, len);
 +				/* If the last byte of ret is zero, then we won the race, sleep and try again. */
-+				printf("kenv: %s length: %x count: %x\n", name, len, count);
++				printf("kenv0: name=%s length=%d count=%x\n", name, len, count);
 +				if (ret[len + 1] == '\x00') {
-+					printf("data: %s\n", ret);
++					printf("kenv0: data=%s\n", ret);
 +					break;
 +				}
 +			} else {
