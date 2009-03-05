@@ -481,7 +481,7 @@ piper() {
 			pv -s "${2}" --name "${1}"
 		fi
 	else
-		dd
+		dd 2>/dev/null
 	fi
 }
 
@@ -512,7 +512,7 @@ getfile() {
 		;;
 	esac
 
-	filesize="$(stat -f '%z' ${filename})"
+	filesize="$(stat -f '%z' ${filename} 2>/dev/null)"
 
 	if [ "${filesize}" = "0" ] ; then
 		rm "${filename}"
