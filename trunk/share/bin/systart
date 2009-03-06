@@ -68,7 +68,7 @@ export USE_PV=yes
 # abis/architectures in a neutral way
 
 if [ "${MODE}" = "init" ] ; then
-	export OS=$(uname)
+	export EVOKE_SYSTEM_OS=$(uname)
 	case "${EVOKE_SYSTEM_OS}" in
 		OpenBSD)
 			export ABI="$(sysctl -n kern.osrelease)"
