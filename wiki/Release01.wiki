@@ -17,6 +17,7 @@
     * Better handling of mirror urls. This way installer can fall back from cd, to tftp, etc.
     * Probably means we need a mirror menu somewhere.
  * 6.4 and 7.1 for i386 need to be on the image.
+ * Add timezone support.
 
 == Features ==
 
