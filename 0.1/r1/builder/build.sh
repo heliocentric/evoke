@@ -117,7 +117,7 @@ do
 
 		for patchfile in ${PATCHLIST}
 		do
-			patch <"${patchfile}" >&2
+			patch -p0 <"${patchfile}" >&2
 		done
 	fi
 
@@ -202,7 +202,11 @@ do
 	# Grab port modules and copy them to the kernel directory.
 	for file in $(grep ^M ${BUILDDIR}/portlist | cut -d : -f 2)
 	do
-		cp ${DESTDIR}/usr/local/modules/${file}.ko ./
+		if [ -f ${DESTDIR}/usr/local/modules/${file}.ko ] ; then
+			cp ${DESTDIR}/usr/local/modules/${file}.ko ./
+		else
+			cp ${DESTDIR}/boot/modules/${file}.ko ./
+		fi
 	done
 
 #	gzip -9 kernel
@@ -368,7 +372,7 @@ echo "					[DONE]"
 echo -n " * share = Creating RELEASEDIR"
 
 # grab a list of already installed versions for create-updates.
-VERSIONLIST="$(cd /releases/evoke && find . -not -path "./misc*" -depth 2 | cut -b 3-300 | paste - - - - - - - - - - - - - - - - - - - - - - -)"
+VERSIONLIST="$(cd /releases/evoke && find . -not -path "./misc*" -depth 2 | cut -b 3-300 | sort -r | head -n 7 | paste - - - - - - -)"
 
 mkdir -p ${RELEASEDIR}${BOOTPREFIX}
 cd ${BOOTDIR}${BOOTPREFIX}
@@ -425,6 +429,9 @@ if [ "${EVOKE_PUSH_MIRROR}" != "" ] ; then
 		tar -cf - "${VERSION}/${REVISION}" "misc/ISO-IMAGES/${VERSION}/${REVISION}" "misc/BIN-UPDATES/${VERSION}/${REVISION}" | tar -xvf - -C "${MOUNTPOINT}/evoke/"
 		( cat "${MOUNTPOINT}/evoke/misc/versionlist" ; echo "${VERSION}/${REVISION}") | sort -r | uniq >"${TMPDIR}/mirrortest"
 		mv "${TMPDIR}/mirrortest" "${MOUNTPOINT}/evoke/misc/versionlist"
+
+		rm ${MOUNTPOINT}/evoke/${VERSION}/HEAD
+		ln -sf ${REVISION} ${MOUNTPOINT}/evoke/${VERSION}/HEAD
 		mounter umount "${MOUNTPOINT}"
 	done
 fi

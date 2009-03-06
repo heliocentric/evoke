@@ -12,8 +12,8 @@
 == Todo ==
 
  * installer needs to be able to install to a thumb drive.
-    * Does not support installing from a cd drive, this is a vital piece of functionality.
     * Needs to disable/unmount all swap/filesystems on the target device node, if they are mounted/enabled.
+    * update needs to use the trackfiles for each patch directory. This way it doesn't need to hammer the remote system.
     * Better handling of mirror urls. This way installer can fall back from cd, to tftp, etc.
     * Probably means we need a mirror menu somewhere.
  * 6.4 and 7.1 for i386 need to be on the image.
@@ -27,6 +27,28 @@ Like the pilot, 0.1 supports ssh, however because evoke is currently single user
   evoke.sshkey="ssh-rsa AAAAB3NzaC1yc2EAAAABI...."
 
 Where the key is your public key. Currently, this method is an administrative interface that only supports a single public key. It is not recommended to use this feature in a pxeboot environment unless the hardware of both the boot server, the client, and all networking infrastructure is completely secured.
+
+=== Install ===
+
+Evoke supports a basic installer, intended for use with dedicated hard drives or thumb drives. Shared systems (with freebsd, windows, etc) are currently not supported with installer. This includes resizing partitions, adding boot menus, etc. Please do not use on those drives, thank you.
+
+To access the installer, type:
+
+  installer
+
+And choose the 'Install Evoke' menu entry.
+
+=== Update ===
+
+Evoke now supports an update utility. To access, simply type:
+
+  update
+
+This will list your bootable filesystems, and allow you to choose the release to update to. If you want to specify a directory to update, type:
+
+  update /directory
+
+Caveat: The Activate menu entry only activates systems that boot directly off of the filesystem. Systems which are netbooted are not supported through this menu.
 
 === Changes to Previous Releases ===
 
@@ -51,7 +73,7 @@ N/A
 ==== Targets ====
 
  * FreeBSD 6.4-RELEASE-p3/i386
- * FreeBSD 7.1-RELEASE-p2/i386
+ * FreeBSD 7.1-RELEASE-p3/i386
 
 ==== Security Updates ====
 

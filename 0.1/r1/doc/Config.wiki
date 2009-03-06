@@ -1,4 +1,4 @@
-#summary Config variables for site.conf and local.conf.
+#summary Config variables for site.conf, local.conf, and dhcp servers.
 #labels Phase-Design
 
 == kenv variables ==
@@ -13,3 +13,15 @@
 || evoke.sshkey		|| SSH public key (warning, do not use in an untrusted pxeboot environment).	||
 || evoke.useonly	|| If there is only one sysconfig or userconfig to specify, use that.		||
 || evoke.monitor	|| If 'yes'. enable the monitoring daemon (ganglia).				||
+|| boot.netif.name	|| Interface to set the static ip address on.					||
+|| boot.netif.ip	|| Static IP address.								||
+|| boot.netif.netmask	|| Netmask for static IP address.						||
+|| boot.netif.gateway	|| Gateway for static IP address.						||
+|| boot.netif.dns	|| DNS Server to use.								||
+
+== DHCP options ==
+
+|| variable		|| value	|| description							||
+|| option-100		|| Timezone	|| ex. EST5EDT, America/New_York.				||
+|| ip-forwarding	|| Bool		|| 'true' if the host should forward packets.			||
+|| ntp-servers		|| IP list	|| list of ntp servers, the order is precendence		||

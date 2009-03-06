@@ -167,6 +167,7 @@ real_update() {
 					vecho "Starting ${FILENAME} \{\n"
 					vecho "\tFetching full files \{\n"
 
+					SIZE="$(echo "${filespec}" | cut -d ":" -f 4)"
 					HASH="$(echo "${filespec}" | cut -d ":" -f 3)"
 					FILENAME="$(echo "${filespec}" | cut -d ":" -f 2)"
 					PDESTDIR="${STAGEDIR}/$(dirname ${FILENAME})"
@@ -176,12 +177,9 @@ real_update() {
 					vecho "\tFILENAME=${FILENAME}\n"
 					vecho "\tPDESTDIR=${PDESTDIR}\n"
 					vecho "\tBASENAME=${BASENAME}\n"
-					if [ "${VERBOSE}" = "NO" ] ; then
-						echo "Fetching ${FILENAME}"
-					fi
 
 
-					RETVAL="$(fetch_full_file "${HASH}" "${FILENAME}" "${PDESTDIR}" "${BASENAME}")" 2>&1
+					RETVAL="$(fetch_full_file "${HASH}" "${FILENAME}" "${PDESTDIR}" "${BASENAME}" "${SIZE}")"
 
 					if [ "${RETVAL}" != "0" ] ; then
 						unset RETVAL
@@ -199,14 +197,12 @@ real_update() {
 					cd "${DESTDIR}/evoke/"
 					# let's see if HASH matches any already existing file.
 
+					SIZE="$(echo "${filespec}" | cut -d ":" -f 4)"
 					HASH="$(echo "${filespec}" | cut -d ":" -f 3)"
 					FILENAME="$(echo "${filespec}" | cut -d ":" -f 2)"
 					PDESTDIR="${STAGEDIR}/$(dirname ${FILENAME})"
 					BASENAME="$(basename ${FILENAME})"
 					PPATCHDIR="${PATCHDIR}/${HASH}"
-					if [ "${VERBOSE}" = "NO" ] ; then
-						echo "Fetching ${FILENAME}"
-					fi
 					mkdir -p "${PPATCHDIR}"
 					mkdir -p "${PDESTDIR}"
 					vecho "Starting ${FILENAME} \{\n"
@@ -219,7 +215,7 @@ real_update() {
 							SFILENAME="$(echo ${MATCHED_LINE} | cut -d ":" -f 2)"
 							FILEPATH="${DESTDIR}/evoke/${version}/${SFILENAME}"
 							vecho "\t\t${FILEPATH} {\n"
-							cp "${FILEPATH}" "${STAGEDIR}/${FILENAME}"
+							cat "${FILEPATH}" | piper "${FILENAME}" "${SIZE}" >${STAGEDIR}/${FILENAME}
 							sh -c "cd ${STAGEDIR} && TRACKFILE="${TEMPDIR}/trackfile" OPTIONS="quiet" verify "${FILENAME}""
 							RETVAL=$?
 							if [ "${RETVAL}" = "0" ] ; then
@@ -258,7 +254,7 @@ real_update() {
 						do
 							realhash="$(basename ${hash})"
 							vecho "\t\tFetching ${realhash} {\n"
-							getfile ${hash} 2>${DEVICES}/null
+							getfile "${hash}" "${realhash}"
 							if [ -f "${realhash}" ] ; then
 								vecho "\t\t\tFile exists: ${realhash}\n"
 								FILE="$(grep -Ha ^F: ${DESTDIR}/evoke/*/*/trackfile | grep ${realhash} | awk -F : '{ FILENAME=$3; "dirname " $1 | getline; print $0 "/" FILENAME; }' | head -n 1)"
@@ -289,7 +285,7 @@ real_update() {
 
 					vecho "\tGrabbing full file {\n"
 					# Ok, fall back on grabbing the file.
-					RETVAL="$(fetch_full_file "${HASH}" "${FILENAME}" "${PDESTDIR}" "${BASENAME}")"
+					RETVAL="$(fetch_full_file "${HASH}" "${FILENAME}" "${PDESTDIR}" "${BASENAME}" "${SIZE}")"
 	
 					vecho "\t}\n"
 					if [ "${RETVAL}" != "0" ] ; then
@@ -337,13 +333,14 @@ fetch_full_file() {
 	local FILENAME="${2}"
 	local PDESTDIR="${3}"
 	local BASENAME="${4}"
+	local SIZE="${5}"
 	
 	local PDOWNDIR="${DOWNDIR}/${HASH}"
 	mkdir -p "${PDOWNDIR}"
 
 	cd "${PDOWNDIR}"
 	vecho "\t\tFetching ${FILENAME} {\n" 1>&2
-	getfile "evoke/${VERSION}/${FILENAME}" 2>${DEVICES}/null
+	getfile "evoke/${VERSION}/${FILENAME}" "${FILENAME}" "${SIZE}"
 
 	cp "${BASENAME}" "${PDESTDIR}/"
 	cd "${STAGEDIR}"
@@ -376,12 +373,31 @@ find_mirror() {
 				server="$(echo "${mirrorurl}" | sed 's_http://__g' | cut -d "/" -f 1)"
 				filespec="/$(echo "${mirrorurl}" | sed 's_http://__g' | cut -d "/" -f 2-200)"
 				rfilespec="${filespec}/${FILENAME}"
-				phttpget "${server}" "${rfilespec}" 2>${DEVICES}/null
+				fetch -q "http://${server}/${rfilespec}" 2>${DEVICES}/null
 				if [ -r "${file}" ] ; then
 					vecho "\tpassed\n"
 					vecho "}\n"
 					RETVAL="0"
 					PROTOCOL="http"
+					SERVER="${server}"
+					FILESPEC="${filespec}"
+					break
+				else
+					vecho "\tfailed\n"
+					vecho "}\n"
+					RETVAL="65"
+				fi
+			;;
+			ftp)
+				server="$(echo "${mirrorurl}" | sed 's_ftp://__g' | cut -d "/" -f 1)"
+				filespec="/$(echo "${mirrorurl}" | sed 's_ftp://__g' | cut -d "/" -f 2-200)"
+				rfilespec="${filespec}/${FILENAME}"
+				fetch -q "ftp://${server}/${rfilespec}" 2>${DEVICES}/null
+				if [ -r "${file}" ] ; then
+					vecho "\tpassed\n"
+					vecho "}\n"
+					RETVAL="0"
+					PROTOCOL="ftp"
 					SERVER="${server}"
 					FILESPEC="${filespec}"
 					break
@@ -456,32 +472,51 @@ vecho() {
 	fi
 }
 
-# Wrapper, as our main mirror doesn't support wdfs, so we have to fall back to phttpget
+
+piper() {
+	if [ "${USE_PV}" = "yes" ] ; then
+		if [ "${2}" = "" ] ; then
+			pv --name "${1}"
+		else
+			pv -s "${2}" --name "${1}"
+		fi
+	else
+		dd 2>/dev/null
+	fi
+}
+
+# Wrapper, as our main mirror doesn't support wdfs, so we have to fall back to fetch
 
 getfile() {
 
 	filename="$(basename "${1}")"
+	realfile="${2}"
+	size="${3}"
 
 	case "${PROTOCOL}" in
 		http)
-			phttpget "${SERVER}" "${FILESPEC}/${1}" 2>${DEVICES}/null
+			fetch -q -o - "http://${SERVER}/${FILESPEC}/${1}" 2>${DEVICES}/null | piper "${realfile}" "${size}" >${filename}
+		;;
+		ftp)
+			fetch -q -o - "ftp://${SERVER}/${FILESPEC}/${1}" 2>${DEVICES}/null | piper "${realfile}" "${size}" >${filename}
 		;;
 		tftp)
 			printf "binary\nget ${FILESPEC}/${1}\n" | tftp "${SERVER}" 2>${DEVICES}/null >${DEVICES}/null
-			filesize="$(stat -f '%z' ${filename})"
-
-			if [ "${filesize}" = "0" ] ; then
-				rm "${filename}"
-			fi
 		;;
 		*)
 			if [ -r "${MIRROR_MOUNTPOINT}/${1}" ] ; then
 				RETVAL="0"
-				cp "${MIRROR_MOUNTPOINT}/${1}" "${filename}"
+				cat "${MIRROR_MOUNTPOINT}/${1}" 2>${DEVICES}/null | piper "${realfile}" "${size}" >${filename}
 			fi
 			
 		;;
 	esac
+
+	filesize="$(stat -f '%z' ${filename} 2>/dev/null)"
+
+	if [ "${filesize}" = "0" ] ; then
+		rm "${filename}"
+	fi
 }
 
 
@@ -844,7 +879,9 @@ update_menu() {
 											echo "Activate ${VERSION} now?"
 											read -p "[Y/n]: " PROMPT
 											case "${PROMPT}" in
-												[yY])
+												[nN])
+												;;
+												*)	
 													activater "${DESTDIR}" "${VERSION}"
 												;;
 											esac
@@ -891,7 +928,7 @@ update() {
 	if [ "${EVOKE_UPDATE_MIRROR}" = "" ] ; then
 		MOUNTER_EVOKE_LIST="$(mounter search tag=evoke)"
 		if [ "${MOUNTER_EVOKE_LIST}" = "" ] ; then
-			phttpget evoke.googlecode.com /svn/info/mirrorlist 2>${DEVICES}/null
+			fetch -q http://evoke.googlecode.com/svn/info/mirrorlist 2>${DEVICES}/null
 			if [ ! -f mirrorlist ] ; then
 				echo "Unable to fetch mirrorlist, Network connection down?"
 				exit 65
@@ -952,7 +989,7 @@ update() {
 			create_updates "${@}"
 		;;
 		*)
-			update_menu "${2}"
+			update_menu "${1}"
 		;;
 	esac
 	cd "${PREVDIR}"

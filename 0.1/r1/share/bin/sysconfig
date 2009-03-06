@@ -134,12 +134,15 @@ prepsysconfig () {
 
 				export SC_CONSISTENT="$(until [ "${RECORDNUM}" -eq "${SC_LOGSIZE}" ]
 					do
-#						echo "${RECORDNUM} ${TEMPOFFSET}" 1>&2
 						mkdir -p ${SCRATCHDIR}/record${RECORDNUM}
+						TAIL="$(( ${SC_SECTORSIZE} - 74))"
 						dd if=${SCRATCHDIR}/partition of=${SCRATCHDIR}/record${RECORDNUM}/record bs=${SC_SECTORSIZE} count=${SC_ENTRYSIZE} skip=${TEMPOFFSET} conv=sync fillchar=" " 2>${DEVICES}/null
-						dd if=${SCRATCHDIR}/record${RECORDNUM}/record bs=1 count=64 conv=sync of=${SCRATCHDIR}/record${RECORDNUM}/hash 2>${DEVICES}/null
+						dd if=${SCRATCHDIR}/record${RECORDNUM}/record bs=64 count=1 conv=sync of=${SCRATCHDIR}/record${RECORDNUM}/hash 2>${DEVICES}/null
 						dd if=${SCRATCHDIR}/record${RECORDNUM}/record bs=1 skip=64 count=10 conv=sync of=${SCRATCHDIR}/record${RECORDNUM}/timestamp 2>${DEVICES}/null
-						dd if=${SCRATCHDIR}/record${RECORDNUM}/record bs=1 skip=74 conv=sync of=${SCRATCHDIR}/record${RECORDNUM}/tarball.tgz 2>${DEVICES}/null
+						dd if=${SCRATCHDIR}/record${RECORDNUM}/record bs=1 skip=74 count=${TAIL} conv=sync of=${SCRATCHDIR}/record${RECORDNUM}/tarball1 2>${DEVICES}/null
+						dd if=${SCRATCHDIR}/record${RECORDNUM}/record bs=512 skip=1 conv=sync of=${SCRATCHDIR}/record${RECORDNUM}/tarball2 2>${DEVICES}/null
+						cat ${SCRATCHDIR}/record${RECORDNUM}/tarball1 ${SCRATCHDIR}/record${RECORDNUM}/tarball2 >${SCRATCHDIR}/record${RECORDNUM}/tarball.tgz
+
 						RHASH="$(cat ${SCRATCHDIR}/record${RECORDNUM}/timestamp ${SCRATCHDIR}/record${RECORDNUM}/tarball.tgz | sha256 -q)"
 #						echo ${RHASH} 1>&2
 #						echo $(cat ${SCRATCHDIR}/record${RECORDNUM}/hash) 1>&2
@@ -318,9 +321,21 @@ sysconfig () {
 			cat ${SCRATCHDIR}/headsect | dd of=${DEVICES}/${SC_DEVICE} bs=${SC_SECTORSIZE} count=1 2>${DEVICES}/null
 		;;
 		[mM][eE][nN][uU])
-			CONFIGLIST=$(mounter list sysconfig)
+			CONFIGLIST=$(sysconfig list)
+			CONFIGNUM="$(echo "${CONFIGLIST}" | wc -l | awk '{ print $1 }')"
 			. $(command -v menu)
-			CHOICE=$(menu "Available Configurations" "$(sysconfig list ; echo None)")
+			if [ "${CONFIGNUM}" = "1" ] ; then
+				case "${EVOKE_USEONLY}" in
+					[yY][eE][sS])
+						CHOICE="${CONFIGLIST}"
+					;;
+					*)
+						CHOICE=$(menu "Available Configurations" "$(echo "${CONFIGLIST}" ; echo None)")
+					;;
+				esac
+			else
+				CHOICE=$(menu "Available Configurations" "$(echo "${CONFIGLIST}" ; echo None)")
+			fi
 			if [ "$(is_uuid ${CHOICE})" = "yes" ] ; then
 				UUID="$(echo "${CHOICE}" | awk '{ print $1 }')"
 				DESCRIPTION="$(echo "${CHOICE}" | cut -d "-" -f 6 | cut -b 2-4096)"
