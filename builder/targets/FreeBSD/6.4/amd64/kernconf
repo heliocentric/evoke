@@ -53,3 +53,4 @@ device if_bridge
 device		atapicam
 nodevice	atapicd
 options SW_WATCHDOG
+device		snd_uaudio
