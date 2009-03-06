@@ -1,4 +1,4 @@
-#summary Config variables for site.conf and local.conf.
+#summary Config variables for site.conf, local.conf, and dhcp servers.
 #labels Phase-Design
 
 == kenv variables ==
