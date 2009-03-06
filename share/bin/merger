@@ -36,15 +36,15 @@ else
 	TARGET="${2}"
 fi
 
-if [ -d "${SOURCE}/${EVOKE_SYSTEM_OS}-${EVOKE_SYSTEM_ABI}/${ARCH}/lib" ] ; then
-	mount_nullfs -o union,ro ${SOURCE}/${EVOKE_SYSTEM_OS}-${EVOKE_SYSTEM_ABI}/${ARCH}/lib ${TARGET}/lib
+if [ -d "${SOURCE}/${EVOKE_SYSTEM_OS}-${EVOKE_SYSTEM_ABI}/${EVOKE_SYSTEM_ARCH}/lib" ] ; then
+	mount_nullfs -o union,ro ${SOURCE}/${EVOKE_SYSTEM_OS}-${EVOKE_SYSTEM_ABI}/${EVOKE_SYSTEM_ARCH}/lib ${TARGET}/lib
 fi
-if [ -d "${SOURCE}/${EVOKE_SYSTEM_OS}-${EVOKE_SYSTEM_ABI}/${ARCH}/libexec" ] ; then
-	mount_nullfs -o union,ro ${SOURCE}/${EVOKE_SYSTEM_OS}-${EVOKE_SYSTEM_ABI}/${ARCH}/libexec ${TARGET}/libexec
+if [ -d "${SOURCE}/${EVOKE_SYSTEM_OS}-${EVOKE_SYSTEM_ABI}/${EVOKE_SYSTEM_ARCH}/libexec" ] ; then
+	mount_nullfs -o union,ro ${SOURCE}/${EVOKE_SYSTEM_OS}-${EVOKE_SYSTEM_ABI}/${EVOKE_SYSTEM_ARCH}/libexec ${TARGET}/libexec
 fi
-if [ -d "${SOURCE}/${EVOKE_SYSTEM_OS}-${EVOKE_SYSTEM_ABI}/${ARCH}/bin" ] ; then
-	mount_nullfs -o union,ro ${SOURCE}/${EVOKE_SYSTEM_OS}-${EVOKE_SYSTEM_ABI}/${ARCH}/bin ${TARGET}/bin
+if [ -d "${SOURCE}/${EVOKE_SYSTEM_OS}-${EVOKE_SYSTEM_ABI}/${EVOKE_SYSTEM_ARCH}/bin" ] ; then
+	mount_nullfs -o union,ro ${SOURCE}/${EVOKE_SYSTEM_OS}-${EVOKE_SYSTEM_ABI}/${EVOKE_SYSTEM_ARCH}/bin ${TARGET}/bin
 fi
-if [ -d "${SOURCE}/${EVOKE_SYSTEM_OS}-${EVOKE_SYSTEM_ABI}/${ARCH}/boot" ] ; then
-	mount_nullfs -o union,ro ${SOURCE}/${EVOKE_SYSTEM_OS}-${EVOKE_SYSTEM_ABI}/${ARCH}/boot ${TARGET}/boot
+if [ -d "${SOURCE}/${EVOKE_SYSTEM_OS}-${EVOKE_SYSTEM_ABI}/${EVOKE_SYSTEM_ARCH}/boot" ] ; then
+	mount_nullfs -o union,ro ${SOURCE}/${EVOKE_SYSTEM_OS}-${EVOKE_SYSTEM_ABI}/${EVOKE_SYSTEM_ARCH}/boot ${TARGET}/boot
 fi
