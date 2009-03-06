@@ -170,7 +170,20 @@ userconfig () {
 
 		[mM][eE][nN][uU])
 			. $(command -v menu)
-			CHOICE=$(menu "Available Users" "$(userconfig list)")
+			USERLIST="$(userconfig list)"
+			NUMUSERS="$(echo "${USERLIST}" | wc -l | awk '{ print $1 }')"
+			if [ "${NUMUSERS}" = "1" ] ; then
+				case "${EVOKE_USEONLY}" in
+					[yY][eE][sS])
+						CHOICE="${USERLIST}"
+					;;
+					*)
+						CHOICE=$(menu "Available Users" "$(echo "${USERLIST}")")
+					;;
+				esac
+			else
+				CHOICE=$(menu "Available Users" "$(echo "${USERLIST}")")
+			fi
 			if [ "$(is_uuid ${CHOICE})" = "yes" ] ; then
 				UUID="$(echo "${CHOICE}" | awk '{ print $1 }')"
 				echo ${UUID}
