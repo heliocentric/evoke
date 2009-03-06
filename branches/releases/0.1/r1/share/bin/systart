@@ -68,42 +68,42 @@ export USE_PV=yes
 # abis/architectures in a neutral way
 
 if [ "${MODE}" = "init" ] ; then
-	export OS=$(uname)
-	case "${OS}" in
+	export EVOKE_SYSTEM_OS=$(uname)
+	case "${EVOKE_SYSTEM_OS}" in
 		OpenBSD)
-			export ABI="$(sysctl -n kern.osrelease)"
-			export MACHINE="$(machine)"
-			export ARCH="$(machine -a)"
+			export EVOKE_SYSTEM_ABI="$(sysctl -n kern.osrelease)"
+			export EVOKE_SYSTEM_MACHINE="$(machine)"
+			export EVOKE_SYSTEM_ARCH="$(machine -a)"
 		;;
 		Haiku)
-			export ABI="$(uname -r)"
-			export MACHINE="$(uname -m)"
-			export ARCH="$(uname -p)"
+			export EVOKE_SYSTEM_ABI="$(uname -r)"
+			export EVOKE_SYSTEM_MACHINE="$(uname -m)"
+			export EVOKE_SYSTEM_ARCH="$(uname -p)"
 		;;
 		Darwin)
-			export ABI="$(sysctl -n kern.osrelease | cut -d . -f 1)"
-			export MACHINE="$(sysctl -n hw.machine)"
+			export EVOKE_SYSTEM_ABI="$(sysctl -n kern.osrelease | cut -d . -f 1)"
+			export EVOKE_SYSTEM_MACHINE="$(sysctl -n hw.machine)"
 			if [ "${MACHINE}" != "i386" ] ; then
-				export MACHINE="powerpc"
+				export EVOKE_SYSTEM_MACHINE="powerpc"
 			fi
-			export ARCH="${MACHINE}"
+			export EVOKE_SYSTEM_ARCH="${MACHINE}"
 		;;
 		DragonFly)
-			export ABI="$(sysctl -n kern.osrelease | cut -d . -f 1,2)"
-			export MACHINE="$(sysctl -n hw.machine)"
-			export ARCH="$(sysctl -n hw.machine_arch)"
+			export EVOKE_SYSTEM_ABI="$(sysctl -n kern.osrelease | cut -d . -f 1,2)"
+			export EVOKE_SYSTEM_MACHINE="$(sysctl -n hw.machine)"
+			export EVOKE_SYSTEM_ARCH="$(sysctl -n hw.machine_arch)"
 		;;
 		*)
-			export ABI="$(sysctl -n kern.osrelease | cut -d . -f 1)"
-			export MACHINE="$(sysctl -n hw.machine)"
-			export ARCH="$(sysctl -n hw.machine_arch)"
-			MODEL="$(kenv -q smbios.system.maker)"
-			case "${MODEL}" in
+			export EVOKE_SYSTEM_ABI="$(sysctl -n kern.osrelease | cut -d . -f 1)"
+			export EVOKE_SYSTEM_MACHINE="$(sysctl -n hw.machine)"
+			export EVOKE_SYSTEM_ARCH="$(sysctl -n hw.machine_arch)"
+			export EVOKE_SYSTEM_MODEL="$(kenv -q smbios.system.serial)"
+			case "${EVOKE_SYSTEM_MODEL}" in
 				EeePC-1234567890)
-					MODEL="EEEPC-$(kenv -q smbios.system.serial)"
+					export EVOKE_SYSTEM_MODEL="EEEPC-$(kenv -q smbios.system.product)"
 				;;
 				*)
-					MODEL="GENERIC"
+					export EVOKE_SYSTEM_MODEL="GENERIC"
 				;;
 			esac
 		;;
@@ -180,8 +180,8 @@ export EVOKE_MEMDIR=/mem
 # If we are running 7 or higher releases, use tmpfs, everything else,
 # create a large ramdisk.
 
-if [ "${OS}" = "FreeBSD" ] ; then
-	if [ "${ABI}" -ge "7" ] ; then
+if [ "${EVOKE_SYSTEM_OS}" = "FreeBSD" ] ; then
+	if [ "${EVOKE_SYSTEM_ABI}" -ge "7" ] ; then
 		mount -t tmpfs tmpfs ${EVOKE_MEMDIR}
 	else
 		mdmfs -s60m md ${EVOKE_MEMDIR}
@@ -293,14 +293,14 @@ echo "Generating files"
 export HOME=${EVOKE_MEMDIR}/home
 mkdir -p ${HOME}
 
-echo "root:*:0:0::0:0:Super-User:${HOME}:/bin/tcsh" >>${EVOKE_LIBDIR}/master.passwd
-echo "nobody:*:1:1::0:0:nobody:${EVOKE_NULLDIR}:${DEVICES}/null" >>${EVOKE_LIBDIR}/master.passwd
-echo "monitor:*:2:2::0:0:Evoke Monitoring Daemon (ganglia):${EVOKE_NULLDIR}:${DEVICES}/null" >>${EVOKE_LIBDIR}/master.passwd
+echo "root:*:0:0:default:0:0:Super-User:${HOME}:/bin/tcsh" >>${EVOKE_LIBDIR}/master.passwd
+echo "nobody:*:1:1:defau;t:0:0:nobody:${EVOKE_NULLDIR}:${DEVICES}/null" >>${EVOKE_LIBDIR}/master.passwd
+echo "monitor:*:2:2:default:0:0:Evoke Monitoring Daemon (ganglia):${EVOKE_NULLDIR}:${DEVICES}/null" >>${EVOKE_LIBDIR}/master.passwd
 echo "wheel:*:0:" >>${EVOKE_LIBDIR}/group
 echo "operator:*:5:" >>${EVOKE_LIBDIR}/group
 
 pwd_mkdb -i -p -d ${EVOKE_LIBDIR} ${EVOKE_LIBDIR}/master.passwd 2>${DEVICES}/null
-cap_mkdb -f ${EVOKE_LIBDIR}/login.conf.db ${EVOKE_CFGDIR}/login.conf
+cap_mkdb -f ${EVOKE_LIBDIR}/login.conf ${EVOKE_CFGDIR}/login.conf
 echo "/bin/tcsh" >>${EVOKE_LIBDIR}/shells
 echo "/bin/csh" >>${EVOKE_LIBDIR}/shells
 echo "/bin/sh" >>${EVOKE_LIBDIR}/shells
@@ -328,12 +328,15 @@ if [ "${MODE}" = "init" ] ; then
 	NETMASK="$(kenv -q boot.netif.netmask)"
 	GATEWAY="$(kenv -q boot.netif.gateway)"
 
-	# Unfortunately, doesn't exist yet. Yay! Add it here as a reminder that
-	# I should request it.
-
 	DNS="$(kenv -q boot.netif.dns)"
 	sysctl net.inet6.ip6.accept_rtadv=1 >/${DEVICES}/null
 
+	EVOKE_NET_HOSTNAME="$(kenv -q dhcp.host-name)"
+	EVOKE_NET_DOMAIN-NAME="$(kenv -q dhcp.domain-name)"
+
+	if [ "${EVOKE_NET_HOSTNAME}" != "" ] ; then
+		sysctl kern.hostname="${EVOKE_NET_HOSTNAME}.${EVOKE_NET_DOMAIN-NAME}"
+	fi
 	INTERFACES=$(list_if)
 	#for network in ${INTERFACES}
 	#do
@@ -379,7 +382,8 @@ if [ "${MODE}" = "init" ] ; then
 			do
 				moused -p ${DEVICES}/${i} -3 -I ${EVOKE_PIDDIR}/${i}.pid 2>${DEVICES}/null
 			done
-			for ttyv in ${DEVICES}/ttyv* ; do
+			for ttyv in ${DEVICES}/ttyv* ${DEVICES}/console
+			do
 				vidcontrol < ${ttyv} -m on
 			done
 		;;

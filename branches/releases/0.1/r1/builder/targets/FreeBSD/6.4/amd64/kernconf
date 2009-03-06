@@ -6,7 +6,6 @@ options		MAC
 options		GDB
 options		KDB
 options		DDB
-nodevice	ehci
 options		AUDIT
 options		MAC
 options         SC_PIXEL_MODE
@@ -54,3 +53,5 @@ device if_bridge
 device		atapicam
 nodevice	atapicd
 options SW_WATCHDOG
+device		snd_uaudio
+options         INCLUDE_CONFIG_FILE

@@ -1,25 +1,49 @@
 --- sys/kern/kern_environment.c	2009-02-20 12:31:36.000000000 -0500
-+++ sys/kern/kern_environment.c	2009-02-24 23:26:43.000000000 -0500
-@@ -293,7 +293,6 @@
++++ sys/kern/kern_environment.c	2009-03-03 22:45:19.000000000 -0500
+@@ -293,22 +293,34 @@
  char *
  getenv(const char *name)
  {
 -	char buf[KENV_MNAMELEN + 1 + KENV_MVALLEN + 1];
  	char *ret, *cp;
- 	int len;
+-	int len;
++	int len = 0;
++	int count = 0;
  
-@@ -301,11 +300,10 @@
- 		mtx_lock(&kenv_lock);
- 		cp = _getenv_dynamic(name, NULL);
- 		if (cp != NULL) {
+ 	if (dynamic_kenv) {
+-		mtx_lock(&kenv_lock);
+-		cp = _getenv_dynamic(name, NULL);
+-		if (cp != NULL) {
 -			strcpy(buf, cp);
 -			mtx_unlock(&kenv_lock);
 -			len = strlen(buf) + 1;
-+			len = strlen(cp) + 1;
- 			ret = malloc(len, M_KENV, M_WAITOK);
+-			ret = malloc(len, M_KENV, M_WAITOK);
 -			strcpy(ret, buf);
-+			strcpy(ret, cp);
-+			mtx_unlock(&kenv_lock);
- 		} else {
- 			mtx_unlock(&kenv_lock);
+-		} else {
+-			mtx_unlock(&kenv_lock);
++		while (count <= 5) {
  			ret = NULL;
++			mtx_lock(&kenv_lock);
++			cp = _getenv_dynamic(name, NULL);
++			if (cp != NULL) {
++				len = strlen(cp) + 1;
++				mtx_unlock(&kenv_lock);
++				ret = malloc(len, M_KENV, M_WAITOK | M_ZERO);
++				strncpy(ret, cp, len);
++				/* If the last byte of ret is zero, then we won the race */
++				printf("kenv0: name=%s length=%d count=%x\n", name, len, count);
++				if (ret[len] == '\x00') {
++					printf("kenv0: data=%s\n", ret);
++					break;
++				}
++			} else {
++				mtx_unlock(&kenv_lock);
++				ret = NULL;
++				break;
++			}
++			count++;
++			free(ret, M_KENV);
++			tsleep(cp, 0, "kenvsl", 1);
+ 		}
+ 	} else
+ 		ret = _getenv_static(name);
