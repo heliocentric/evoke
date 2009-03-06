@@ -4,7 +4,7 @@
  * [Release01 0.1]
 
 == Usage ==
- * [Config Configuration variables for site.conf and local.conf]
+ * [Config Configuration variables]
  * [BuildEnvironment Requirements for a build environment]
  * [SystemRequirements Requirements for a running evoke system]
  * [Target Idealized Target Environment]
