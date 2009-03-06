@@ -379,7 +379,8 @@ if [ "${MODE}" = "init" ] ; then
 			do
 				moused -p ${DEVICES}/${i} -3 -I ${EVOKE_PIDDIR}/${i}.pid 2>${DEVICES}/null
 			done
-			for ttyv in ${DEVICES}/ttyv* ; do
+			for ttyv in ${DEVICES}/ttyv* ${DEVICES}/console
+			do
 				vidcontrol < ${ttyv} -m on
 			done
 		;;
