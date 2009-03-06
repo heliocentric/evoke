@@ -160,7 +160,7 @@ list_other_urls() {
 }
 
 list_all_disks() {
-	case "${OS}" in
+	case "${EVOKE_SYSTEM_OS}" in
 		*)
 			freebsd_disk_list | awk -F ":" '{
 					PROTO=$1;
