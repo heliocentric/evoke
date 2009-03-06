@@ -71,17 +71,17 @@ if [ "${MODE}" = "init" ] ; then
 	export EVOKE_SYSTEM_OS=$(uname)
 	case "${EVOKE_SYSTEM_OS}" in
 		OpenBSD)
-			export ABI="$(sysctl -n kern.osrelease)"
+			export EVOKE_SYSTEM_ABI="$(sysctl -n kern.osrelease)"
 			export MACHINE="$(machine)"
 			export ARCH="$(machine -a)"
 		;;
 		Haiku)
-			export ABI="$(uname -r)"
+			export EVOKE_SYSTEM_ABI="$(uname -r)"
 			export MACHINE="$(uname -m)"
 			export ARCH="$(uname -p)"
 		;;
 		Darwin)
-			export ABI="$(sysctl -n kern.osrelease | cut -d . -f 1)"
+			export EVOKE_SYSTEM_ABI="$(sysctl -n kern.osrelease | cut -d . -f 1)"
 			export MACHINE="$(sysctl -n hw.machine)"
 			if [ "${MACHINE}" != "i386" ] ; then
 				export MACHINE="powerpc"
@@ -89,12 +89,12 @@ if [ "${MODE}" = "init" ] ; then
 			export ARCH="${MACHINE}"
 		;;
 		DragonFly)
-			export ABI="$(sysctl -n kern.osrelease | cut -d . -f 1,2)"
+			export EVOKE_SYSTEM_ABI="$(sysctl -n kern.osrelease | cut -d . -f 1,2)"
 			export MACHINE="$(sysctl -n hw.machine)"
 			export ARCH="$(sysctl -n hw.machine_arch)"
 		;;
 		*)
-			export ABI="$(sysctl -n kern.osrelease | cut -d . -f 1)"
+			export EVOKE_SYSTEM_ABI="$(sysctl -n kern.osrelease | cut -d . -f 1)"
 			export MACHINE="$(sysctl -n hw.machine)"
 			export ARCH="$(sysctl -n hw.machine_arch)"
 			MODEL="$(kenv -q smbios.system.maker)"
@@ -181,7 +181,7 @@ export EVOKE_MEMDIR=/mem
 # create a large ramdisk.
 
 if [ "${EVOKE_SYSTEM_OS}" = "FreeBSD" ] ; then
-	if [ "${ABI}" -ge "7" ] ; then
+	if [ "${EVOKE_SYSTEM_ABI}" -ge "7" ] ; then
 		mount -t tmpfs tmpfs ${EVOKE_MEMDIR}
 	else
 		mdmfs -s60m md ${EVOKE_MEMDIR}
