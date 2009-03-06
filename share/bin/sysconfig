@@ -321,9 +321,21 @@ sysconfig () {
 			cat ${SCRATCHDIR}/headsect | dd of=${DEVICES}/${SC_DEVICE} bs=${SC_SECTORSIZE} count=1 2>${DEVICES}/null
 		;;
 		[mM][eE][nN][uU])
-			CONFIGLIST=$(mounter list sysconfig)
+			CONFIGLIST=$(sysconfig list)
+			CONFIGNUM="$(echo "${CONFIGLIST}" | wc -l | awk '{ print $1 }')"
 			. $(command -v menu)
-			CHOICE=$(menu "Available Configurations" "$(sysconfig list ; echo None)")
+			if [ "${CONFIGNUM}" = "1" ] ; then
+				case "${EVOKE_USEONLY}" in
+					[yY][eE][sS])
+						CHOICE="${CONFIGLIST}"
+					;;
+					*)
+						CHOICE=$(menu "Available Configurations" "$(echo "${CONFIGLIST}" ; echo None)")
+					;;
+				esac
+			else
+				CHOICE=$(menu "Available Configurations" "$(echo "${CONFIGLIST}" ; echo None)")
+			fi
 			if [ "$(is_uuid ${CHOICE})" = "yes" ] ; then
 				UUID="$(echo "${CHOICE}" | awk '{ print $1 }')"
 				DESCRIPTION="$(echo "${CHOICE}" | cut -d "-" -f 6 | cut -b 2-4096)"
