@@ -332,10 +332,10 @@ if [ "${MODE}" = "init" ] ; then
 	sysctl net.inet6.ip6.accept_rtadv=1 >/${DEVICES}/null
 
 	EVOKE_NET_HOSTNAME="$(kenv -q dhcp.host-name)"
-	EVOKE_NET_DOMAIN-NAME="$(kenv -q dhcp.domain-name)"
+	EVOKE_NET_DOMAIN_NAME="$(kenv -q dhcp.domain-name)"
 
 	if [ "${EVOKE_NET_HOSTNAME}" != "" ] ; then
-		sysctl kern.hostname="${EVOKE_NET_HOSTNAME}.${EVOKE_NET_DOMAIN-NAME}"
+		sysctl kern.hostname="${EVOKE_NET_HOSTNAME}.${EVOKE_NET_DOMAIN_NAME}"
 	fi
 	INTERFACES=$(list_if)
 	#for network in ${INTERFACES}
