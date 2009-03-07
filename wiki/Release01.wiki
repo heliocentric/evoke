@@ -18,6 +18,7 @@
     * Probably means we need a mirror menu somewhere.
  * 6.4 and 7.1 for i386 need to be on the image.
  * Add timezone support.
+ * Have update understand and use the BIN-UPDATES trackfiles.
 
 == Features ==
 
