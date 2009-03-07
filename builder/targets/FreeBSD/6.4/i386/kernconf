@@ -86,3 +86,5 @@ device		snd_via8233
 device		snd_via82c686
 device		snd_vibes
 device       snd_uaudio
+nooptions         AHC_REG_PRETTY_PRINT
+nooptions         AHD_REG_PRETTY_PRINT
