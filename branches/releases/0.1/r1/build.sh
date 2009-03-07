@@ -57,7 +57,7 @@ openssl fetch basename dumpfs command wc sleep
 # List of kernel objects in base that will be on the image. Ports modules
 # are added automatically.
 
-export MODULES="acpi tmpfs"
+export MODULES="acpi tmpfs snd_uaudio"
 
 export ROOTDIR=`pwd`
 
