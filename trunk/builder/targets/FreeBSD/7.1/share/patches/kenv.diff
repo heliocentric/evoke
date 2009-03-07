@@ -1,6 +1,6 @@
 --- sys/kern/kern_environment.c	2009-02-20 12:31:36.000000000 -0500
-+++ sys/kern/kern_environment.c	2009-03-03 22:45:19.000000000 -0500
-@@ -293,22 +293,34 @@
++++ sys/kern/kern_environment.c	2009-03-07 18:54:37.000000000 -0500
+@@ -293,22 +293,32 @@
  char *
  getenv(const char *name)
  {
@@ -31,9 +31,7 @@
 +				ret = malloc(len, M_KENV, M_WAITOK | M_ZERO);
 +				strncpy(ret, cp, len);
 +				/* If the last byte of ret is zero, then we won the race */
-+				printf("kenv0: name=%s length=%d count=%x\n", name, len, count);
 +				if (ret[len] == '\x00') {
-+					printf("kenv0: data=%s\n", ret);
 +					break;
 +				}
 +			} else {
