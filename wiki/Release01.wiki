@@ -51,6 +51,11 @@ This will list your bootable filesystems, and allow you to choose the release to
 
 Caveat: The Activate menu entry only activates systems that boot directly off of the filesystem. Systems which are netbooted are not supported through this menu.
 
+=== Special Thanks ===
+
+Jamie Ivanov of RadioactiveRussian.com for providing another test machine for the kenv patch.
+
+
 === Changes to Previous Releases ===
 
 N/A
