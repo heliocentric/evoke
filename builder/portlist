@@ -19,7 +19,10 @@ B:vac:devel/plan9port:
 B:vacfs:devel/plan9port:
 B:vcat:devel/plan9port:
 B:unvac:devel/plan9port:
-#B:Xorg:x11/xorg:
+B:Xorg:x11/xorg-server:
+B:xterm:x11/xterm:
+B:xauth:x11/xauth:
+B:xinit:x11/xinit:
 B:e2fsck:sysutils/e2fsprogs:
 B:mke2fs:sysutils/e2fsprogs:
 B:gmond:sysutils/ganglia-monitor-core:
