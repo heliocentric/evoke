@@ -55,7 +55,7 @@
 
 == Xorg ==
 
-with just the Xorg binary, the xinit binary, the xauth binary, and the xterm binary. Differences:
+With just the Xorg binary, the xinit binary, the xauth binary, and the xterm binary. Differences:
 
 === r846 (without Xorg) ===
 Build time:
@@ -63,8 +63,8 @@ Build time:
 Size:
  23258 1024 byte blocks
 
-=== r847 (with Xorg) ===
+=== r851 (with Xorg) ===
 Build time:
- 16188.347u 2454.094s 6:39:32.37 77.7%   1046+1100k 402526+1205677io 489501pf+9w
+ 
 Size:
- 24892 1024 byte blocks
+ 
