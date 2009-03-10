@@ -497,6 +497,13 @@ prep_transport () {
 				FILE)
 					mdconfig_handler
 				;;
+				GEOM)
+					DIRECTORY="$(mount | grep ${DEVICES}/${M_FILE} | cut -d " " -f 3)"
+					if [ "${DIRECTORY}" != "" ] ; then
+						mounter "remount:${DIRECTORY}" "${M_DESTINATION}"
+						mexit 0
+					fi
+				;;
 			esac
 		;;
 	esac
@@ -543,7 +550,6 @@ mdconfig_handler () {
 # ggate wrapper, push options into the ggatec command line, then catch errors ggatec can return.
 
 ggate_handler () {
-	ISTRANSPORT="yes"
 	if [ "${M_PORT}" != "" ] ; then
 		local GOPTS="-p ${M_PORT}"
 	fi
@@ -555,6 +561,7 @@ ggate_handler () {
 	fi
 	local GATEDEV=$(ggatec create ${GOPTS} ${M_HOST} ${M_FILE})
 	local ERROR=$?
+	ISTRANSPORT="yes"
 	# XXX helio someone needs to fill out the error codes ggatec can return.
 	case "${ERROR}" in
 		0)
