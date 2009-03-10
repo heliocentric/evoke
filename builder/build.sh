@@ -209,21 +209,26 @@ do
 		fi
 	done
 
-#	gzip -9 kernel
+	if [ "${EVOKE_BUILDER_GZIPKERN}" = "yes" ; then
+		gzip -9 kernel
+	fi
 	for file in $(grep ^M ${BUILDDIR}/portlist | cut -d : -f 2) ${MODULES}
 	do
-#		gzip -9 ${file}.ko
-		mv ${file}.ko ${file}.ka
+		if [ "${EVOKE_BUILDER_GZIPKERN}" = "yes" ; then
+			gzip -9 ${file}.ko
+		else
+			mv ${file}.ko ${file}.ka
+		fi
 	done
 	# Remove everything that is not gzipped.
 	rm -r *.symbols
 	rm -r *.ko
 	rm -r *.hints
-	# Yes, this is all wasteful. But this bug will be fixed eventually, and when it does, this line can be removed.
-#	gunzip *.gz
-	for file in $(grep ^M ${BUILDDIR}/portlist | cut -d : -f 2) ${MODULES}
+	for file in *.ka
 	do
-		mv ${file}.ka ${file}.ko
+		if [ "${file}" != "*.ka" ] ; then
+			mv ${file}.ka ${file}.ko
+		fi
 	done
 
 	echo "				[DONE]"
