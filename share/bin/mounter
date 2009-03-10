@@ -102,6 +102,9 @@ mexit () {
 			echo "Filesystem unable to be cleaned. Bailing out."
 			exit 6
 		;;
+		0)
+			exit 0
+		;;
 		*)
 			echo "General Error" >&2
 			exit 255
@@ -482,8 +485,6 @@ prep_transport () {
 		DEV)
 			case "${M_STYPE}" in
 				URI)
-					# we set ISTRANSPORT so that mexit can clean up device nodes if there is a failure.
-					ISTRANSPORT="yes"
 					case "${M_TRANSPORT}" in
 						[gG][gG][aA][tT][eE])
 							ggate_handler
@@ -494,7 +495,6 @@ prep_transport () {
 					esac
 				;;
 				FILE)
-					ISTRANSPORT="yes"
 					mdconfig_handler
 				;;
 			esac
@@ -505,8 +505,29 @@ prep_transport () {
 # mdconfig wrapper, trap errors, and terminate if necessary.
 
 mdconfig_handler () {
-	local MD_DEV=$(mdconfig -af "${M_FILE}" 2>/dev/null)
+	# Check to see if the device has been mdconfig'd already.
+	EXISTINGDEV="$(mdconfig -lv | awk -v FILE="${M_FILE}" '{ 
+		if ($2 == "vnode") {
+			if ($4 == FILE) {
+				print $1;
+			}
+		}
+	}')"
+
+	if [ "${EXISTINGDEV}" = "" ] ; then
+		local MD_DEV=$(mdconfig -af "${M_FILE}" 2>/dev/null)
+	else
+		# find the directory to remount.
+		DIRECTORY="$(mount | grep ${DEVICES}/${EXISTINGDEV} | cut -d " " -f 3)"
+		if [ "${DIRECTORY}" != "" ] ; then
+			mounter "remount:${DIRECTORY}" "${M_DESTINATION}"
+			mexit 0
+		else
+			local MD_DEV=$(mdconfig -af "${M_FILE}" 2>/dev/null)
+		fi
+	fi
 	local ERROR=$?
+	ISTRANSPORT="yes"
 	# XXX helio someone needs to fill out the error codes mdconfig can return.
 	case "${ERROR}" in
 		0)
@@ -522,6 +543,7 @@ mdconfig_handler () {
 # ggate wrapper, push options into the ggatec command line, then catch errors ggatec can return.
 
 ggate_handler () {
+	ISTRANSPORT="yes"
 	if [ "${M_PORT}" != "" ] ; then
 		local GOPTS="-p ${M_PORT}"
 	fi
