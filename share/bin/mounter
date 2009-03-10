@@ -572,6 +572,9 @@ ggate_handler () {
 	esac
 	M_STYPE="GEOM"
 	M_FILE="${GATEDEV}"
+	# Since ggate runs in the background, it takes some time for it to create the ggate device. 
+	# Make sure we sleep for a second to let it create the node.
+	sleep 1
 }
 
 # MSDOSFS mounting wrapper.
