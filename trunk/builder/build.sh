@@ -214,7 +214,7 @@ do
 	fi
 	for file in $(grep ^M ${BUILDDIR}/portlist | cut -d : -f 2) ${MODULES}
 	do
-		if [ "${EVOKE_BUILDER_GZIPKERN}" = "yes" ; then
+		if [ "${EVOKE_BUILDER_GZIPKERN}" = "yes" ] ; then
 			gzip -9 ${file}.ko
 		else
 			mv ${file}.ko ${file}.ka
@@ -224,12 +224,12 @@ do
 	rm -r *.symbols
 	rm -r *.ko
 	rm -r *.hints
-	for file in *.ka
-	do
-		if [ "${file}" != "*.ka" ] ; then
-			mv ${file}.ka ${file}.ko
-		fi
-	done
+	if [ "${EVOKE_BUILDER_GZIPKERN}" != "yes" ] ; then
+		for file in $(grep ^M ${BUILDDIR}/portlist | cut -d : -f 2) ${MODULES}
+		do
+				mv ${file}.ka ${file}.ko
+		done
+	fi
 
 	echo "				[DONE]"
 
