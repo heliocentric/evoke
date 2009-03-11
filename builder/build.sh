@@ -209,7 +209,7 @@ do
 		fi
 	done
 
-	if [ "${EVOKE_BUILDER_GZIPKERN}" = "yes" ; then
+	if [ "${EVOKE_BUILDER_GZIPKERN}" = "yes" ] ; then
 		gzip -9 kernel
 	fi
 	for file in $(grep ^M ${BUILDDIR}/portlist | cut -d : -f 2) ${MODULES}
