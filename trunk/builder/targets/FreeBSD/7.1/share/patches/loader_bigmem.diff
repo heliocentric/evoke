@@ -1,5 +1,5 @@
---- /mnt/releng/7.1/src/sys/boot/i386/loader/main.c	2009-02-20 12:31:41.000000000 -0500
-+++ /usr/src/sys/boot/i386/loader/main.c	2009-03-10 17:17:33.000000000 -0400
+--- sys/boot/i386/loader/main.c	2009-02-20 12:31:41.000000000 -0500
++++ sys/boot/i386/loader/main.c	2009-03-10 17:17:33.000000000 -0400
 @@ -96,14 +96,9 @@
       */
      bios_getmem();
