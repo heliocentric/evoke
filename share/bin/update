@@ -238,43 +238,54 @@ real_update() {
 					fi
 
 					vecho "\tGrabbing patches {\n"
-					HASHLIST="$(for version in ${VERSIONLIST}
-					do
-						FILEHASH="$(grep -a ^F: ${DESTDIR}/evoke/${version}/trackfile | cut -d : -f 3)"
-						if [ "${FILEHASH}" != "" ] ; then
-							for filehash in ${FILEHASH}
-							do
-								echo "evoke/misc/BIN-UPDATES/${VERSION}/${HASH}/${filehash}" 
-							done
-						fi
-					done)"
-					if [ "${HASHLIST}" != "" ] ; then
-						cd "${PPATCHDIR}"
-						for hash in ${HASHLIST}
+					cd "${PPATCHDIR}"
+					getfile "evoke/misc/BIN-UPDATES/${VERSION}/${HASH}/trackfile" "trackfile" 2>/dev/null 
+		                        TRACKFILE="${PPATCHDIR}/trackfile" OPTIONS="quiet" verify 2>/dev/null
+		                        RETVAL=$?
+					PTRACKFILE="$(grep -a ^F: ${PPATCHDIR}/trackfile | cut -d : -f 3)"
+        		                if [ "${RETVAL}" = "65" ] ; then
+
+						HASHLIST="$(for version in ${VERSIONLIST}
 						do
-							realhash="$(basename ${hash})"
-							vecho "\t\tFetching ${realhash} {\n"
-							getfile "${hash}" "${realhash}"
-							if [ -f "${realhash}" ] ; then
-								vecho "\t\t\tFile exists: ${realhash}\n"
-								FILE="$(grep -Ha ^F: ${DESTDIR}/evoke/*/*/trackfile | grep ${realhash} | awk -F : '{ FILENAME=$3; "dirname " $1 | getline; print $0 "/" FILENAME; }' | head -n 1)"
-								RETVAL="$(apply_patch "${realhash}" "${FILE}" "${PDESTDIR}/${BASENAME}" "${realhash}" "${HASH}")"
-								if [ "${RETVAL}" = "0" ] ; then
-									vecho "\t\t\tPatch applied successfully: ${realhash}\n"
-									vecho "\t\t}\n"
-									break
+							FILEHASH="$(grep -a ^F: ${DESTDIR}/evoke/${version}/trackfile | cut -d : -f 3)"
+							if [ "${FILEHASH}" != "" ] ; then
+								for filehash in ${FILEHASH}
+								do
+									GTRACKFILE="$(echo "${PTRACKFILE}" | grep ${filehash})"
+									if [ "${GTRACKFILE}" != "" ] ; then
+										echo "evoke/misc/BIN-UPDATES/${VERSION}/${HASH}/${filehash}" 
+									fi
+								done
+							fi
+						done)"
+
+						if [ "${HASHLIST}" != "" ] ; then
+							for hash in ${HASHLIST}
+							do
+								realhash="$(basename ${hash})"
+								vecho "\t\tFetching ${realhash} {\n"
+								getfile "${hash}" "${realhash}"
+								if [ -f "${realhash}" ] ; then
+									vecho "\t\t\tFile exists: ${realhash}\n"
+									FILE="$(grep -Ha ^F: ${DESTDIR}/evoke/*/*/trackfile | grep ${realhash} | awk -F : '{ FILENAME=$3; "dirname " $1 | getline; print $0 "/" FILENAME; }' | head -n 1)"
+									RETVAL="$(apply_patch "${realhash}" "${FILE}" "${PDESTDIR}/${BASENAME}" "${realhash}" "${HASH}")"
+									if [ "${RETVAL}" = "0" ] ; then
+										vecho "\t\t\tPatch applied successfully: ${realhash}\n"
+										vecho "\t\t}\n"
+										break
+									else
+										vecho "\t\t\tPatch did not apply: ${realhash}\n"
+										vecho "\t\t}\n"
+									fi
 								else
-									vecho "\t\t\tPatch did not apply: ${realhash}\n"
+									vecho "\t\t\tFile doesn't exist: ${realhash}\n"
 									vecho "\t\t}\n"
 								fi
-							else
-								vecho "\t\t\tFile doesn't exist: ${realhash}\n"
-								vecho "\t\t}\n"
-							fi
-						done
-					fi
+							done
+						fi
 
-					vecho "\t}\n"
+						vecho "\t}\n"
+					fi
 					if [ "${RETVAL}" = "0" ] ; then
 						unset RETVAL
 						vecho "}\n"
@@ -481,6 +492,7 @@ piper() {
 			pv -s "${2}" --name "${1}"
 		fi
 	else
+		echo "Fetching ${1}" 1>&2
 		dd 2>/dev/null
 	fi
 }
