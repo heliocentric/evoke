@@ -315,12 +315,6 @@ if [ "${MODE}" = "init" ] ; then
 		IF="$(list_if | head -n 1)"
 	fi
 
-	# This is /needed/, else some programs will just not work, as they need
-	# some ip available.
-
-	ifconfig lo0 inet 127.0.0.1 netmask 255.255.255.255
-	ifconfig lo0 up
-
 	# Grab the ip, netmask, and gateway from kenv so pxebooting doesn't need
 	# an extra dhcp request. For robustness.
 
@@ -372,6 +366,13 @@ if [ "${MODE}" = "init" ] ; then
 
 		dhclient ${IF} >${DEVICES}/null 2>/${DEVICES}/null
 	fi
+
+	# This is /needed/, else some programs will just not work, as they need
+	# some ip available.
+
+	ifconfig lo0 inet 127.0.0.1 netmask 255.255.255.255
+	ifconfig lo0 up
+
 	case "${EVOKE_MOUSED}" in
 		[yY][eE][sS])
 			echo "Starting moused"
