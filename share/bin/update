@@ -242,21 +242,18 @@ real_update() {
 					getfile "evoke/misc/BIN-UPDATES/${VERSION}/${HASH}/trackfile" "trackfile" 2>/dev/null 
 		                        TRACKFILE="${PPATCHDIR}/trackfile" OPTIONS="quiet" verify 2>/dev/null
 		                        RETVAL=$?
-					PTRACKFILE="$(grep -a ^F: ${PPATCHDIR}/trackfile | cut -d : -f 3)"
         		                if [ "${RETVAL}" = "65" ] ; then
+						PTRACKFILE="$(grep -a ^F: ${PPATCHDIR}/trackfile | sort -t : -k 4 | cut -d : -f 2)"
 
-						HASHLIST="$(for version in ${VERSIONLIST}
+						HASHLIST="$(for hash in ${PTRACKFILE}
 						do
-							FILEHASH="$(grep -a ^F: ${DESTDIR}/evoke/${version}/trackfile | cut -d : -f 3)"
-							if [ "${FILEHASH}" != "" ] ; then
-								for filehash in ${FILEHASH}
-								do
-									GTRACKFILE="$(echo "${PTRACKFILE}" | grep ${filehash})"
-									if [ "${GTRACKFILE}" != "" ] ; then
-										echo "evoke/misc/BIN-UPDATES/${VERSION}/${HASH}/${filehash}" 
+							for version in ${VERSIONLIST}
+							do
+									FILEHASH="$(grep -a ^F: ${DESTDIR}/evoke/${version}/trackfile | cut -d : -f 3 | grep ${hash})"
+									if [ "${FILEHASH}" != "" ] ; then
+										echo "evoke/misc/BIN-UPDATES/${VERSION}/${HASH}/${hash}" 
 									fi
 								done
-							fi
 						done)"
 
 						if [ "${HASHLIST}" != "" ] ; then
@@ -264,7 +261,7 @@ real_update() {
 							do
 								realhash="$(basename ${hash})"
 								vecho "\t\tFetching ${realhash} {\n"
-								getfile "${hash}" "${realhash}"
+								getfile "${hash}" "${FILENAME}"
 								if [ -f "${realhash}" ] ; then
 									vecho "\t\t\tFile exists: ${realhash}\n"
 									FILE="$(grep -Ha ^F: ${DESTDIR}/evoke/*/*/trackfile | grep ${realhash} | awk -F : '{ FILENAME=$3; "dirname " $1 | getline; print $0 "/" FILENAME; }' | head -n 1)"
