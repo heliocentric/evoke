@@ -539,9 +539,8 @@ unmount_mirror() {
 		tftp)
 		;;
 		*)
-			echo "${MIRROR_MOUNTPOINT}"
 			mounter unmount "${MIRROR_MOUNTPOINT}"
-			rmdir "${MIRROR_MOUNTPOINT}"
+			rmdir "${MIRROR_MOUNTPOINT}" 2>${DEVICES}/null
 		;;
 	esac
 }
@@ -841,6 +840,31 @@ update_menu() {
 	fi
 
 	. $(command -v menu)
+	while [ 1 != 2 ]
+	do
+		clear
+		OPTION="$(menu "Evoke System Manager" "$(printf "Install Evoke\nSelect Media\nActivate")" "q:Quit")"
+		case "${OPTION}" in
+			Quit)
+				break
+			;;
+			Activate)
+				activater "${DESTDIR}"
+			;;
+			Install\ Evoke)
+				revision_menu
+			;;
+			Select\ Media)
+				media_menu
+			;;
+		esac
+	done
+}
+
+media_menu() {
+  
+}
+revision_menu () {
 	find_mirror "evoke/misc/versionlist" "${TEMPDIR}/versionlist"
 
 	if [ -f "${TEMPDIR}/versionlist" ] ; then
@@ -850,6 +874,7 @@ update_menu() {
 			unset RESULT
 			unset REVISIONS
 			unset REVISION
+			clear
 			BRANCH=$(menu "Branch" "$(cut -d "/" -f 1 ${TEMPDIR}/versionlist | sort -r | uniq | grep -v ^$)" "$(printf "a:Activate\nq:Quit")")
 			if [ "${BRANCH}" != "" ] ; then
 				case "${BRANCH}" in
@@ -867,6 +892,7 @@ update_menu() {
 							unset REVISION
 
 							REVISIONS="$(awk -F "/" -v branch="${BRANCH}" '{ if ($1 == branch) { print $2; }; }' ${TEMPDIR}/versionlist | sort -r | grep -v ^$ | head -n 18)"
+							clear
 							REVISION=$(menu "Revision" "${REVISIONS}" "$(printf "a:Activate\nb:Back\nq:Quit")")
 							if [ "${REVISION}" != "" ] ; then
 								case "${REVISION}" in
@@ -910,11 +936,7 @@ update_menu() {
 			fi
 		done
 		cd ${PREVDIR}
-		if [ "${DESTDIR_IS_MOUNTED}" = "yes" ] ; then
-			echo "${DESTDIR}"
-			mounter unmount "${DESTDIR}"
-			rmdir "${DESTDIR}"
-		fi
+		unmount_mirror
 	fi
 }
 
