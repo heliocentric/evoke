@@ -734,7 +734,7 @@ create_updates () {
 		
 								PATCHFILE="${PATCHDIR}/${DESTHASH}/${SOURCEHASH}"
 								mkdir -p ${PATCHDIR}/${DESTHASH}/
-								echo "Generating ${RFILE} -> ${DFILE}"
+								echo "Generating ${SOURCEFILE} -> ${DESTFILE}"
 								bsdiff "${RFILE}" "${DFILE}" "${PATCHFILE}"
 								PATCHSIZE="$(stat -f '%z' ${PATCHFILE})"
 								if [ "${PATCHSIZE}" -ge "${DESTSIZE}" ] ; then
