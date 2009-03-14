@@ -210,12 +210,13 @@ do
 	done
 
 	if [ "${EVOKE_BUILDER_GZIPKERN}" = "yes" ] ; then
-		gzip -9 kernel
+		gzip -9nc kernel >kernel.gz
+		rm kernel
 	fi
 	for file in $(grep ^M ${BUILDDIR}/portlist | cut -d : -f 2) ${MODULES}
 	do
 		if [ "${EVOKE_BUILDER_GZIPKERN}" = "yes" ] ; then
-			gzip -9 ${file}.ko
+			gzip -9nc ${file}.ko >${file}.ko.gz
 		else
 			mv ${file}.ko ${file}.ka
 		fi
