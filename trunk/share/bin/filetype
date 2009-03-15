@@ -46,7 +46,7 @@ type_check() {
 		if [ "${WARNING}" = "yes" ] ; then
 			echo "WARNING: 1 ${1}"
 		fi
-		MIME="$(file -b --mime-type "${1}" | cut -d , -f 1)"
+		MIME="$(file -bL --mime-type "${1}" | cut -d , -f 1)"
 		setextattr -q user mime_type "${MIME}" "${1}"
 		setextattr -q user mime_mtime "$(date "+%s")" "${1}"
 	fi
@@ -114,7 +114,7 @@ filetype () {
 						type_check "${1}" "inode/chardevice"
 					;;
 					"Symbolic Link")
-						type_check "${1}" "inode/symlink"
+						type_check "${1}"
 					;;
 					"Regular File")
 						type_check "${1}"

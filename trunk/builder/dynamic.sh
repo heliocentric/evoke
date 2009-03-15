@@ -175,6 +175,11 @@ resolve_libs() {
 				echo "${DEPENDENCIES}"
 				resolve_libs ${DEPENDENCIES}
 			;;
+			application/x-sharedlib)
+				DEPENDENCIES=$(${CROSSTOOLSPATH}/readelf -d ${file} | grep '(NEEDED)' | cut -d [ -f 2 | cut -d ] -f 1)
+				echo "${DEPENDENCIES}"
+				resolve_libs ${DEPENDENCIES}
+			;;
 		esac
 	done | sort | uniq
 
