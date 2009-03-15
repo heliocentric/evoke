@@ -49,7 +49,6 @@ type_check() {
 		MIME="$(file -b --mime-type "${1}" | cut -d , -f 1)"
 		setextattr -q user mime_type "${MIME}" "${1}"
 		setextattr -q user mime_mtime "$(date "+%s")" "${1}"
-		echo "blah"
 	fi
 	if [ "${ECHO_FILE}" != "no" ] ; then
 		echo "${1}:" "${MIME}"
