@@ -30,15 +30,26 @@ FORFS="
 
 type_check() {
 	MIME="$(getextattr -q user mime_type "${1}")"
+	CACHE_MTIME="$(getextattr -q user mime_mtime "${1}")"
+
+	if [ "${CACHE_MTIME}" = "" ] ; then
+		CACHE_MTIME=0
+	fi
+
+	REAL_MTIME="$(stat -f "%m" "${1}" 2>/dev/null)"
+
 	if [ "${2}" != "" ] ; then
 		MIME="${2}"
 	fi
-	if [ "${MIME}" = "" -o "${FORCE_WRITE_MIME}" = "yes" ] ; then
+
+	if [ "${MIME}" = "" -o "${FORCE_WRITE_MIME}" = "yes" -o "${REAL_MTIME}" -gt "${CACHE_MTIME}" -o "${FILEDB_MTIME}" -gt "${CACHE_MTIME}" ] ; then
 		if [ "${WARNING}" = "yes" ] ; then
 			echo "WARNING: 1 ${1}"
 		fi
 		MIME="$(file -b --mime-type "${1}" | cut -d , -f 1)"
 		setextattr -q user mime_type "${MIME}" "${1}"
+		setextattr -q user mime_mtime "$(date "+%s")" "${1}"
+		echo "blah"
 	fi
 	if [ "${ECHO_FILE}" != "no" ] ; then
 		echo "${1}:" "${MIME}"
@@ -115,5 +126,12 @@ filetype () {
 		shift
 	done
 }
+
+
+if [ -d /system ] ; then
+	FILEDB_MTIME="$(stat -f "%m" /system/share/lib/magic.mime 2>/dev/null)"
+else
+	FILEDB_MTIME="$(stat -f "%m" /usr/share/misc/magic.mime 2>/dev/null)"
+fi
 
 filetype $@
