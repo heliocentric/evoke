@@ -378,7 +378,7 @@ echo "					[DONE]"
 echo -n " * share = Creating RELEASEDIR"
 
 # grab a list of already installed versions for create-updates.
-VERSIONLIST="$(cd /releases/evoke && find . -not -path "./misc*" -depth 2 | cut -b 3-300 | sort -r | head -n 7 | paste - - - - - - -)"
+VERSIONLIST="$(cd ${RELEASEDIR}/evoke && find . -not -path "./misc*" -depth 2 | cut -b 3-300 | sort -r | head -n 7 | paste - - - - - - -)"
 
 mkdir -p ${RELEASEDIR}${BOOTPREFIX}
 cd ${BOOTDIR}${BOOTPREFIX}
