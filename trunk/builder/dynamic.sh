@@ -168,9 +168,14 @@ PROGS="${PROGS} $(grep ^B ${BUILDDIR}/portlist | cut -d : -f 2)"
 resolve_libs() {
 	for file in $@
 	do
-		DEPENDENCIES=$(${CROSSTOOLSPATH}/readelf -d ${file} | grep '(NEEDED)' | cut -d [ -f 2 | cut -d ] -f 1)
-		echo "${DEPENDENCIES}"
-		resolve_libs ${DEPENDENCIES}
+		TYPE="$(OPTIONS="quiet" filetype ${file})"
+		case "${TYPE}" in
+			application/x-executable)
+				DEPENDENCIES=$(${CROSSTOOLSPATH}/readelf -d ${file} | grep '(NEEDED)' | cut -d [ -f 2 | cut -d ] -f 1)
+				echo "${DEPENDENCIES}"
+				resolve_libs ${DEPENDENCIES}
+			;;
+		esac
 	done | sort | uniq
 
 }
