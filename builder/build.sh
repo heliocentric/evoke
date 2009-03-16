@@ -420,6 +420,8 @@ echo "${ISO_MD5}" >>CHECKSUM.MD5
 mkdir -p ${RELEASEDIR}/evoke/misc
 (cat "${RELEASEDIR}/evoke/misc/versionlist" ; echo "${VERSION}/${REVISION}") | sort -r | uniq >"${TMPDIR}/mirrortest"
 mv "${TMPDIR}/mirrortest" "${RELEASEDIR}/evoke/misc/versionlist"
+rm ${RELEASEDIR}/evoke/${VERSION}/HEAD
+ln -sf ${REVISION} ${RELEASEDIR}/evoke/${VERSION}/HEAD
 
 if [ "${EVOKE_PUSH_MIRROR}" != "" ] ; then
 	cd ${RELEASEDIR}/evoke

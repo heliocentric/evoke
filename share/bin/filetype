@@ -40,15 +40,15 @@ type_check() {
 
 	if [ "${2}" != "" ] ; then
 		MIME="${2}"
-	fi
-
-	if [ "${MIME}" = "" -o "${FORCE_WRITE_MIME}" = "yes" -o "${REAL_MTIME}" -gt "${CACHE_MTIME}" -o "${FILEDB_MTIME}" -gt "${CACHE_MTIME}" ] ; then
-		if [ "${WARNING}" = "yes" ] ; then
-			echo "WARNING: 1 ${1}"
+	else
+		if [ "${MIME}" = "" -o "${FORCE_WRITE_MIME}" = "yes" -o "${REAL_MTIME}" -gt "${CACHE_MTIME}" -o "${FILEDB_MTIME}" -gt "${CACHE_MTIME}" ] ; then
+			if [ "${WARNING}" = "yes" ] ; then
+				echo "WARNING: 1 ${1}"
+			fi
+			MIME="$(file -bL --mime-type "${1}" | cut -d , -f 1)"
+			setextattr -q user mime_type "${MIME}" "${1}"
+			setextattr -q user mime_mtime "$(date "+%s")" "${1}"
 		fi
-		MIME="$(file -bL --mime-type "${1}" | cut -d , -f 1)"
-		setextattr -q user mime_type "${MIME}" "${1}"
-		setextattr -q user mime_mtime "$(date "+%s")" "${1}"
 	fi
 	if [ "${ECHO_FILE}" != "no" ] ; then
 		echo "${1}:" "${MIME}"
