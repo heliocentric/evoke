@@ -862,8 +862,52 @@ update_menu() {
 }
 
 media_menu() {
-  
+	while [ 1 != 2 ]
+	do
+		clear
+		MEDIALIST="$(case ${EVOKE_BOOTMODE} in
+			cdboot)
+				echo "CD/DVD ROM"
+			;;
+			pxeboot)
+				echo "Local Boot Server"
+			;;
+		esac
+		if [ "${EVOKE_UPDATE_MIRROR}" != "" ] ; then
+			echo "Local Site"
+		fi
+		echo "Official Site"
+		echo "Other"
+		)"
+
+		OPTION="$(menu "Mirrors" "${MEDIALIST}" "q:Quit")"
+		case "${OPTION}" in
+			Quit)
+				break
+			;;
+			Local\ Site)
+				echo "${EVOKE_UPDATE_MIRROR}" >${TEMPDIR}/mirrorlist
+				break
+			;;
+			Official\ Site)
+				MOUNTER_EVOKE_LIST="$(mounter search tag=evoke)"
+				if [ "${MOUNTER_EVOKE_LIST}" = "" ] ; then
+					cd ${TEMPDIR}
+					fetch -q http://evoke.googlecode.com/svn/info/mirrorlist 2>${DEVICES}/null
+					if [ ! -f mirrorlist ] ; then
+						echo "Unable to fetch mirrorlist, Network connection down?"
+					else
+						break
+					fi
+				else
+					echo "${MOUNTER_EVOKE_LIST}" >${TEMPDIR}/mirrorlist
+					break
+				fi
+			;;
+		esac
+	done  
 }
+
 revision_menu () {
 	find_mirror "evoke/misc/versionlist" "${TEMPDIR}/versionlist"
 

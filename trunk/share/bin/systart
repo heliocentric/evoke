@@ -151,6 +151,7 @@ export PATH=/bin
 if [ "${MODE}" = "init" ] ; then
 
 	export EVOKE_FINGERPRINT="$(kenv -q evoke.fingerprint)"
+	export EVOKE_UPDATE_MIRROR="$(kenv -q evoke.update.mirror)"
 	export EVOKE_MOUSED="$(kenv -q evoke.moused)"
 	export EVOKE_USERCONFIG="$(kenv -q evoke.userconfig)"
 	export EVOKE_SCDEVICE="$(kenv -q evoke.sysconfig)"
