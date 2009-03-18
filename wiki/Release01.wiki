@@ -9,6 +9,7 @@
 	svnrevision: $Revision$
 </wiki:comment>
 
+<wiki:toc max_depth="3" />
 == Todo ==
 
  * installer needs to be able to install to a thumb drive.

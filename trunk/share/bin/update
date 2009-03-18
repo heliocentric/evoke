@@ -544,6 +544,20 @@ unmount_mirror() {
 	esac
 }
 
+list_versions() {
+	cd "${1}"
+	for version in $(echo */*)
+	do
+		case "${version}" in 
+			misc*)
+			;;
+			*)
+				echo ${version}
+			;;
+		esac
+	done | sort -r
+}
+
 activater() {
 	local PREVDIR="$(pwd)"
 	local PDESTDIR="${1}"
@@ -559,17 +573,7 @@ activater() {
 
 	while [ 1 != 2 ]
 	do
-		cd "${LDESTDIR}"
-		VERSIONLIST="$(for version in $(echo */*)
-		do
-			case "${version}" in 
-				misc*)
-				;;
-				*)
-					echo ${version}
-				;;
-			esac
-		done | sort -r)"
+		VERSIONLIST="$(list_versions ${LDESTDIR})"
 		if [ "${VERSIONLIST}" = "*/*" -o "${VERSIONLIST}" = "" ] ; then
 			echo "No versions found"
 			return 65
@@ -842,7 +846,7 @@ update_menu() {
 	while [ 1 != 2 ]
 	do
 		clear
-		OPTION="$(menu "Evoke System Manager" "$(printf "Install Evoke\nSelect Media\nActivate")" "q:Quit")"
+		OPTION="$(menu "Evoke System Manager" "$(printf "Install New Version\nDeinstall Version\nSelect Media\nActivate")" "q:Quit")"
 		case "${OPTION}" in
 			Quit)
 				break
@@ -850,11 +854,43 @@ update_menu() {
 			Activate)
 				activater "${DESTDIR}"
 			;;
-			Install\ Evoke)
+			Install\ New\ Version)
 				revision_menu
+			;;
+			Deinstall\ Version)
+				deinstall_menu "${DESTDIR}"
 			;;
 			Select\ Media)
 				media_menu
+			;;
+		esac
+	done
+}
+
+deinstall_menu() {
+	LDESTDIR="${1}/evoke"
+	VERSIONLIST="$(list_versions ${LDESTDIR})"
+	while [ 1 != 2 ] 
+	do
+		clear
+		VERSION="$(menu "Available Versions" "${VERSIONLIST}" "b:Back")"
+		case "${VERSION}" in
+			Back)
+				break
+			;;
+			*)
+				if [ -f "${LDESTDIR}/${VERSION}/trackfile" ] ; then
+					read -p "Are you sure you want to remove ${VERSION}? [y/N]: " RESPONSE
+					case "${RESPONSE}" in
+						[yY])
+							rm -r ${LDESTDIR}/${VERSION}
+							if [ -f "${LDESTDIR}/misc/versionlist" ] ; then
+								sed -i .bak "@${VERSION}@d" ${LDESTDIR}/misc/versionlist
+							fi
+						;;
+					esac
+					break
+				fi
 			;;
 		esac
 	done
