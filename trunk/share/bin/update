@@ -885,7 +885,8 @@ deinstall_menu() {
 						[yY])
 							rm -r ${LDESTDIR}/${VERSION}
 							if [ -f "${LDESTDIR}/misc/versionlist" ] ; then
-								sed -i .bak "@${VERSION}@d" ${LDESTDIR}/misc/versionlist
+								grep -v "${VERSION}" ${LDESTDIR}/misc/versionlist >${SCRATCHDIR}/versionlist
+								mv ${SCRATCHDIR}/versionlist ${LDESTDIR}/misc/versionlist
 							fi
 						;;
 					esac
@@ -1012,6 +1013,9 @@ revision_menu () {
 											real_update "${DESTDIR}" "${VERSION}"
 											local RETVAL="${?}"
 											if [ "${RETVAL}" = "0" ] ; then
+												( cat "${DESTDIR}/evoke/misc/versionlist" ; echo "${VERSION}") | sort -r | uniq >"${SCRATCHDIR}/mirrortest"
+												mv "${SCRATCHDIR}/mirrortest" "${DESTDIR}/evoke/misc/versionlist"
+
 												echo "Activate ${VERSION} now?"
 												read -p "[Y/n]: " PROMPT
 												case "${PROMPT}" in
