@@ -13,12 +13,13 @@
 
  * installer needs to be able to install to a thumb drive.
     * Needs to disable/unmount all swap/filesystems on the target device node, if they are mounted/enabled.
-    * update needs to use the trackfiles for each patch directory. This way it doesn't need to hammer the remote system.
-    * Better handling of mirror urls. This way installer can fall back from cd, to tftp, etc.
-    * Probably means we need a mirror menu somewhere.
  * 6.4 and 7.1 for i386 need to be on the image.
  * Add timezone support.
  * sshd public key support needs to work reliably.
+
+== Warnings ==
+
+Warning: Evoke now uses gzip to compress the kernel and all modules. There are reports that evoke is now unbootable on qemu, however, there are no reports of problems on real hardware. If you find any problems, we urge you to create a ticket in the issue tracker describing the boot problem.
 
 == Features ==
 
