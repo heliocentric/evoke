@@ -370,7 +370,7 @@ find_mirror() {
 	FILENAME="${1}"
 	OUTFILENAME="${2}"
 	cd ${TEMPDIR}
-	unset RETVAL
+	local RETVAL=0
 	file="$(basename "${FILENAME}")"
 	for mirrorurl in $(sed -e 's/#.*$//g' ${TEMPDIR}/mirrorlist)
 	do
@@ -468,10 +468,9 @@ find_mirror() {
 		fi
 	else
 		echo "No usable mirrors found. Bailing out."
-		exit 65
+		RETVAL="65"
 	fi
-
-	unset RETVAL
+	return "${RETVAL}"
 }
 
 vecho() {
@@ -865,7 +864,8 @@ media_menu() {
 	while [ 1 != 2 ]
 	do
 		clear
-		MEDIALIST="$(case ${EVOKE_BOOTMODE} in
+
+		MEDIALIST="$(case ${EVOKE_BOOT_MODE} in
 			cdboot)
 				echo "CD/DVD ROM"
 			;;
@@ -873,21 +873,39 @@ media_menu() {
 				echo "Local Boot Server"
 			;;
 		esac
+
 		if [ "${EVOKE_UPDATE_MIRROR}" != "" ] ; then
 			echo "Local Site"
 		fi
+
 		echo "Official Site"
 		echo "Other"
+
 		)"
 
-		OPTION="$(menu "Mirrors" "${MEDIALIST}" "q:Quit")"
-		case "${OPTION}" in
-			Quit)
+		MEDIA="$(menu "Mirrors" "${MEDIALIST}" "b:Back")"
+		case "${MEDIA}" in
+			Back)
 				break
 			;;
 			Local\ Site)
 				echo "${EVOKE_UPDATE_MIRROR}" >${TEMPDIR}/mirrorlist
 				break
+			;;
+			Local\ Boot\ Server)
+				echo "tftp://${EVOKE_BOOT_SERVER}/" >${TEMPDIR}/mirrorlist
+				break
+			;;
+			CD/DVD\ ROM)
+				CHOICE="$(menu "CD Drives" "$(mounter list cd9660)" "b:Back")"
+				if [ "${CHOICE}" != "Back" ] ; then
+					if [ "$(mounter list cd9660 | grep "${CHOICE}")" = "" ] ; then
+						echo "Drive not found!"
+					else
+						echo "cd9660:${CHOICE}" >${TEMPDIR}/mirrorlist
+						break
+					fi
+				fi
 			;;
 			Official\ Site)
 				MOUNTER_EVOKE_LIST="$(mounter search tag=evoke)"
@@ -905,82 +923,87 @@ media_menu() {
 				fi
 			;;
 		esac
-	done  
+	done
 }
 
 revision_menu () {
+	rm ${TEMPDIR}/versionlist 2>${DEVICES}/null
 	find_mirror "evoke/misc/versionlist" "${TEMPDIR}/versionlist"
+	RETURN=$?
 
-	if [ -f "${TEMPDIR}/versionlist" ] ; then
-		while [ 1 != 2 ]
-		do
-			unset BRANCH
-			unset RESULT
-			unset REVISIONS
-			unset REVISION
-			clear
-			BRANCH=$(menu "Branch" "$(cut -d "/" -f 1 ${TEMPDIR}/versionlist | sort -r | uniq | grep -v ^$)" "$(printf "a:Activate\nq:Quit")")
-			if [ "${BRANCH}" != "" ] ; then
-				case "${BRANCH}" in
-					Quit)
-						break
-					;;
-					Activate)
-						activater "${DESTDIR}"
-					;;
-					*)
-						while [ 1 != 2 ]
-						do
-							unset RESULT
-							unset REVISIONS
-							unset REVISION
+	if [ "${RETURN}" = "0" ] ; then
+		if [ -f "${TEMPDIR}/versionlist" ] ; then
+			while [ 1 != 2 ]
+			do
+				unset BRANCH
+				unset RESULT
+				unset REVISIONS
+				unset REVISION
+				clear
+				BRANCH=$(menu "Branch" "$(cut -d "/" -f 1 ${TEMPDIR}/versionlist | sort -r | uniq | grep -v ^$)" "$(printf "a:Activate\nq:Quit")")
+				if [ "${BRANCH}" != "" ] ; then
+					case "${BRANCH}" in
+						Quit)
+							break
+						;;
+						Activate)
+							activater "${DESTDIR}"
+						;;
+						*)
+							while [ 1 != 2 ]
+							do
+								unset RESULT
+								unset REVISIONS
+								unset REVISION
 
-							REVISIONS="$(awk -F "/" -v branch="${BRANCH}" '{ if ($1 == branch) { print $2; }; }' ${TEMPDIR}/versionlist | sort -r | grep -v ^$ | head -n 18)"
-							clear
-							REVISION=$(menu "Revision" "${REVISIONS}" "$(printf "a:Activate\nb:Back\nq:Quit")")
-							if [ "${REVISION}" != "" ] ; then
-								case "${REVISION}" in
-									Quit)
-										break 2
-									;;
-									Activate)
-										activater "${DESTDIR}"
-										break
-									;;
-									Back)
-										break
-									;;
-									*)
-										VERSION="${BRANCH}/${REVISION}"
-										real_update "${DESTDIR}" "${VERSION}"
-										local RETVAL="${?}"
-										if [ "${RETVAL}" = "0" ] ; then
-											echo "Activate ${VERSION} now?"
-											read -p "[Y/n]: " PROMPT
-											case "${PROMPT}" in
-												[nN])
-												;;
-												*)	
-													activater "${DESTDIR}" "${VERSION}"
-												;;
-											esac
-										fi
-									;;
-								esac
-							else
-								echo "Revision not found! - Press any key to continue" 
-								read RESULT
-							fi
-						done
-					;;
-				esac
-			else
-				echo "Branch not found! - Press any key to continue" 
-				read RESULT
-			fi
-		done
-		cd ${PREVDIR}
-		unmount_mirror
+								REVISIONS="$(awk -F "/" -v branch="${BRANCH}" '{ if ($1 == branch) { print $2; }; }' ${TEMPDIR}/versionlist | sort -r | grep -v ^$ | head -n 18)"
+								clear
+								REVISION=$(menu "Revision" "${REVISIONS}" "$(printf "a:Activate\nb:Back\nq:Quit")")
+								if [ "${REVISION}" != "" ] ; then
+									case "${REVISION}" in
+										Quit)
+											break 2
+										;;
+										Activate)
+											activater "${DESTDIR}"
+											break
+										;;
+										Back)
+											break
+										;;
+										*)
+											VERSION="${BRANCH}/${REVISION}"
+											real_update "${DESTDIR}" "${VERSION}"
+											local RETVAL="${?}"
+											if [ "${RETVAL}" = "0" ] ; then
+												echo "Activate ${VERSION} now?"
+												read -p "[Y/n]: " PROMPT
+												case "${PROMPT}" in
+													[nN])
+													;;
+													*)	
+														activater "${DESTDIR}" "${VERSION}"
+													;;
+												esac
+											fi
+										;;
+									esac
+								else
+									echo "Revision not found! - Press any key to continue" 
+									read RESULT
+								fi
+							done
+						;;
+					esac
+				else
+					echo "Branch not found! - Press any key to continue" 
+					read RESULT
+				fi
+			done
+			cd ${PREVDIR}
+			unmount_mirror
+		fi
+	else
 	fi
 }
 
