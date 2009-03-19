@@ -109,16 +109,16 @@ if [ "${MODE}" = "init" ] ; then
 	esac
 	case "$(kenv -q loaddev)" in
 		cd*)
-			EVOKE_BOOT_MODE="cdboot"
+			export EVOKE_BOOT_MODE="cdboot"
 		;;
 		pxe*)
-			EVOKE_BOOT_MODE="pxeboot"
+			export EVOKE_BOOT_MODE="pxeboot"
 		;;
 		disk*)
-			EVOKE_BOOT_MODE="diskboot"
+			export EVOKE_BOOT_MODE="diskboot"
 		;;
 		*)
-			EVOKE_BOOT_MODE="jailer"
+			export EVOKE_BOOT_MODE="jailer"
 		;;
 	esac
 
