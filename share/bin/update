@@ -1013,8 +1013,13 @@ revision_menu () {
 											real_update "${DESTDIR}" "${VERSION}"
 											local RETVAL="${?}"
 											if [ "${RETVAL}" = "0" ] ; then
-												( cat "${DESTDIR}/evoke/misc/versionlist" ; echo "${VERSION}") | sort -r | uniq >"${SCRATCHDIR}/mirrortest"
-												mv "${SCRATCHDIR}/mirrortest" "${DESTDIR}/evoke/misc/versionlist"
+												if [ -f "${DESTDIR}/evoke/misc/versionlist" ] ; then
+													( cat "${DESTDIR}/evoke/misc/versionlist" ; echo "${VERSION}") | sort -r | uniq >"${SCRATCHDIR}/versiontest"
+													mv "${SCRATCHDIR}/versiontest" "${DESTDIR}/evoke/misc/versionlist"
+												else
+													mkdir -p ${DESTDIR}/evoke/misc
+													echo "${VERSION}" >>${DESTDIR}/evoke/misc/versionlist
+												fi
 
 												echo "Activate ${VERSION} now?"
 												read -p "[Y/n]: " PROMPT
