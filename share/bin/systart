@@ -453,7 +453,6 @@ esac
 case "${EVOKE_MISC_MESSAGE}" in
 	[yY][eE][sS])
 		cat /system/share/lib/message
-		read -p "Press any key to continue" BLAH
 	;;
 esac
 
