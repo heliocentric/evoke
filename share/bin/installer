@@ -130,7 +130,6 @@ evoke_chooser() {
 			partdisk evoke
 		;;
 	esac
-	echo "${EVOKE_SYSCONFIG_DIR}"
 	sysconfig create current
 	USERCONFIG_UUID="$(userconfig create)"
 
