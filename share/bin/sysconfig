@@ -63,11 +63,7 @@ EOF
 prepsysconfig () {
 	case "${1}" in
 		[cC][uU][rR][rR][eE][nN][tT])
-			export SPEC=${EVOKE_SYSCONFIG}
-			if [ "$(is_uuid ${SPEC})" = "no" ] ; then
-				echo "Error: You can't use CURRENT if the kernel environment variable isn't set"
-				exit 7
-			fi
+			export SPEC="${EVOKE_SYSCONFIG}"
 		;;
 		*)
 			SPEC="${1}"
@@ -287,7 +283,7 @@ sysconfig () {
 			unset break
 			until [ "${break}" = "yes" ]
 			do
-				read -p "Description: " LONGDESC
+				read -p "Machine Description: " LONGDESC
 				if [ "${LONGDESC}" != "" ] ; then
 					break="yes"
 				else
@@ -297,7 +293,7 @@ sysconfig () {
 			unset break
 			until [ "${break}" = "yes" ]
 			do
-				read -p "Length of the config log: " CONFIGLOG
+				read -p "Length of the system configuration log: " CONFIGLOG
 				if [ "${CONFIGLOG}" != "" ] ; then
 					break="yes"
 				else

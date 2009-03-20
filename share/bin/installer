@@ -48,6 +48,16 @@ if [ "${EVOKE_MNTDIR}" = "" ] ; then
 	fi
 fi
 
+if [ ! -d "${EVOKE_SYSCONFIG_DIR}" ] ; then
+	export EVOKE_SYSCONFIG_DIR="/tmp/sysconfig"
+	mkdir -p ${EVOKE_SYSCONFIG_DIR}
+fi
+
+if [ ! -d "${EVOKE_CURUSER}" ] ; then
+	export EVOKE_CURUSER="/tmp/currentuser"
+	mkdir -p ${EVOKE_CURUSER}
+fi
+
 echo "WARNING. installer is experimental, and there ARE bugs"
 echo "that will result in loss of data. DO NOT USE"
 read -p "Continue? [yN]: " CONT
@@ -120,7 +130,10 @@ evoke_chooser() {
 			partdisk evoke
 		;;
 	esac
+	echo "${EVOKE_SYSCONFIG_DIR}"
 	sysconfig create current
+	USERCONFIG_UUID="$(userconfig create)"
+
 	BOOTHASH="${BOOTHASH}" update menu
 }
 
@@ -136,8 +149,9 @@ partdisk() {
 					dd if=/dev/zero bs=4m count=1 of=${DEVICES}/${RESULT} 2>${DEVICES}/null
 					gpt create ${DEVICES}/${RESULT}
 					gpt boot ${DEVICES}/${RESULT}
+#					gpt add -s 16384 -t 4b4cf826-e53e-4b56-86b6-0f9b728e0436 ${DEVICES}/${RESULT}
 					gpt add -s 4096 -t 4b4cf826-e53e-4b56-86b6-0f9b728e0436 ${DEVICES}/${RESULT}
-					EVOKE_SYSCONFIG="${RESULT}p1"
+					export EVOKE_SYSCONFIG="${RESULT}p2"
 					SIZE="$(sysctl -b kern.geom.conftxt | awk -v RESULT=${RESULT} '{ if ($3 == RESULT) { print $4; } }')"
 
 					if [ "${SIZE}" -le "512099328" ] ; then
