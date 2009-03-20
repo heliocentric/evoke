@@ -826,7 +826,7 @@ update_menu() {
 	fi
 
 	if [ ! -d "${DESTDIR}" ] ; then
-		if [ -f "${DEVICES}/ufs/${BOOTHASH}" ] ; then
+		if [ -c "${DEVICES}/ufs/${BOOTHASH}" ] ; then
 			BOOTDEVICE="ufs/${BOOTHASH}"
 		else
 			BOOTDEVICE="$(choose_boot)"
