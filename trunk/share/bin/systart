@@ -155,7 +155,7 @@ if [ "${MODE}" = "init" ] ; then
 	export EVOKE_MISC_MESSAGE="$(kenv -q evoke.misc.message)"
 	export EVOKE_MOUSED="$(kenv -q evoke.moused)"
 	export EVOKE_USERCONFIG="$(kenv -q evoke.userconfig)"
-	export EVOKE_SCDEVICE="$(kenv -q evoke.sysconfig)"
+	export EVOKE_SYSCONFIG="$(kenv -q evoke.sysconfig)"
 	export EVOKE_SSHKEY="$(kenv -q evoke.sshkey)"
 	export EVOKE_VERSION="$(kenv -q evoke.version)"
 	export EVOKE_USEONLY="$(kenv -q evoke.useonly)"
@@ -226,8 +226,8 @@ mount_nullfs -o union /mem/lib/ /config/
 export EVOKE_CFGDIR=/config
 export TRACKFILE_PUBLIC_KEY=/config/evoke_public.rsa
 
-export EVOKE_SCDIR=/mem/sysconfig
-mkdir -p ${EVOKE_SCDIR}
+export EVOKE_SYSCONFIG_DIR=/mem/sysconfig
+mkdir -p ${EVOKE_SYSCONFIG_CDIR}
 
 export EVOKE_CURUSER=/mem/curuser
 mkdir -p ${EVOKE_CURUSER}
@@ -271,11 +271,11 @@ SC_PART=${EVOKE_SCDEVICE}
 
 if [ "$(is_uuid ${SC_PART})" = "no" ] ; then
 	SC_PART=$(sysconfig menu)
-	export EVOKE_SCDEVICE=${SC_PART} >/dev/null
+	export EVOKE_SYSCONFIG=${SC_PART} >/dev/null
 fi
 
 if [ "${SC_PART}" != "" ] ; then
-	sysconfig extract ${SC_PART}
+	sysconfig extract ${EVOKE_SYSCONFIG}
 fi
 
 DEFUSER=${EVOKE_USERCONFIG}
@@ -286,7 +286,7 @@ if [ "$(is_uuid ${DEFUSER})" = "no" ] ; then
 fi
 
 if [ "${DEFUSER}" != "" ] ; then
-	userconfig login ${DEFUSER}
+	userconfig login ${EVOKE_USERCONFIG}
 fi
 
 

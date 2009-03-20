@@ -120,6 +120,7 @@ evoke_chooser() {
 			partdisk evoke
 		;;
 	esac
+	sysconfig create current
 	BOOTHASH="${BOOTHASH}" update menu
 }
 
@@ -136,7 +137,7 @@ partdisk() {
 					gpt create ${DEVICES}/${RESULT}
 					gpt boot ${DEVICES}/${RESULT}
 					gpt add -s 4096 -t 4b4cf826-e53e-4b56-86b6-0f9b728e0436 ${DEVICES}/${RESULT}
-
+					EVOKE_SYSCONFIG="${RESULT}p1"
 					SIZE="$(sysctl -b kern.geom.conftxt | awk -v RESULT=${RESULT} '{ if ($3 == RESULT) { print $4; } }')"
 
 					if [ "${SIZE}" -le "512099328" ] ; then

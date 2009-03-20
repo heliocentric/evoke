@@ -40,9 +40,9 @@ if [ ! -d "${TMPDIR}" ] ; then
 fi
 
 
-if [ ! -d "${EVOKE_SCDIR}" ] ; then
-	EVOKE_SCDIR="/tmp/sysconfig"
-	mkdir -p "${EVOKE_SCDIR}"
+if [ ! -d "${EVOKE_SYSCONFIG_DIR}" ] ; then
+	EVOKE_SYSCONFIG_DIR="/tmp/sysconfig"
+	mkdir -p "${EVOKE_SYSCONFIG_DIR}"
 fi
 
 usage () {
@@ -63,7 +63,7 @@ EOF
 prepsysconfig () {
 	case "${1}" in
 		[cC][uU][rR][rR][eE][nN][tT])
-			export SPEC=$(kenv -q evoke.sysconfig)
+			export SPEC=${EVOKE_SYSCONFIG}
 			if [ "$(is_uuid ${SPEC})" = "no" ] ; then
 				echo "Error: You can't use CURRENT if the kernel environment variable isn't set"
 				exit 7
@@ -220,7 +220,7 @@ sysconfig () {
 				exit 6
 			else
 				if [ ! -d "${EXTRACTPOINT}" ] ; then
-					tar -xpf ${SCRATCHDIR}/record${SC_CURRECORD}/tarball.tgz -C ${EVOKE_SCDIR}/
+					tar -xpf ${SCRATCHDIR}/record${SC_CURRECORD}/tarball.tgz -C ${EVOKE_SYSCONFIG_DIR}/
 				else
 					tar -xpf ${SCRATCHDIR}/record${SC_CURRECORD}/tarball.tgz -C ${EXTRACTPOINT}/
 				fi
