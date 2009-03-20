@@ -236,60 +236,65 @@ real_update() {
 					else
 						unset RETVAL
 					fi
+					case "${EVOKE_UPDATE_BDIFF}" in
+						[Nn][Oo])
+						;;
+						*)
+							vecho "\tGrabbing patches {\n"
+							cd "${PPATCHDIR}"
+							getfile "evoke/misc/BIN-UPDATES/${VERSION}/${HASH}/trackfile" "trackfile" 2>/dev/null 
+				                        TRACKFILE="${PPATCHDIR}/trackfile" OPTIONS="quiet" verify 2>/dev/null
+				                        TRETVAL=$?
+        		        		        if [ "${TRETVAL}" = "65" ] ; then
+								PTRACKFILE="$(grep -a ^F: ${PPATCHDIR}/trackfile | sort -t : -k 4 | cut -d : -f 2)"
+	
+								HASHLIST="$(for hash in ${PTRACKFILE}
+								do
+									for version in ${VERSIONLIST}
+									do
+										FILEHASH="$(grep -a ^F: ${DESTDIR}/evoke/${version}/trackfile | cut -d : -f 3 | grep ${hash})"
+										if [ "${FILEHASH}" != "" ] ; then
+											echo "evoke/misc/BIN-UPDATES/${VERSION}/${HASH}/${hash}" 
+										fi
+									done
+								done)"
 
-					vecho "\tGrabbing patches {\n"
-					cd "${PPATCHDIR}"
-					getfile "evoke/misc/BIN-UPDATES/${VERSION}/${HASH}/trackfile" "trackfile" 2>/dev/null 
-		                        TRACKFILE="${PPATCHDIR}/trackfile" OPTIONS="quiet" verify 2>/dev/null
-		                        TRETVAL=$?
-        		                if [ "${TRETVAL}" = "65" ] ; then
-						PTRACKFILE="$(grep -a ^F: ${PPATCHDIR}/trackfile | sort -t : -k 4 | cut -d : -f 2)"
-
-						HASHLIST="$(for hash in ${PTRACKFILE}
-						do
-							for version in ${VERSIONLIST}
-							do
-									FILEHASH="$(grep -a ^F: ${DESTDIR}/evoke/${version}/trackfile | cut -d : -f 3 | grep ${hash})"
-									if [ "${FILEHASH}" != "" ] ; then
-										echo "evoke/misc/BIN-UPDATES/${VERSION}/${HASH}/${hash}" 
-									fi
-								done
-						done)"
-
-						if [ "${HASHLIST}" != "" ] ; then
-							for hash in ${HASHLIST}
-							do
-								realhash="$(basename ${hash})"
-								vecho "\t\tFetching ${realhash} {\n"
-								getfile "${hash}" "${FILENAME}"
-								if [ -f "${realhash}" ] ; then
-									vecho "\t\t\tFile exists: ${realhash}\n"
-									FILE="$(grep -Ha ^F: ${DESTDIR}/evoke/*/*/trackfile | grep ${realhash} | awk -F : '{ FILENAME=$3; "dirname " $1 | getline; print $0 "/" FILENAME; }' | head -n 1)"
-									RETVAL="$(apply_patch "${realhash}" "${FILE}" "${PDESTDIR}/${BASENAME}" "${realhash}" "${HASH}")"
-									if [ "${RETVAL}" = "0" ] ; then
-										vecho "\t\t\tPatch applied successfully: ${realhash}\n"
-										vecho "\t\t}\n"
-										break
-									else
-										vecho "\t\t\tPatch did not apply: ${realhash}\n"
-										vecho "\t\t}\n"
-									fi
-								else
-									vecho "\t\t\tFile doesn't exist: ${realhash}\n"
-									vecho "\t\t}\n"
+								if [ "${HASHLIST}" != "" ] ; then
+									for hash in ${HASHLIST}
+									do
+										realhash="$(basename ${hash})"
+										vecho "\t\tFetching ${realhash} {\n"
+										getfile "${hash}" "${FILENAME}"
+										if [ -f "${realhash}" ] ; then
+											vecho "\t\t\tFile exists: ${realhash}\n"
+											FILE="$(grep -Ha ^F: ${DESTDIR}/evoke/*/*/trackfile | grep ${realhash} | awk -F : '{ FILENAME=$3; "dirname " $1 | getline; print $0 "/" FILENAME; }' | head -n 1)"
+											RETVAL="$(apply_patch "${realhash}" "${FILE}" "${PDESTDIR}/${BASENAME}" "${realhash}" "${HASH}")"
+											if [ "${RETVAL}" = "0" ] ; then
+												vecho "\t\t\tPatch applied successfully: ${realhash}\n"
+												vecho "\t\t}\n"
+												break
+											else
+												vecho "\t\t\tPatch did not apply: ${realhash}\n"
+												vecho "\t\t}\n"
+											fi
+										else
+											vecho "\t\t\tFile doesn't exist: ${realhash}\n"
+											vecho "\t\t}\n"
+										fi
+									done
 								fi
-							done
-						fi
 
-						vecho "\t}\n"
-					fi
-					if [ "${RETVAL}" = "0" ] ; then
-						unset RETVAL
-						vecho "}\n"
-						continue
-					else
-						unset RETVAL
-					fi
+								vecho "\t}\n"
+							fi
+							if [ "${RETVAL}" = "0" ] ; then
+								unset RETVAL
+								vecho "}\n"
+								continue
+							else
+								unset RETVAL
+							fi
+						;;
+					esac
 
 					vecho "\tGrabbing full file {\n"
 					# Ok, fall back on grabbing the file.
@@ -579,12 +584,15 @@ activater() {
 			return 65
 		else
 			if [ "${VERSION}" = "" ] ; then
-				VERSION="$(menu "Available Versions" "${VERSIONLIST}" "b:Back")"
+				VERSION="$(menu "Available Versions" "${VERSIONLIST}" "$(printf "o:Options\nb:Back")")"
 			fi
 			if [ "${VERSION}" != "" ] ; then
 				case "${VERSION}" in
 					Back)
 						break
+					;;
+					Options)
+						option_menu
 					;;
 					*)
 						if [ -f "${LDESTDIR}/${VERSION}/trackfile" ] ; then
@@ -846,13 +854,16 @@ update_menu() {
 	while [ 1 != 2 ]
 	do
 		clear
-		OPTION="$(menu "Evoke System Manager" "$(printf "Install New Version\nDeinstall Version\nSelect Media\nActivate")" "q:Quit")"
+		OPTION="$(menu "Evoke System Manager" "$(printf "Install New Version\nDeinstall Version\nSelect Media\nActivate")" "$(printf "o:Options\nq:Quit")")"
 		case "${OPTION}" in
 			Quit)
 				break
 			;;
 			Activate)
 				activater "${DESTDIR}"
+			;;
+			Options)
+				option_menu
 			;;
 			Install\ New\ Version)
 				revision_menu
@@ -873,10 +884,13 @@ deinstall_menu() {
 	while [ 1 != 2 ] 
 	do
 		clear
-		VERSION="$(menu "Available Versions" "${VERSIONLIST}" "b:Back")"
+		VERSION="$(menu "Available Versions" "${VERSIONLIST}" "$(printf "o:Options\nb:Back")")"
 		case "${VERSION}" in
 			Back)
 				break
+			;;
+			Options)
+				option_menu
 			;;
 			*)
 				if [ -f "${LDESTDIR}/${VERSION}/trackfile" ] ; then
@@ -920,10 +934,13 @@ media_menu() {
 
 		)"
 
-		MEDIA="$(menu "Mirrors" "${MEDIALIST}" "b:Back")"
+		MEDIA="$(menu "Mirrors" "${MEDIALIST}" "$(printf "o:Options\nb:Back")")"
 		case "${MEDIA}" in
 			Back)
 				break
+			;;
+			Options)
+				option_menu
 			;;
 			Local\ Site)
 				echo "${EVOKE_UPDATE_MIRROR}" >${TEMPDIR}/mirrorlist
@@ -934,7 +951,7 @@ media_menu() {
 				break
 			;;
 			CD/DVD\ ROM)
-				CHOICE="$(menu "CD Drives" "$(mounter list cd9660)" "b:Back")"
+				CHOICE="$(menu "CD Drives" "$(mounter list cd9660)" "$(printf "b:Back")")"
 				if [ "${CHOICE}" != "Back" ] ; then
 					if [ "$(mounter list cd9660 | grep "${CHOICE}")" = "" ] ; then
 						echo "Drive not found!"
@@ -963,6 +980,39 @@ media_menu() {
 	done
 }
 
+option_menu() {
+	while [ 1 != 2 ]
+	do
+		clear
+
+		OPTIONLIST="$(
+		case ${EVOKE_UPDATE_BDIFF} in
+			[nN][oO])
+				echo "Enable binary patches"
+			;;
+			*)
+				echo "Disable binary patches"
+			;;
+		esac
+		)"
+
+		MEDIA="$(menu "Options" "${OPTIONLIST}" "$(printf "b:Back")")"
+		case "${MEDIA}" in
+			Back)
+				break
+			;;
+			Enable\ binary\ patches)
+				EVOKE_UPDATE_BDIFF="yes"
+				break
+			;;
+			Disable\ binary\ patches)
+				EVOKE_UPDATE_BDIFF="no"
+				break
+			;;
+		esac
+	done
+}
+
 revision_menu () {
 	rm ${TEMPDIR}/versionlist 2>${DEVICES}/null
 	find_mirror "evoke/misc/versionlist" "${TEMPDIR}/versionlist"
@@ -977,7 +1027,7 @@ revision_menu () {
 				unset REVISIONS
 				unset REVISION
 				clear
-				BRANCH=$(menu "Branch" "$(cut -d "/" -f 1 ${TEMPDIR}/versionlist | sort -r | uniq | grep -v ^$)" "$(printf "a:Activate\nq:Quit")")
+				BRANCH=$(menu "Branch" "$(cut -d "/" -f 1 ${TEMPDIR}/versionlist | sort -r | uniq | grep -v ^$)" "$(printf "a:Activate\no:Options\nq:Quit")")
 				if [ "${BRANCH}" != "" ] ; then
 					case "${BRANCH}" in
 						Quit)
@@ -985,6 +1035,9 @@ revision_menu () {
 						;;
 						Activate)
 							activater "${DESTDIR}"
+						;;
+						Options)
+							option_menu
 						;;
 						*)
 							while [ 1 != 2 ]
@@ -995,7 +1048,7 @@ revision_menu () {
 
 								REVISIONS="$(awk -F "/" -v branch="${BRANCH}" '{ if ($1 == branch) { print $2; }; }' ${TEMPDIR}/versionlist | sort -r | grep -v ^$ | head -n 18)"
 								clear
-								REVISION=$(menu "Revision" "${REVISIONS}" "$(printf "a:Activate\nb:Back\nq:Quit")")
+								REVISION=$(menu "Revision" "${REVISIONS}" "$(printf "a:Activate\no:Options\nb:Back\nq:Quit")")
 								if [ "${REVISION}" != "" ] ; then
 									case "${REVISION}" in
 										Quit)
@@ -1003,6 +1056,10 @@ revision_menu () {
 										;;
 										Activate)
 											activater "${DESTDIR}"
+											break
+										;;
+										Options)
+											option_menu
 											break
 										;;
 										Back)
