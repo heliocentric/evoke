@@ -897,7 +897,15 @@ rmount () {
 }
 
 unmount_handler () {
-	mount | awk -v MOUNTSPEC=$1 -v DEVICES=${DEVICES} '
+	DIR="$(dirname $1)"
+
+	if [ "${DIR}" = "/" ] ; then
+		MOUNTSPEC="/$(basename ${1})"
+	else
+		MOUNTSPEC="${DIR}/$(basename ${1})"
+	fi
+	echo "${MOUNTSPEC}"
+	mount | awk -v MOUNTSPEC="${MOUNTSPEC}" -v DEVICES=${DEVICES} '
 	function unmount(spec) {
 		system("umount " spec);
 		close("umount " spec);			
