@@ -411,6 +411,7 @@ EOF
 
 	mkdir -p ${HOME}/.ssh
 	echo "${EVOKE_SSHKEY}" >>${HOME}/.ssh/authorized_keys
+	set | grep EVOKE | grep -v EVOKE_SSHKEY >>${HOME}/.ssh/environment
 
 	ln -s . ${EVOKE_LIBDIR}/ssh
 
