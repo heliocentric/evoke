@@ -431,6 +431,7 @@ PidFile ${EVOKE_PIDDIR}/sshd.pid
 PasswordAuthentication no
 ChallengeResponseAuthentication no
 PermitEmptyPasswords no
+PermitUserEnvironment yes
 ForceCommand tcsh
 UsePAM no
 EOF
