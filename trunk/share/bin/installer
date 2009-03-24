@@ -112,11 +112,11 @@ freebsd_chooser() {
 			partdisk freebsd
 		;;
 	esac
-	if [ "${ROOTFS}" = "" ] ; then
+	if [ "${BOOTDEVICE}" = "" ] ; then
 		clear
-		ROOTFS=$(menu "Choose Root Filesystem" "$(mounter list boot-ufs)")
+		BOOTDEVICE=$(menu "Choose Root Filesystem" "$(mounter list boot-ufs)")
 	fi
-	mounter ufs:${ROOTFS} ${DESTDIR}
+	mounter ufs:${BOOTDEVICE} ${DESTDIR}
 }
 
 # Evoke Chooser
@@ -145,6 +145,7 @@ partdisk() {
 		evoke)
 			case "${ANSWER}" in
 				[yY])
+					mounter unmount ${RESULT}
 					dd if=/dev/zero bs=4m count=1 of=${DEVICES}/${RESULT} 2>${DEVICES}/null
 					gpt create ${DEVICES}/${RESULT}
 					gpt boot ${DEVICES}/${RESULT}
@@ -193,15 +194,22 @@ partdisk() {
 		freebsd)
 			case "${ANSWER}" in
 				[yY])
+					mounter unmount ${RESULT}
+
 					dd if=/dev/zero bs=4m count=1 of=${DEVICES}/${RESULT} 2>${DEVICES}/null
-					fdisk -IB ${DEVICES}/${RESULT}
-					bsdlabel -wB ${DEVICES}/${RESULT}s1
-					bsdlabel -e ${DEVICES}/${RESULT}s1
-					if [ -c "${DEVICES}/${RESULT}s1a" ] ; then
-						ROOTHASH=$(rand)
-						ROOTFS="${RESULT}s1a"
-					fi
-					newfs -L ${ROOTHASH} ${DEVICES}/${ROOTFS}
+					gpt create ${DEVICES}/${RESULT}
+					gpt boot ${DEVICES}/${RESULT}
+					echo -n "Do you want to create a swap partition? [yN]: "
+					read SWAP
+					case "${SWAP}" in
+						[yY])
+							gpt add -s 1000000 -t swap ${DEVICES}/${RESULT}
+						;;
+					esac
+					gpt add ${DEVICES}${RESULT}
+					BOOTHASH="$(rand)"
+					BOOTDEVICE="$(mounter list boot-ufs | grep "${RESULT}" | head -n 1)"
+					newfs -L ${BOOTHASH} ${DEVICES}/${BOOTDEVICE}
 				;;
 				[nN])
 					echo "Not currently Implemented"	
@@ -219,8 +227,8 @@ freebsd_installer() {
 	mkdir -p ${DESTDIR}
 
 	unset BREAKOUT
-	export FTPURLS="ftp.freebsd.org/pub/FreeBSD/releases
-			ftp-archive.freebsd.org/pub/FreeBSD-Archive/old-releases"
+	export URLS="ftp://ftp.freebsd.org/pub/FreeBSD/releases
+			ftp://ftp-archive.freebsd.org/pub/FreeBSD-Archive/old-releases"
 	while [ "${BREAKOUT}" != "yes" ]
 	do
 		SRCFS=$(menu "Choose Source" "$(mounter list proto | sort ; echo Select Path)")
@@ -265,11 +273,11 @@ freebsd_installer() {
 	fi
 cat >>${DESTDIR}/boot/loader.conf << EOF
 kernel="GENERIC"
-vfs.root.mountfrom="ufs:ufs/${ROOTHASH}"
+vfs.root.mountfrom="ufs:ufs/${BOOTHASH}"
 geom_label_load="YES"
 EOF
 cat >>${DESTDIR}/etc/fstab << EOF
-/dev/ufs/${ROOTHASH}	/	ufs	rw,noatime	1	1
+/dev/ufs/${BOOTHASH}	/	ufs	rw,noatime	1	1
 EOF
 	mounter unmount ${DESTDIR}
 	mounter unmount ${SOURCEDIR}
