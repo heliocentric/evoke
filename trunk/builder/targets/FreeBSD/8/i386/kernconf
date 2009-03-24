@@ -93,3 +93,4 @@ device		snd_vibes
 device       snd_uaudio
 nooptions         AHC_REG_PRETTY_PRINT
 nooptions         AHD_REG_PRETTY_PRINT
+device ale

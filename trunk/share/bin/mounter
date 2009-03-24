@@ -39,6 +39,12 @@ if [ ! -c "${DEVICES}/null" ] ; then
 	fi
 fi
 
+OLDFS=" 	
+"
+OURFS="
+"
+GEOMLIST="$(sysctl -b kern.geom.conftxt)"
+
 # Also, force noatime mounting, it's unnecessary.
 
 
@@ -897,45 +903,98 @@ rmount () {
 }
 
 unmount_handler () {
-	DIR="$(dirname $1)"
-
-	if [ "${DIR}" = "/" ] ; then
-		MOUNTSPEC="/$(basename ${1})"
-	else
-		MOUNTSPEC="${DIR}/$(basename ${1})"
-	fi
-	echo "${MOUNTSPEC}"
-	mount | awk -v MOUNTSPEC="${MOUNTSPEC}" -v DEVICES=${DEVICES} '
-	function unmount(spec) {
-		system("umount " spec);
-		close("umount " spec);			
-	}
-
-	{
-		mount=$3
-		devicenode=$1
-		if (mount == MOUNTSPEC) {
-			if (devicenode ~ /fuse/) {
-				unmount(devicenode);
-			} else {
-				unmount(mount);
-				if (devicenode ~ /md/) {
-					# This strips ${DEVICES} and md from the node name, so mdconfig -d -u # will work
-					sub(DEVICES"/md","",devicenode)
-					system("mdconfig -d -u " devicenode " 2>/dev/null >/dev/null");
-					close("mdconfig -d -u " devicenode " 2>/dev/null >/dev/null");
-
-				}
-				if (devicenode ~ /ggate/) {
-					# same as md
-					sub(DEVICES"/ggate","",devicenode)
-					system("ggatec destroy -u " devicenode " 2>/dev/null >/dev/null");
-					close("ggatec destroy -u " devicenode " 2>/dev/null >/dev/null");
-				}
+	DEVICE="${1}"
+	TYPE="$(echo "${GEOMLIST}" | awk -v DEVICE="${DEVICE}" '{
+			if ($3 == DEVICE) {
+				print $2;
 			}
-					
-		}
-	}'
+		}'
+	)"
+	case "${TYPE}" in
+		DISK)
+			GEOMS="$(echo "${GEOMLIST}" | awk -v DEVICE="${DEVICE}" '{
+					if ($3 == DEVICE) {
+						retval = 0;
+						while (retval == 0) {
+							RET=getline;
+							if ($1 == 0 || RET == 0) {
+								retval = 1;
+							} else {
+								print $3;
+							}
+						}
+					}
+				}' | sort -r
+			)"
+
+			IFS="${OURFS}"
+			for geom in ${GEOMS}
+			do
+				mounter unmount "${geom}"
+			done
+			IFS="${OLDFS}"
+		;;
+		*)
+			if [ "${TYPE}" = "" ] ; then
+				if [ -d "${DEVICE}" ] ; then
+					DIR="$(dirname ${DEVICE})"
+					if [ "${DIR}" = "/" ] ; then
+						MOUNTSPEC="/$(basename ${DEVICE})"
+					else
+						MOUNTSPEC="${DIR}/$(basename ${DEVICE})"
+					fi
+					mount | awk -v MOUNTSPEC="${MOUNTSPEC}" -v DEVICES=${DEVICES} '
+					function unmount(spec) {
+						system("umount " spec);
+						close("umount " spec);			
+					}
+
+					{
+						mount=$3
+						devicenode=$1
+						if (mount == MOUNTSPEC) {
+							if (devicenode ~ /fuse/) {
+								unmount(devicenode);
+							} else {
+								unmount(mount);
+								if (devicenode ~ /md/) {
+									# This strips ${DEVICES} and md from the node name, so mdconfig -d -u # will work
+									sub(DEVICES"/md","",devicenode)
+									system("mdconfig -d -u " devicenode " 2>/dev/null >/dev/null");
+									close("mdconfig -d -u " devicenode " 2>/dev/null >/dev/null");
+
+								}
+								if (devicenode ~ /ggate/) {
+									# same as md
+									sub(DEVICES"/ggate","",devicenode)
+									system("ggatec destroy -u " devicenode " 2>/dev/null >/dev/null");
+									close("ggatec destroy -u " devicenode " 2>/dev/null >/dev/null");
+								}
+							}
+						
+						}
+					}'
+				fi
+			else
+				local DEST="$(mount | awk -v DEVICES="${DEVICES}" -v DEVICE="${DEVICE}" '{
+						if ($1 == DEVICES "/" DEVICE) {
+							print $3;
+						}
+					 }'
+				)"
+				if [ "${DEST}" = "" ] ; then
+					swapinfo | awk -v DEVICES="${DEVICES}" -v DEVICE="${DEVICE}" '{
+						if ($1 == DEVICES "/" DEVICE) {
+							system("swapoff " $1 ">/dev/null");
+							close("swapoff " $1 ">/dev/null");
+						}
+					 }'
+				else
+					mounter unmount "${DEST}"
+				fi
+			fi
+		;;
+	esac
 }
 
 # List available protocols to stdout in newline deliminated form.
