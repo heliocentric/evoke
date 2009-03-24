@@ -16,7 +16,6 @@
     * Needs to disable/unmount all swap/filesystems on the target device node, if they are mounted/enabled.
  * 6.4 and 7.1 for i386 need to be on the image.
  * Add timezone support.
- * sshd public key support needs to work reliably.
 
 == Warnings ==
 
