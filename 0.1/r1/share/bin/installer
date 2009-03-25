@@ -48,6 +48,16 @@ if [ "${EVOKE_MNTDIR}" = "" ] ; then
 	fi
 fi
 
+if [ ! -d "${EVOKE_SYSCONFIG_DIR}" ] ; then
+	export EVOKE_SYSCONFIG_DIR="/tmp/sysconfig"
+	mkdir -p ${EVOKE_SYSCONFIG_DIR}
+fi
+
+if [ ! -d "${EVOKE_CURUSER}" ] ; then
+	export EVOKE_CURUSER="/tmp/currentuser"
+	mkdir -p ${EVOKE_CURUSER}
+fi
+
 echo "WARNING. installer is experimental, and there ARE bugs"
 echo "that will result in loss of data. DO NOT USE"
 read -p "Continue? [yN]: " CONT
@@ -66,18 +76,18 @@ main_installer () {
 		echo ""
 		echo "-----------------------------"
 		echo ""
-		echo " 1) Install FreeBSD"
-		echo " 2) Install Evoke "
+		echo " 2) Install FreeBSD"
+		echo " 1) Install Evoke "
 		echo " a) Activater"
 		echo " q) Exit "
 		echo ""
 		echo ""
 		read -p "Choice: " CHOICE
 		case "${CHOICE}" in
-			2)
+			1)
 				evoke_chooser
 			;;
-			1)
+			2)
 				freebsd_chooser
 				freebsd_installer
 			;;
@@ -102,11 +112,11 @@ freebsd_chooser() {
 			partdisk freebsd
 		;;
 	esac
-	if [ "${ROOTFS}" = "" ] ; then
+	if [ "${BOOTDEVICE}" = "" ] ; then
 		clear
-		ROOTFS=$(menu "Choose Root Filesystem" "$(mounter list boot-ufs)")
+		BOOTDEVICE=$(menu "Choose Root Filesystem" "$(mounter list boot-ufs)")
 	fi
-	mounter ufs:${ROOTFS} ${DESTDIR}
+	mounter ufs:${BOOTDEVICE} ${DESTDIR}
 }
 
 # Evoke Chooser
@@ -120,6 +130,9 @@ evoke_chooser() {
 			partdisk evoke
 		;;
 	esac
+	sysconfig create current
+	USERCONFIG_UUID="$(userconfig create)"
+
 	BOOTHASH="${BOOTHASH}" update menu
 }
 
@@ -132,11 +145,13 @@ partdisk() {
 		evoke)
 			case "${ANSWER}" in
 				[yY])
+					mounter unmount ${RESULT}
 					dd if=/dev/zero bs=4m count=1 of=${DEVICES}/${RESULT} 2>${DEVICES}/null
 					gpt create ${DEVICES}/${RESULT}
 					gpt boot ${DEVICES}/${RESULT}
+#					gpt add -s 16384 -t 4b4cf826-e53e-4b56-86b6-0f9b728e0436 ${DEVICES}/${RESULT}
 					gpt add -s 4096 -t 4b4cf826-e53e-4b56-86b6-0f9b728e0436 ${DEVICES}/${RESULT}
-
+					export EVOKE_SYSCONFIG="${RESULT}p2"
 					SIZE="$(sysctl -b kern.geom.conftxt | awk -v RESULT=${RESULT} '{ if ($3 == RESULT) { print $4; } }')"
 
 					if [ "${SIZE}" -le "512099328" ] ; then
@@ -179,15 +194,22 @@ partdisk() {
 		freebsd)
 			case "${ANSWER}" in
 				[yY])
+					mounter unmount ${RESULT}
+
 					dd if=/dev/zero bs=4m count=1 of=${DEVICES}/${RESULT} 2>${DEVICES}/null
-					fdisk -IB ${DEVICES}/${RESULT}
-					bsdlabel -wB ${DEVICES}/${RESULT}s1
-					bsdlabel -e ${DEVICES}/${RESULT}s1
-					if [ -c "${DEVICES}/${RESULT}s1a" ] ; then
-						ROOTHASH=$(rand)
-						ROOTFS="${RESULT}s1a"
-					fi
-					newfs -L ${ROOTHASH} ${DEVICES}/${ROOTFS}
+					gpt create ${DEVICES}/${RESULT}
+					gpt boot ${DEVICES}/${RESULT}
+					echo -n "Do you want to create a swap partition? [yN]: "
+					read SWAP
+					case "${SWAP}" in
+						[yY])
+							gpt add -s 1000000 -t swap ${DEVICES}/${RESULT}
+						;;
+					esac
+					gpt add ${DEVICES}${RESULT}
+					BOOTHASH="$(rand)"
+					BOOTDEVICE="$(mounter list boot-ufs | grep "${RESULT}" | head -n 1)"
+					newfs -L ${BOOTHASH} ${DEVICES}/${BOOTDEVICE}
 				;;
 				[nN])
 					echo "Not currently Implemented"	
@@ -205,8 +227,8 @@ freebsd_installer() {
 	mkdir -p ${DESTDIR}
 
 	unset BREAKOUT
-	export FTPURLS="ftp.freebsd.org/pub/FreeBSD/releases
-			ftp-archive.freebsd.org/pub/FreeBSD-Archive/old-releases"
+	export URLS="ftp://ftp.freebsd.org/pub/FreeBSD/releases
+			ftp://ftp-archive.freebsd.org/pub/FreeBSD-Archive/old-releases"
 	while [ "${BREAKOUT}" != "yes" ]
 	do
 		SRCFS=$(menu "Choose Source" "$(mounter list proto | sort ; echo Select Path)")
@@ -251,11 +273,11 @@ freebsd_installer() {
 	fi
 cat >>${DESTDIR}/boot/loader.conf << EOF
 kernel="GENERIC"
-vfs.root.mountfrom="ufs:ufs/${ROOTHASH}"
+vfs.root.mountfrom="ufs:ufs/${BOOTHASH}"
 geom_label_load="YES"
 EOF
 cat >>${DESTDIR}/etc/fstab << EOF
-/dev/ufs/${ROOTHASH}	/	ufs	rw,noatime	1	1
+/dev/ufs/${BOOTHASH}	/	ufs	rw,noatime	1	1
 EOF
 	mounter unmount ${DESTDIR}
 	mounter unmount ${SOURCEDIR}

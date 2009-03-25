@@ -1,4 +1,3 @@
-
 #!/bin/sh
 # Copyright 2007-2009 Dylan Cochran
 # All rights reserved
@@ -110,16 +109,16 @@ if [ "${MODE}" = "init" ] ; then
 	esac
 	case "$(kenv -q loaddev)" in
 		cd*)
-			EVOKE_BOOTMODE="cdboot"
+			export EVOKE_BOOT_MODE="cdboot"
 		;;
 		pxe*)
-			EVOKE_BOOTMODE="pxeboot"
+			export EVOKE_BOOT_MODE="pxeboot"
 		;;
 		disk*)
-			EVOKE_BOOTMODE="diskboot"
+			export EVOKE_BOOT_MODE="diskboot"
 		;;
 		*)
-			EVOKE_BOOTMODE="jailer"
+			export EVOKE_BOOT_MODE="jailer"
 		;;
 	esac
 
@@ -151,9 +150,12 @@ export PATH=/bin
 if [ "${MODE}" = "init" ] ; then
 
 	export EVOKE_FINGERPRINT="$(kenv -q evoke.fingerprint)"
+	export EVOKE_UPDATE_MIRROR="$(kenv -q evoke.update.mirror)"
+	export EVOKE_BOOT_SERVER="$(kenv -q boot.nfsroot.server)"
+	export EVOKE_MISC_MESSAGE="$(kenv -q evoke.misc.message)"
 	export EVOKE_MOUSED="$(kenv -q evoke.moused)"
 	export EVOKE_USERCONFIG="$(kenv -q evoke.userconfig)"
-	export EVOKE_SCDEVICE="$(kenv -q evoke.sysconfig)"
+	export EVOKE_SYSCONFIG="$(kenv -q evoke.sysconfig)"
 	export EVOKE_SSHKEY="$(kenv -q evoke.sshkey)"
 	export EVOKE_VERSION="$(kenv -q evoke.version)"
 	export EVOKE_USEONLY="$(kenv -q evoke.useonly)"
@@ -224,8 +226,8 @@ mount_nullfs -o union /mem/lib/ /config/
 export EVOKE_CFGDIR=/config
 export TRACKFILE_PUBLIC_KEY=/config/evoke_public.rsa
 
-export EVOKE_SCDIR=/mem/sysconfig
-mkdir -p ${EVOKE_SCDIR}
+export EVOKE_SYSCONFIG_DIR=/mem/sysconfig
+mkdir -p ${EVOKE_SYSCONFIG_CDIR}
 
 export EVOKE_CURUSER=/mem/curuser
 mkdir -p ${EVOKE_CURUSER}
@@ -263,17 +265,18 @@ if [ "${MODE}" = "init" ] ; then
 	# Do not remove under penalty of death!
 	powerd >${DEVICES}/null 2>${DEVICES}/null
 	watchdogd -I/mem/pid/watchdogd.pid
+	echo "" >/var/run/utmp
 fi
 
 SC_PART=${EVOKE_SCDEVICE}
 
 if [ "$(is_uuid ${SC_PART})" = "no" ] ; then
 	SC_PART=$(sysconfig menu)
-	export EVOKE_SCDEVICE=${SC_PART} >/dev/null
+	export EVOKE_SYSCONFIG=${SC_PART} >/dev/null
 fi
 
 if [ "${SC_PART}" != "" ] ; then
-	sysconfig extract ${SC_PART}
+	sysconfig extract ${EVOKE_SYSCONFIG}
 fi
 
 DEFUSER=${EVOKE_USERCONFIG}
@@ -284,7 +287,7 @@ if [ "$(is_uuid ${DEFUSER})" = "no" ] ; then
 fi
 
 if [ "${DEFUSER}" != "" ] ; then
-	userconfig login ${DEFUSER}
+	userconfig login ${EVOKE_USERCONFIG}
 fi
 
 
@@ -315,12 +318,6 @@ if [ "${MODE}" = "init" ] ; then
 		IF="$(list_if | head -n 1)"
 	fi
 
-	# This is /needed/, else some programs will just not work, as they need
-	# some ip available.
-
-	ifconfig lo0 inet 127.0.0.1 netmask 255.255.255.255
-	ifconfig lo0 up
-
 	# Grab the ip, netmask, and gateway from kenv so pxebooting doesn't need
 	# an extra dhcp request. For robustness.
 
@@ -332,10 +329,10 @@ if [ "${MODE}" = "init" ] ; then
 	sysctl net.inet6.ip6.accept_rtadv=1 >/${DEVICES}/null
 
 	EVOKE_NET_HOSTNAME="$(kenv -q dhcp.host-name)"
-	EVOKE_NET_DOMAIN-NAME="$(kenv -q dhcp.domain-name)"
+	EVOKE_NET_DOMAIN_NAME="$(kenv -q dhcp.domain-name)"
 
 	if [ "${EVOKE_NET_HOSTNAME}" != "" ] ; then
-		sysctl kern.hostname="${EVOKE_NET_HOSTNAME}.${EVOKE_NET_DOMAIN-NAME}"
+		sysctl kern.hostname="${EVOKE_NET_HOSTNAME}.${EVOKE_NET_DOMAIN_NAME}"
 	fi
 	INTERFACES=$(list_if)
 	#for network in ${INTERFACES}
@@ -372,6 +369,13 @@ if [ "${MODE}" = "init" ] ; then
 
 		dhclient ${IF} >${DEVICES}/null 2>/${DEVICES}/null
 	fi
+
+	# This is /needed/, else some programs will just not work, as they need
+	# some ip available.
+
+	ifconfig lo0 inet 127.0.0.1 netmask 255.255.255.255
+	ifconfig lo0 up
+
 	case "${EVOKE_MOUSED}" in
 		[yY][eE][sS])
 			echo "Starting moused"
@@ -408,6 +412,7 @@ EOF
 
 	mkdir -p ${HOME}/.ssh
 	echo "${EVOKE_SSHKEY}" >>${HOME}/.ssh/authorized_keys
+	set | grep EVOKE | grep -v EVOKE_SSHKEY >>${HOME}/.ssh/environment
 
 	ln -s . ${EVOKE_LIBDIR}/ssh
 
@@ -427,6 +432,7 @@ PidFile ${EVOKE_PIDDIR}/sshd.pid
 PasswordAuthentication no
 ChallengeResponseAuthentication no
 PermitEmptyPasswords no
+PermitUserEnvironment yes
 ForceCommand tcsh
 UsePAM no
 EOF
@@ -444,6 +450,12 @@ case "${EVOKE_MONITOR}" in
 	[yY][eE][sS])
 		gmond -t | sed '/include/d' | sed 's/ganglia/monitor/g' >${EVOKE_LIBDIR}/gmond.conf
 		gmond -c ${EVOKE_LIBDIR}/gmond.conf
+	;;
+esac
+
+case "${EVOKE_MISC_MESSAGE}" in
+	[yY][eE][sS])
+		cat /system/share/lib/message
 	;;
 esac
 

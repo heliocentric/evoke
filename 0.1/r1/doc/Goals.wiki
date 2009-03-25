@@ -51,3 +51,20 @@
 || Replace a tty subsystem based around ioctls, with a generalized console daemon.								|| N/A		|| 0	||
 || Use file descripters 3 and 4 as 'consin' and 'consout', and replace the outdated use of ioctls on /dev/tty with a 'console protocol'		|| N/A		|| 0	||
 || Console protocol needs inline mouse event support, and should grow some of the advanced key features that right now rely on an X server	|| N/A		|| 0	||
+
+
+== Xorg ==
+
+With just the Xorg binary, the xinit binary, the xauth binary, and the xterm binary. Differences:
+
+=== r846 (without Xorg) ===
+Build time:
+ 10860.604u 2462.413s 5:49:23.04 63.5%   -1444+1144k 451451+1187583io 508844pf+49w
+Size:
+ 23258 1024 byte blocks
+
+=== r851 (with Xorg) ===
+Build time:
+ 20409.213u 2897.353s 8:09:38.60 79.3%   -713+-749k 436749+1317614io 543278pf+11w
+Size:
+ 25984 1024 byte blocks

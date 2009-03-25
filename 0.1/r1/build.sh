@@ -51,13 +51,13 @@ swapon swapoff swapinfo syslogd tail tar tcsh tftp tftpd top umount
 uniq unlink usbdevs vidcontrol whoami zcat sort pfctl du makefs 
 mount_msdosfs getextattr setextattr devinfo newfs_msdos stat dirname lsvfs
 rtsol egrep mount_cd9660 rmdir gpt watchdogd tr file bsdiff bspatch
-openssl fetch basename dumpfs command wc sleep
+openssl fetch basename dumpfs command wc sleep uptime
 "
 
 # List of kernel objects in base that will be on the image. Ports modules
 # are added automatically.
 
-export MODULES="acpi tmpfs snd_uaudio"
+export MODULES="acpi tmpfs"
 
 export ROOTDIR=`pwd`
 

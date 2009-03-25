@@ -39,6 +39,12 @@ if [ ! -c "${DEVICES}/null" ] ; then
 	fi
 fi
 
+OLDFS=" 	
+"
+OURFS="
+"
+GEOMLIST="$(sysctl -b kern.geom.conftxt)"
+
 # Also, force noatime mounting, it's unnecessary.
 
 
@@ -101,6 +107,9 @@ mexit () {
 			# Unable to fsck. Bail
 			echo "Filesystem unable to be cleaned. Bailing out."
 			exit 6
+		;;
+		0)
+			exit 0
 		;;
 		*)
 			echo "General Error" >&2
@@ -482,8 +491,6 @@ prep_transport () {
 		DEV)
 			case "${M_STYPE}" in
 				URI)
-					# we set ISTRANSPORT so that mexit can clean up device nodes if there is a failure.
-					ISTRANSPORT="yes"
 					case "${M_TRANSPORT}" in
 						[gG][gG][aA][tT][eE])
 							ggate_handler
@@ -494,8 +501,14 @@ prep_transport () {
 					esac
 				;;
 				FILE)
-					ISTRANSPORT="yes"
 					mdconfig_handler
+				;;
+				GEOM)
+					DIRECTORY="$(mount | grep ${DEVICES}/${M_FILE} | cut -d " " -f 3)"
+					if [ "${DIRECTORY}" != "" ] ; then
+						mounter "remount:${DIRECTORY}" "${M_DESTINATION}"
+						mexit 0
+					fi
 				;;
 			esac
 		;;
@@ -505,8 +518,29 @@ prep_transport () {
 # mdconfig wrapper, trap errors, and terminate if necessary.
 
 mdconfig_handler () {
-	local MD_DEV=$(mdconfig -af "${M_FILE}" 2>/dev/null)
+	# Check to see if the device has been mdconfig'd already.
+	EXISTINGDEV="$(mdconfig -lv | awk -v FILE="${M_FILE}" '{ 
+		if ($2 == "vnode") {
+			if ($4 == FILE) {
+				print $1;
+			}
+		}
+	}')"
+
+	if [ "${EXISTINGDEV}" = "" ] ; then
+		local MD_DEV=$(mdconfig -af "${M_FILE}" 2>/dev/null)
+	else
+		# find the directory to remount.
+		DIRECTORY="$(mount | grep ${DEVICES}/${EXISTINGDEV} | cut -d " " -f 3)"
+		if [ "${DIRECTORY}" != "" ] ; then
+			mounter "remount:${DIRECTORY}" "${M_DESTINATION}"
+			mexit 0
+		else
+			local MD_DEV=$(mdconfig -af "${M_FILE}" 2>/dev/null)
+		fi
+	fi
 	local ERROR=$?
+	ISTRANSPORT="yes"
 	# XXX helio someone needs to fill out the error codes mdconfig can return.
 	case "${ERROR}" in
 		0)
@@ -533,6 +567,7 @@ ggate_handler () {
 	fi
 	local GATEDEV=$(ggatec create ${GOPTS} ${M_HOST} ${M_FILE})
 	local ERROR=$?
+	ISTRANSPORT="yes"
 	# XXX helio someone needs to fill out the error codes ggatec can return.
 	case "${ERROR}" in
 		0)
@@ -543,6 +578,9 @@ ggate_handler () {
 	esac
 	M_STYPE="GEOM"
 	M_FILE="${GATEDEV}"
+	# Since ggate runs in the background, it takes some time for it to create the ggate device. 
+	# Make sure we sleep for a second to let it create the node.
+	sleep 1
 }
 
 # MSDOSFS mounting wrapper.
@@ -865,37 +903,98 @@ rmount () {
 }
 
 unmount_handler () {
-	mount | awk -v MOUNTSPEC=$1 -v DEVICES=${DEVICES} '
-	function unmount(spec) {
-		system("umount " spec);
-		close("umount " spec);			
-	}
-
-	{
-		mount=$3
-		devicenode=$1
-		if (mount == MOUNTSPEC) {
-			if (devicenode ~ /fuse/) {
-				unmount(devicenode);
-			} else {
-				unmount(mount);
-				if (devicenode ~ /md/) {
-					# This strips ${DEVICES} and md from the node name, so mdconfig -d -u # will work
-					sub(DEVICES"/md","",devicenode)
-					system("mdconfig -d -u " devicenode " 2>/dev/null >/dev/null");
-					close("mdconfig -d -u " devicenode " 2>/dev/null >/dev/null");
-
-				}
-				if (devicenode ~ /ggate/) {
-					# same as md
-					sub(DEVICES"/ggate","",devicenode)
-					system("ggatec destroy -u " devicenode " 2>/dev/null >/dev/null");
-					close("ggatec destroy -u " devicenode " 2>/dev/null >/dev/null");
-				}
+	DEVICE="${1}"
+	TYPE="$(echo "${GEOMLIST}" | awk -v DEVICE="${DEVICE}" '{
+			if ($3 == DEVICE) {
+				print $2;
 			}
-					
-		}
-	}'
+		}'
+	)"
+	case "${TYPE}" in
+		DISK)
+			GEOMS="$(echo "${GEOMLIST}" | awk -v DEVICE="${DEVICE}" '{
+					if ($3 == DEVICE) {
+						retval = 0;
+						while (retval == 0) {
+							RET=getline;
+							if ($1 == 0 || RET == 0) {
+								retval = 1;
+							} else {
+								print $3;
+							}
+						}
+					}
+				}' | sort -r
+			)"
+
+			IFS="${OURFS}"
+			for geom in ${GEOMS}
+			do
+				mounter unmount "${geom}"
+			done
+			IFS="${OLDFS}"
+		;;
+		*)
+			if [ "${TYPE}" = "" ] ; then
+				if [ -d "${DEVICE}" ] ; then
+					DIR="$(dirname ${DEVICE})"
+					if [ "${DIR}" = "/" ] ; then
+						MOUNTSPEC="/$(basename ${DEVICE})"
+					else
+						MOUNTSPEC="${DIR}/$(basename ${DEVICE})"
+					fi
+					mount | awk -v MOUNTSPEC="${MOUNTSPEC}" -v DEVICES=${DEVICES} '
+					function unmount(spec) {
+						system("umount " spec);
+						close("umount " spec);			
+					}
+
+					{
+						mount=$3
+						devicenode=$1
+						if (mount == MOUNTSPEC) {
+							if (devicenode ~ /fuse/) {
+								unmount(devicenode);
+							} else {
+								unmount(mount);
+								if (devicenode ~ /md/) {
+									# This strips ${DEVICES} and md from the node name, so mdconfig -d -u # will work
+									sub(DEVICES"/md","",devicenode)
+									system("mdconfig -d -u " devicenode " 2>/dev/null >/dev/null");
+									close("mdconfig -d -u " devicenode " 2>/dev/null >/dev/null");
+
+								}
+								if (devicenode ~ /ggate/) {
+									# same as md
+									sub(DEVICES"/ggate","",devicenode)
+									system("ggatec destroy -u " devicenode " 2>/dev/null >/dev/null");
+									close("ggatec destroy -u " devicenode " 2>/dev/null >/dev/null");
+								}
+							}
+						
+						}
+					}'
+				fi
+			else
+				local DEST="$(mount | awk -v DEVICES="${DEVICES}" -v DEVICE="${DEVICE}" '{
+						if ($1 == DEVICES "/" DEVICE) {
+							print $3;
+						}
+					 }'
+				)"
+				if [ "${DEST}" = "" ] ; then
+					swapinfo | awk -v DEVICES="${DEVICES}" -v DEVICE="${DEVICE}" '{
+						if ($1 == DEVICES "/" DEVICE) {
+							system("swapoff " $1 ">/dev/null");
+							close("swapoff " $1 ">/dev/null");
+						}
+					 }'
+				else
+					mounter unmount "${DEST}"
+				fi
+			fi
+		;;
+	esac
 }
 
 # List available protocols to stdout in newline deliminated form.
