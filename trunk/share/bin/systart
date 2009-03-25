@@ -265,6 +265,7 @@ if [ "${MODE}" = "init" ] ; then
 	# Do not remove under penalty of death!
 	powerd >${DEVICES}/null 2>${DEVICES}/null
 	watchdogd -I/mem/pid/watchdogd.pid
+	echo "" >/var/run/utmp
 fi
 
 SC_PART=${EVOKE_SCDEVICE}
