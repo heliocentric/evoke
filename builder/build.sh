@@ -288,6 +288,11 @@ do
 	chmod a+rx ${FSDIR}/system/${file}
 done
 
+mkdir -p ${FSDIR}/system/share/lib/zoneinfo
+
+cd ${DESTDIR}/usr/share/zoneinfo
+tar -cf - * | tar -xpf - -C ${FSDIR}/system/share/lib/zoneinfo/
+
 cp "${EVOKE_BUILDER_PUBLIC}" "${FSDIR}/system/share/lib/evoke_public.rsa"
 echo "/dev/md0		/	ufs	rw	1	1" >${FSDIR}/system/share/lib/fstab
 

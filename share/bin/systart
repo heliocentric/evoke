@@ -160,6 +160,8 @@ if [ "${MODE}" = "init" ] ; then
 	export EVOKE_VERSION="$(kenv -q evoke.version)"
 	export EVOKE_USEONLY="$(kenv -q evoke.useonly)"
 	export EVOKE_MONITOR="$(kenv -q evoke.monitor)"
+	export EVOKE_TIMEZONE_PCODE="$(kenv -q dhcp.tz-pcode)"
+	export EVOKE_TIMEZONE_TCODE="$(kenv -q dhcp.tz-tcode)"
 
 	echo "Verifying root filesystem"
 	ROOTDEV=${DEVICES}/$(mount | awk '{ if ($3 == "/") { print $1 } }')
