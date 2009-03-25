@@ -9,16 +9,17 @@
 	svnrevision: $Revision$
 </wiki:comment>
 
+<wiki:toc max_depth="3" />
 == Todo ==
 
  * installer needs to be able to install to a thumb drive.
-    * Needs to disable/unmount all swap/filesystems on the target device node, if they are mounted/enabled.
-    * update needs to use the trackfiles for each patch directory. This way it doesn't need to hammer the remote system.
-    * Better handling of mirror urls. This way installer can fall back from cd, to tftp, etc.
-    * Probably means we need a mirror menu somewhere.
  * 6.4 and 7.1 for i386 need to be on the image.
  * Add timezone support.
- * Have update understand and use the BIN-UPDATES trackfiles.
+ * Bump the bootcode forward to 7.2 to fix some regressions.
+
+== Warnings ==
+
+Warning: Evoke now uses gzip to compress the kernel and all modules. There are reports that evoke is now unbootable on qemu, however, there are no reports of problems on real hardware. If you find any problems, we urge you to create a ticket in the issue tracker describing the boot problem.
 
 == Features ==
 
@@ -52,11 +53,6 @@ This will list your bootable filesystems, and allow you to choose the release to
 
 Caveat: The Activate menu entry only activates systems that boot directly off of the filesystem. Systems which are netbooted are not supported through this menu.
 
-=== Special Thanks ===
-
-Jamie Ivanov of RadioactiveRussian.com for providing another test machine for the kenv patch.
-
-
 === Changes to Previous Releases ===
 
 N/A
@@ -72,6 +68,10 @@ N/A
 || [Userconfig userconfig]	|| *New*	|| Utility to support login and user management.							||
 || [Verify verify]		|| *New*	|| File verification utility, with support for extended attributes and trackfiles.			||
 || [Filetype filetype]		|| *New*	|| Utility to identify the type of a specified file, and supports extended attribute based caching.	||
+
+== Special Thanks ==
+
+Jamie Ivanov of RadioactiveRussian.com for providing another test machine for the kenv patch.
 
 == Revisions ==
 

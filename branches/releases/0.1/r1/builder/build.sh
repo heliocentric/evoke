@@ -147,7 +147,7 @@ do
 	# Patch these files to our paths, so they don't collide.
 	# This is the bulk of the boot loader versioning support.
 	sed -i .bak "s@/boot/device.hints@${BOOTPATH}/device.hints@g" ${WORKDIR}/usr/src/sys/boot/forth/loader.conf 1>&2
-	sed -i .bak "s@/boot/loader.conf.local@/evoke/site.conf@g" ${WORKDIR}/usr/src/sys/boot/forth/loader.conf 1>&2
+	sed -i .bak "s@/boot/loader.conf.local@/evoke/misc/site.conf@g" ${WORKDIR}/usr/src/sys/boot/forth/loader.conf 1>&2
 	sed -i .bak "s@/boot/loader.conf@${BOOTPREFIX}/loader.conf@g" ${WORKDIR}/usr/src/sys/boot/forth/loader.conf 1>&2
 	for file in $(cat ${BUILDDIR}/bootlist)
 	do
@@ -209,22 +209,28 @@ do
 		fi
 	done
 
-#	gzip -9 kernel
+	if [ "${EVOKE_BUILDER_GZIPKERN}" = "yes" ] ; then
+		gzip -9nc kernel >kernel.gz
+		rm kernel
+	fi
 	for file in $(grep ^M ${BUILDDIR}/portlist | cut -d : -f 2) ${MODULES}
 	do
-#		gzip -9 ${file}.ko
-		mv ${file}.ko ${file}.ka
+		if [ "${EVOKE_BUILDER_GZIPKERN}" = "yes" ] ; then
+			gzip -9nc ${file}.ko >${file}.ko.gz
+		else
+			mv ${file}.ko ${file}.ka
+		fi
 	done
 	# Remove everything that is not gzipped.
 	rm -r *.symbols
 	rm -r *.ko
 	rm -r *.hints
-	# Yes, this is all wasteful. But this bug will be fixed eventually, and when it does, this line can be removed.
-#	gunzip *.gz
-	for file in $(grep ^M ${BUILDDIR}/portlist | cut -d : -f 2) ${MODULES}
-	do
-		mv ${file}.ka ${file}.ko
-	done
+	if [ "${EVOKE_BUILDER_GZIPKERN}" != "yes" ] ; then
+		for file in $(grep ^M ${BUILDDIR}/portlist | cut -d : -f 2) ${MODULES}
+		do
+				mv ${file}.ka ${file}.ko
+		done
+	fi
 
 	echo "				[DONE]"
 
@@ -333,6 +339,7 @@ evoke.trackfile="md1"
 evoke.fingerprint="${FINGERPRINT}"
 evoke.moused="yes"
 evoke.version="${VERSION}/${REVISION}"
+evoke.misc.message="YES"
 boot_multicons="YES"
 kern.hz=100
 EOF
@@ -372,7 +379,7 @@ echo "					[DONE]"
 echo -n " * share = Creating RELEASEDIR"
 
 # grab a list of already installed versions for create-updates.
-VERSIONLIST="$(cd /releases/evoke && find . -not -path "./misc*" -depth 2 | cut -b 3-300 | sort -r | head -n 7 | paste - - - - - - -)"
+VERSIONLIST="$(cd ${RELEASEDIR}/evoke && find . -not -path "./misc*" -depth 2 | cut -b 3-300 | sort -r | head -n 7 | paste - - - - - - -)"
 
 mkdir -p ${RELEASEDIR}${BOOTPREFIX}
 cd ${BOOTDIR}${BOOTPREFIX}
@@ -414,6 +421,8 @@ echo "${ISO_MD5}" >>CHECKSUM.MD5
 mkdir -p ${RELEASEDIR}/evoke/misc
 (cat "${RELEASEDIR}/evoke/misc/versionlist" ; echo "${VERSION}/${REVISION}") | sort -r | uniq >"${TMPDIR}/mirrortest"
 mv "${TMPDIR}/mirrortest" "${RELEASEDIR}/evoke/misc/versionlist"
+rm ${RELEASEDIR}/evoke/${VERSION}/HEAD
+ln -sf ${REVISION} ${RELEASEDIR}/evoke/${VERSION}/HEAD
 
 if [ "${EVOKE_PUSH_MIRROR}" != "" ] ; then
 	cd ${RELEASEDIR}/evoke

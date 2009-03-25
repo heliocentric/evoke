@@ -236,52 +236,65 @@ real_update() {
 					else
 						unset RETVAL
 					fi
+					case "${EVOKE_UPDATE_BDIFF}" in
+						[Nn][Oo])
+						;;
+						*)
+							vecho "\tGrabbing patches {\n"
+							cd "${PPATCHDIR}"
+							getfile "evoke/misc/BIN-UPDATES/${VERSION}/${HASH}/trackfile" "trackfile" 2>/dev/null 
+				                        TRACKFILE="${PPATCHDIR}/trackfile" OPTIONS="quiet" verify 2>/dev/null
+				                        TRETVAL=$?
+        		        		        if [ "${TRETVAL}" = "65" ] ; then
+								PTRACKFILE="$(grep -a ^F: ${PPATCHDIR}/trackfile | sort -t : -k 4 | cut -d : -f 2)"
+	
+								HASHLIST="$(for hash in ${PTRACKFILE}
+								do
+									for version in ${VERSIONLIST}
+									do
+										FILEHASH="$(grep -a ^F: ${DESTDIR}/evoke/${version}/trackfile | cut -d : -f 3 | grep ${hash})"
+										if [ "${FILEHASH}" != "" ] ; then
+											echo "evoke/misc/BIN-UPDATES/${VERSION}/${HASH}/${hash}" 
+										fi
+									done
+								done)"
 
-					vecho "\tGrabbing patches {\n"
-					HASHLIST="$(for version in ${VERSIONLIST}
-					do
-						FILEHASH="$(grep -a ^F: ${DESTDIR}/evoke/${version}/trackfile | cut -d : -f 3)"
-						if [ "${FILEHASH}" != "" ] ; then
-							for filehash in ${FILEHASH}
-							do
-								echo "evoke/misc/BIN-UPDATES/${VERSION}/${HASH}/${filehash}" 
-							done
-						fi
-					done)"
-					if [ "${HASHLIST}" != "" ] ; then
-						cd "${PPATCHDIR}"
-						for hash in ${HASHLIST}
-						do
-							realhash="$(basename ${hash})"
-							vecho "\t\tFetching ${realhash} {\n"
-							getfile "${hash}" "${realhash}"
-							if [ -f "${realhash}" ] ; then
-								vecho "\t\t\tFile exists: ${realhash}\n"
-								FILE="$(grep -Ha ^F: ${DESTDIR}/evoke/*/*/trackfile | grep ${realhash} | awk -F : '{ FILENAME=$3; "dirname " $1 | getline; print $0 "/" FILENAME; }' | head -n 1)"
-								RETVAL="$(apply_patch "${realhash}" "${FILE}" "${PDESTDIR}/${BASENAME}" "${realhash}" "${HASH}")"
-								if [ "${RETVAL}" = "0" ] ; then
-									vecho "\t\t\tPatch applied successfully: ${realhash}\n"
-									vecho "\t\t}\n"
-									break
-								else
-									vecho "\t\t\tPatch did not apply: ${realhash}\n"
-									vecho "\t\t}\n"
+								if [ "${HASHLIST}" != "" ] ; then
+									for hash in ${HASHLIST}
+									do
+										realhash="$(basename ${hash})"
+										vecho "\t\tFetching ${realhash} {\n"
+										getfile "${hash}" "${FILENAME}"
+										if [ -f "${realhash}" ] ; then
+											vecho "\t\t\tFile exists: ${realhash}\n"
+											FILE="$(grep -Ha ^F: ${DESTDIR}/evoke/*/*/trackfile | grep ${realhash} | awk -F : '{ FILENAME=$3; "dirname " $1 | getline; print $0 "/" FILENAME; }' | head -n 1)"
+											RETVAL="$(apply_patch "${realhash}" "${FILE}" "${PDESTDIR}/${BASENAME}" "${realhash}" "${HASH}")"
+											if [ "${RETVAL}" = "0" ] ; then
+												vecho "\t\t\tPatch applied successfully: ${realhash}\n"
+												vecho "\t\t}\n"
+												break
+											else
+												vecho "\t\t\tPatch did not apply: ${realhash}\n"
+												vecho "\t\t}\n"
+											fi
+										else
+											vecho "\t\t\tFile doesn't exist: ${realhash}\n"
+											vecho "\t\t}\n"
+										fi
+									done
 								fi
-							else
-								vecho "\t\t\tFile doesn't exist: ${realhash}\n"
-								vecho "\t\t}\n"
-							fi
-						done
-					fi
 
-					vecho "\t}\n"
-					if [ "${RETVAL}" = "0" ] ; then
-						unset RETVAL
-						vecho "}\n"
-						continue
-					else
-						unset RETVAL
-					fi
+								vecho "\t}\n"
+							fi
+							if [ "${RETVAL}" = "0" ] ; then
+								unset RETVAL
+								vecho "}\n"
+								continue
+							else
+								unset RETVAL
+							fi
+						;;
+					esac
 
 					vecho "\tGrabbing full file {\n"
 					# Ok, fall back on grabbing the file.
@@ -362,7 +375,7 @@ find_mirror() {
 	FILENAME="${1}"
 	OUTFILENAME="${2}"
 	cd ${TEMPDIR}
-	unset RETVAL
+	local RETVAL=0
 	file="$(basename "${FILENAME}")"
 	for mirrorurl in $(sed -e 's/#.*$//g' ${TEMPDIR}/mirrorlist)
 	do
@@ -460,10 +473,9 @@ find_mirror() {
 		fi
 	else
 		echo "No usable mirrors found. Bailing out."
-		exit 65
+		RETVAL="65"
 	fi
-
-	unset RETVAL
+	return "${RETVAL}"
 }
 
 vecho() {
@@ -481,6 +493,7 @@ piper() {
 			pv -s "${2}" --name "${1}"
 		fi
 	else
+		echo "Fetching ${1}" 1>&2
 		dd 2>/dev/null
 	fi
 }
@@ -530,11 +543,24 @@ unmount_mirror() {
 		tftp)
 		;;
 		*)
-			echo "${MIRROR_MOUNTPOINT}"
 			mounter unmount "${MIRROR_MOUNTPOINT}"
-			rmdir "${MIRROR_MOUNTPOINT}"
+			rmdir "${MIRROR_MOUNTPOINT}" 2>${DEVICES}/null
 		;;
 	esac
+}
+
+list_versions() {
+	cd "${1}"
+	for version in $(echo */*)
+	do
+		case "${version}" in 
+			misc*)
+			;;
+			*)
+				echo ${version}
+			;;
+		esac
+	done | sort -r
 }
 
 activater() {
@@ -552,28 +578,21 @@ activater() {
 
 	while [ 1 != 2 ]
 	do
-		cd "${LDESTDIR}"
-		VERSIONLIST="$(for version in $(echo */*)
-		do
-			case "${version}" in 
-				misc*)
-				;;
-				*)
-					echo ${version}
-				;;
-			esac
-		done | sort -r)"
+		VERSIONLIST="$(list_versions ${LDESTDIR})"
 		if [ "${VERSIONLIST}" = "*/*" -o "${VERSIONLIST}" = "" ] ; then
 			echo "No versions found"
 			return 65
 		else
 			if [ "${VERSION}" = "" ] ; then
-				VERSION="$(menu "Available Versions" "${VERSIONLIST}" "b:Back")"
+				VERSION="$(menu "Available Versions" "${VERSIONLIST}" "$(printf "o:Options\nb:Back")")"
 			fi
 			if [ "${VERSION}" != "" ] ; then
 				case "${VERSION}" in
 					Back)
 						break
+					;;
+					Options)
+						option_menu
 					;;
 					*)
 						if [ -f "${LDESTDIR}/${VERSION}/trackfile" ] ; then
@@ -726,7 +745,7 @@ create_updates () {
 		
 								PATCHFILE="${PATCHDIR}/${DESTHASH}/${SOURCEHASH}"
 								mkdir -p ${PATCHDIR}/${DESTHASH}/
-								echo "Generating ${RFILE} -> ${DFILE}"
+								echo "Generating ${SOURCEFILE} -> ${DESTFILE}"
 								bsdiff "${RFILE}" "${DFILE}" "${PATCHFILE}"
 								PATCHSIZE="$(stat -f '%z' ${PATCHFILE})"
 								if [ "${PATCHSIZE}" -ge "${DESTSIZE}" ] ; then
@@ -815,7 +834,7 @@ update_menu() {
 	fi
 
 	if [ ! -d "${DESTDIR}" ] ; then
-		if [ -f "${DEVICES}/ufs/${BOOTHASH}" ] ; then
+		if [ -c "${DEVICES}/ufs/${BOOTHASH}" ] ; then
 			BOOTDEVICE="ufs/${BOOTHASH}"
 		else
 			BOOTDEVICE="$(choose_boot)"
@@ -832,80 +851,261 @@ update_menu() {
 	fi
 
 	. $(command -v menu)
-	find_mirror "evoke/misc/versionlist" "${TEMPDIR}/versionlist"
+	while [ 1 != 2 ]
+	do
+		clear
+		OPTION="$(menu "Evoke System Manager" "$(printf "Install New Version\nDeinstall Version\nSelect Media\nActivate")" "$(printf "o:Options\nq:Quit")")"
+		case "${OPTION}" in
+			Quit)
+				break
+			;;
+			Activate)
+				activater "${DESTDIR}"
+			;;
+			Options)
+				option_menu
+			;;
+			Install\ New\ Version)
+				revision_menu
+			;;
+			Deinstall\ Version)
+				deinstall_menu "${DESTDIR}"
+			;;
+			Select\ Media)
+				media_menu
+			;;
+		esac
+	done
+}
 
-	if [ -f "${TEMPDIR}/versionlist" ] ; then
-		while [ 1 != 2 ]
-		do
-			unset BRANCH
-			unset RESULT
-			unset REVISIONS
-			unset REVISION
-			BRANCH=$(menu "Branch" "$(cut -d "/" -f 1 ${TEMPDIR}/versionlist | sort -r | uniq | grep -v ^$)" "$(printf "a:Activate\nq:Quit")")
-			if [ "${BRANCH}" != "" ] ; then
-				case "${BRANCH}" in
-					Quit)
-						break
-					;;
-					Activate)
-						activater "${DESTDIR}"
-					;;
-					*)
-						while [ 1 != 2 ]
-						do
-							unset RESULT
-							unset REVISIONS
-							unset REVISION
-
-							REVISIONS="$(awk -F "/" -v branch="${BRANCH}" '{ if ($1 == branch) { print $2; }; }' ${TEMPDIR}/versionlist | sort -r | grep -v ^$)"
-							REVISION=$(menu "Revision" "${REVISIONS}" "$(printf "a:Activate\nb:Back\nq:Quit")")
-							if [ "${REVISION}" != "" ] ; then
-								case "${REVISION}" in
-									Quit)
-										break 2
-									;;
-									Activate)
-										activater "${DESTDIR}"
-										break
-									;;
-									Back)
-										break
-									;;
-									*)
-										VERSION="${BRANCH}/${REVISION}"
-										real_update "${DESTDIR}" "${VERSION}"
-										local RETVAL="${?}"
-										if [ "${RETVAL}" = "0" ] ; then
-											echo "Activate ${VERSION} now?"
-											read -p "[Y/n]: " PROMPT
-											case "${PROMPT}" in
-												[nN])
-												;;
-												*)	
-													activater "${DESTDIR}" "${VERSION}"
-												;;
-											esac
-										fi
-									;;
-								esac
-							else
-								echo "Revision not found! - Press any key to continue" 
-								read RESULT
+deinstall_menu() {
+	LDESTDIR="${1}/evoke"
+	VERSIONLIST="$(list_versions ${LDESTDIR})"
+	while [ 1 != 2 ] 
+	do
+		clear
+		VERSION="$(menu "Available Versions" "${VERSIONLIST}" "$(printf "o:Options\nb:Back")")"
+		case "${VERSION}" in
+			Back)
+				break
+			;;
+			Options)
+				option_menu
+			;;
+			*)
+				if [ -f "${LDESTDIR}/${VERSION}/trackfile" ] ; then
+					read -p "Are you sure you want to remove ${VERSION}? [y/N]: " RESPONSE
+					case "${RESPONSE}" in
+						[yY])
+							rm -r ${LDESTDIR}/${VERSION}
+							if [ -f "${LDESTDIR}/misc/versionlist" ] ; then
+								grep -v "${VERSION}" ${LDESTDIR}/misc/versionlist >${SCRATCHDIR}/versionlist
+								mv ${SCRATCHDIR}/versionlist ${LDESTDIR}/misc/versionlist
 							fi
-						done
-					;;
-				esac
-			else
-				echo "Branch not found! - Press any key to continue" 
-				read RESULT
-			fi
-		done
-		cd ${PREVDIR}
-		if [ "${DESTDIR_IS_MOUNTED}" = "yes" ] ; then
-			echo "${DESTDIR}"
-			mounter unmount "${DESTDIR}"
-			rmdir "${DESTDIR}"
+						;;
+					esac
+					break
+				fi
+			;;
+		esac
+	done
+}
+
+media_menu() {
+	while [ 1 != 2 ]
+	do
+		clear
+
+		MEDIALIST="$(case ${EVOKE_BOOT_MODE} in
+			cdboot)
+				echo "CD/DVD ROM"
+			;;
+			pxeboot)
+				echo "Local Boot Server"
+			;;
+		esac
+
+		if [ "${EVOKE_UPDATE_MIRROR}" != "" ] ; then
+			echo "Local Site"
 		fi
+
+		echo "Official Site"
+		echo "Other"
+
+		)"
+
+		MEDIA="$(menu "Mirrors" "${MEDIALIST}" "$(printf "o:Options\nb:Back")")"
+		case "${MEDIA}" in
+			Back)
+				break
+			;;
+			Options)
+				option_menu
+			;;
+			Local\ Site)
+				echo "${EVOKE_UPDATE_MIRROR}" >${TEMPDIR}/mirrorlist
+				break
+			;;
+			Local\ Boot\ Server)
+				echo "tftp://${EVOKE_BOOT_SERVER}/" >${TEMPDIR}/mirrorlist
+				break
+			;;
+			CD/DVD\ ROM)
+				CHOICE="$(menu "CD Drives" "$(mounter list cd9660)" "$(printf "b:Back")")"
+				if [ "${CHOICE}" != "Back" ] ; then
+					if [ "$(mounter list cd9660 | grep "${CHOICE}")" = "" ] ; then
+						echo "Drive not found!"
+					else
+						echo "cd9660:${CHOICE}" >${TEMPDIR}/mirrorlist
+						break
+					fi
+				fi
+			;;
+			Official\ Site)
+				MOUNTER_EVOKE_LIST="$(mounter search tag=evoke)"
+				if [ "${MOUNTER_EVOKE_LIST}" = "" ] ; then
+					cd ${TEMPDIR}
+					fetch -q http://evoke.googlecode.com/svn/info/mirrorlist 2>${DEVICES}/null
+					if [ ! -f mirrorlist ] ; then
+						echo "Unable to fetch mirrorlist, Network connection down?"
+					else
+						break
+					fi
+				else
+					echo "${MOUNTER_EVOKE_LIST}" >${TEMPDIR}/mirrorlist
+					break
+				fi
+			;;
+		esac
+	done
+}
+
+option_menu() {
+	while [ 1 != 2 ]
+	do
+		clear
+
+		OPTIONLIST="$(
+		case ${EVOKE_UPDATE_BDIFF} in
+			[nN][oO])
+				echo "Enable binary patches"
+			;;
+			*)
+				echo "Disable binary patches"
+			;;
+		esac
+		)"
+
+		MEDIA="$(menu "Options" "${OPTIONLIST}" "$(printf "b:Back")")"
+		case "${MEDIA}" in
+			Back)
+				break
+			;;
+			Enable\ binary\ patches)
+				EVOKE_UPDATE_BDIFF="yes"
+				break
+			;;
+			Disable\ binary\ patches)
+				EVOKE_UPDATE_BDIFF="no"
+				break
+			;;
+		esac
+	done
+}
+
+revision_menu () {
+	rm ${TEMPDIR}/versionlist 2>${DEVICES}/null
+	find_mirror "evoke/misc/versionlist" "${TEMPDIR}/versionlist"
+	RETURN=$?
+
+	if [ "${RETURN}" = "0" ] ; then
+		if [ -f "${TEMPDIR}/versionlist" ] ; then
+			while [ 1 != 2 ]
+			do
+				unset BRANCH
+				unset RESULT
+				unset REVISIONS
+				unset REVISION
+				clear
+				BRANCH=$(menu "Branch" "$(cut -d "/" -f 1 ${TEMPDIR}/versionlist | sort -r | uniq | grep -v ^$)" "$(printf "a:Activate\no:Options\nq:Quit")")
+				if [ "${BRANCH}" != "" ] ; then
+					case "${BRANCH}" in
+						Quit)
+							break
+						;;
+						Activate)
+							activater "${DESTDIR}"
+						;;
+						Options)
+							option_menu
+						;;
+						*)
+							while [ 1 != 2 ]
+							do
+								unset RESULT
+								unset REVISIONS
+								unset REVISION
+
+								REVISIONS="$(awk -F "/" -v branch="${BRANCH}" '{ if ($1 == branch) { print $2; }; }' ${TEMPDIR}/versionlist | sort -r | grep -v ^$ | head -n 18)"
+								clear
+								REVISION=$(menu "Revision" "${REVISIONS}" "$(printf "a:Activate\no:Options\nb:Back\nq:Quit")")
+								if [ "${REVISION}" != "" ] ; then
+									case "${REVISION}" in
+										Quit)
+											break 2
+										;;
+										Activate)
+											activater "${DESTDIR}"
+											break
+										;;
+										Options)
+											option_menu
+											break
+										;;
+										Back)
+											break
+										;;
+										*)
+											VERSION="${BRANCH}/${REVISION}"
+											real_update "${DESTDIR}" "${VERSION}"
+											local RETVAL="${?}"
+											if [ "${RETVAL}" = "0" ] ; then
+												if [ -f "${DESTDIR}/evoke/misc/versionlist" ] ; then
+													( cat "${DESTDIR}/evoke/misc/versionlist" ; echo "${VERSION}") | sort -r | uniq >"${SCRATCHDIR}/versiontest"
+													mv "${SCRATCHDIR}/versiontest" "${DESTDIR}/evoke/misc/versionlist"
+												else
+													mkdir -p ${DESTDIR}/evoke/misc
+													echo "${VERSION}" >>${DESTDIR}/evoke/misc/versionlist
+												fi
+
+												echo "Activate ${VERSION} now?"
+												read -p "[Y/n]: " PROMPT
+												case "${PROMPT}" in
+													[nN])
+													;;
+													*)	
+														activater "${DESTDIR}" "${VERSION}"
+													;;
+												esac
+											fi
+										;;
+									esac
+								else
+									echo "Revision not found! - Press any key to continue" 
+									read RESULT
+								fi
+							done
+						;;
+					esac
+				else
+					echo "Branch not found! - Press any key to continue" 
+					read RESULT
+				fi
+			done
+			cd ${PREVDIR}
+			unmount_mirror
+		fi
+	else
 	fi
 }
 
