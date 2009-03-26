@@ -68,7 +68,9 @@ freebsd_disk_list() {
 			if ($11 ~ /516e7cba-6ecf-11d6-8ff8-00022d09712b/) {
 				print "zfs:"$3;
 			}
-	
+			if ($11 ~ /ebd0a0a2-b9e5-4433-87c0-68b6b72699c7/) {
+				print "fs:"$3;
+			}
 
 			# Our usage values.
 			if ($11 ~ /4b4cf826-e53e-4b56-86b6-0f9b728e0436/) {
@@ -90,7 +92,7 @@ freebsd_disk_list() {
 				print "dists:"$3;
 			}
 			if ($11 ~ /12f31621-10a0-4a3c-a0e8-9406c2e485f0/) {
-				print "ufs:"$3;
+				print "ds:"$3;
 			}
 		}
 		if ($2 == "BSD") {
@@ -138,7 +140,7 @@ freebsd_disk_list() {
 				print "swap:"$3;
 			} 
 			else if ($11 == "131") {
-				print "linux:"$3;
+				print "fs:"$3;
 			} 
 			else if ($11 == "11") {
 				print "boot-msdosfs:"$3;
