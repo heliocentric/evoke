@@ -105,6 +105,11 @@ do
 		echo "Error code: ${ERROR}"
 		exit 1
 	fi
+	if [ "${RELEASE}" = "7.1" ] ; then
+		cd ${DESTDIR}/usr/src/sys
+		rm -r boot
+		svn co http://svn.freebsd.org/base/stable/7/sys/boot@${URLREV} boot
+	fi
 
 	echo -n " * ${target} = Patching World"
 
