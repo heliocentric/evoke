@@ -1,8 +1,8 @@
---- lib/libstand/bootp.c	2009-02-14 13:14:42.000000000 -0500
-+++ lib/libstand/bootp.c	2009-03-25 19:06:12.000000000 -0400
-@@ -53,6 +53,12 @@
- /* set DHCP_ENV to one of the values above to export dhcp options to kenv */
- #define DHCP_ENV		DHCP_ENV_NO_VENDOR
+--- lib/libstand/bootp.c	2009-03-13 10:03:55.000000000 -0400
++++ lib/libstand/bootp.c	2009-03-25 23:09:59.000000000 -0400
+@@ -47,6 +47,12 @@
+ #define BOOTP_DEBUGxx
+ #define SUPPORT_DHCP
  
 +#define	DHCP_ENV_NOVENDOR	1	/* do not parse vendor options */
 +#define	DHCP_ENV_PXE		10	/* assume pxe vendor options */
@@ -13,8 +13,8 @@
  #include "stand.h"
  #include "net.h"
  #include "netif.h"
-@@ -85,6 +91,13 @@
- #define setenv_(a, b, c)
+@@ -72,6 +78,13 @@
+ static	void vend_cmu(u_char *);
  #endif
  
 +#ifdef DHCP_ENV		/* export the dhcp response to kenv */
@@ -27,19 +27,88 @@
  #ifdef SUPPORT_DHCP
  static char expected_dhcpmsgtype = -1, dhcp_ok;
  struct in_addr dhcp_serverip;
-@@ -366,6 +379,8 @@
- 
- 	setenv_(cp, ep, NULL);
+@@ -351,6 +364,8 @@
+ 	/* Step over magic cookie */
+ 	cp += sizeof(int);
  
 +	setenv_(cp, ep, NULL);
 +
  	while (cp < ep) {
  		tag = *cp++;
  		size = *cp++;
-@@ -496,6 +511,321 @@
- 	{94,	__BYTES,	"network-interface"},
- 	{97,	__BYTES,	"machine-identifier"},
- #else					/* default (empty) table */
+@@ -412,3 +427,318 @@
+ 	}
+ }
+ #endif
++
++#ifdef DHCP_ENV
++/*
++ * Parse DHCP options and store them into kenv variables.
++ * Original code from Danny Braniss, modifications by Luigi Rizzo.
++ *
++ * The parser is driven by tables which specify the type and name of
++ * each dhcp option and how it appears in kenv.
++ * The first entry in the list contains the prefix used to set the kenv
++ * name (including the . if needed), the last entry must have a 0 tag.
++ * Entries do not need to be sorted though it helps for readability.
++ *
++ * Certain vendor-specific tables can be enabled according to DHCP_ENV.
++ * Set it to 0 if you don't want any.
++ */
++enum opt_fmt { __NONE = 0,
++	__8 = 1, __16 = 2, __32 = 4,	/* Unsigned fields, value=size	*/
++	__IP,				/* IPv4 address			*/
++	__TXT,				/* C string			*/
++	__BYTES,			/* byte sequence, printed %02x	*/
++	__INDIR,			/* name=value			*/
++	__ILIST,			/* name=value;name=value ... */
++	__VE,				/* vendor specific, recurse	*/
++};
++
++struct dhcp_opt {
++	uint8_t	tag;
++	uint8_t	fmt;
++	const char	*desc;
++};
++
++static struct dhcp_opt vndr_opt[] = { /* Vendor Specific Options */
++#if DHCP_ENV == DHCP_ENV_FREEBSD /* FreeBSD table in the original code */
++	{0,	0,	"FreeBSD"},		/* prefix */
++	{1,	__TXT,	"kernel"},
++	{2,	__TXT,	"kernelname"},
++	{3,	__TXT,	"kernel_options"},
++	{4,	__IP,	"usr-ip"},
++	{5,	__TXT,	"conf-path"},
++	{6,	__TXT,	"rc.conf0"},
++	{7,	__TXT,	"rc.conf1"},
++	{8,	__TXT,	"rc.conf2"},
++	{9,	__TXT,	"rc.conf3"},
++	{10,	__TXT,	"rc.conf4"},
++	{11,	__TXT,	"rc.conf5"},
++	{12,	__TXT,	"rc.conf6"},
++	{13,	__TXT,	"rc.conf7"},
++	{14,	__TXT,	"rc.conf8"},
++	{15,	__TXT,	"rc.conf9"},
++
++	{20,	__TXT,  "boot.nfsroot.options"},
++
++	{245,	__INDIR, ""},
++	{246,	__INDIR, ""},
++	{247,	__INDIR, ""},
++	{248,	__INDIR, ""},
++	{249,	__INDIR, ""},
++	{250,	__INDIR, ""},
++	{251,	__INDIR, ""},
++	{252,	__INDIR, ""},
++	{253,	__INDIR, ""},
++	{254,	__INDIR, ""},
++
++#elif DHCP_ENV == DHCP_ENV_PXE		/* some pxe options, RFC4578 */
++	{0,	0,	"pxe"},		/* prefix */
++	{93,	__16,	"system-architecture"},
++	{94,	__BYTES,	"network-interface"},
++	{97,	__BYTES,	"machine-identifier"},
++#else					/* default (empty) table */
 +	{0,	0,	""},		/* prefix */
 +#endif
 +	{0,	__TXT,	"%soption-%d"}
@@ -286,75 +355,3 @@
 +    }
 +}
 +#endif /* additional dhcp */
-+
-+#ifdef DHCP_ENV
-+/*
-+ * Parse DHCP options and store them into kenv variables.
-+ * Original code from Danny Braniss, modifications by Luigi Rizzo.
-+ *
-+ * The parser is driven by tables which specify the type and name of
-+ * each dhcp option and how it appears in kenv.
-+ * The first entry in the list contains the prefix used to set the kenv
-+ * name (including the . if needed), the last entry must have a 0 tag.
-+ * Entries do not need to be sorted though it helps for readability.
-+ *
-+ * Certain vendor-specific tables can be enabled according to DHCP_ENV.
-+ * Set it to 0 if you don't want any.
-+ */
-+enum opt_fmt { __NONE = 0,
-+	__8 = 1, __16 = 2, __32 = 4,	/* Unsigned fields, value=size	*/
-+	__IP,				/* IPv4 address			*/
-+	__TXT,				/* C string			*/
-+	__BYTES,			/* byte sequence, printed %02x	*/
-+	__INDIR,			/* name=value			*/
-+	__ILIST,			/* name=value;name=value ... */
-+	__VE,				/* vendor specific, recurse	*/
-+};
-+
-+struct dhcp_opt {
-+	uint8_t	tag;
-+	uint8_t	fmt;
-+	const char	*desc;
-+};
-+
-+static struct dhcp_opt vndr_opt[] = { /* Vendor Specific Options */
-+#if DHCP_ENV == DHCP_ENV_FREEBSD /* FreeBSD table in the original code */
-+	{0,	0,	"FreeBSD"},		/* prefix */
-+	{1,	__TXT,	"kernel"},
-+	{2,	__TXT,	"kernelname"},
-+	{3,	__TXT,	"kernel_options"},
-+	{4,	__IP,	"usr-ip"},
-+	{5,	__TXT,	"conf-path"},
-+	{6,	__TXT,	"rc.conf0"},
-+	{7,	__TXT,	"rc.conf1"},
-+	{8,	__TXT,	"rc.conf2"},
-+	{9,	__TXT,	"rc.conf3"},
-+	{10,	__TXT,	"rc.conf4"},
-+	{11,	__TXT,	"rc.conf5"},
-+	{12,	__TXT,	"rc.conf6"},
-+	{13,	__TXT,	"rc.conf7"},
-+	{14,	__TXT,	"rc.conf8"},
-+	{15,	__TXT,	"rc.conf9"},
-+
-+	{20,	__TXT,  "boot.nfsroot.options"},
-+
-+	{245,	__INDIR, ""},
-+	{246,	__INDIR, ""},
-+	{247,	__INDIR, ""},
-+	{248,	__INDIR, ""},
-+	{249,	__INDIR, ""},
-+	{250,	__INDIR, ""},
-+	{251,	__INDIR, ""},
-+	{252,	__INDIR, ""},
-+	{253,	__INDIR, ""},
-+	{254,	__INDIR, ""},
-+
-+#elif DHCP_ENV == DHCP_ENV_PXE		/* some pxe options, RFC4578 */
-+	{0,	0,	"pxe"},		/* prefix */
-+	{93,	__16,	"system-architecture"},
-+	{94,	__BYTES,	"network-interface"},
-+	{97,	__BYTES,	"machine-identifier"},
-+#else					/* default (empty) table */
- 	{0,	0,	"dhcp.vendor."},		/* prefix */
- #endif
- 	{0,	__TXT,	"%soption-%d"}
