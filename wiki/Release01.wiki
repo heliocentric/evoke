@@ -12,9 +12,7 @@
 <wiki:toc max_depth="3" />
 == Todo ==
 
- * installer needs to be able to install to a thumb drive.
  * 6.4 and 7.1 for i386 need to be on the image.
- * Add timezone support.
  * Bump the bootcode forward to 7.2 to fix some regressions.
 
 == Warnings ==
