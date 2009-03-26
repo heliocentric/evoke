@@ -237,6 +237,11 @@ mkdir -p ${EVOKE_CURUSER}
 
 if [ "${MODE}" = "init" ] ; then
 
+	echo "Set timezone"
+	if [ -f "/system/share/lib/zoneinfo/${EVOKE_TIMEZONE_TCODE}" ] ; then
+		ln -s /system/share/lib/zoneinfo/${EVOKE_TIMEZONE_TCODE} /config/localtime
+	fi
+
 	echo "Adding swap, dump,  and entropy"
 	SWAPLIST="$(mounter list swap)"
 
@@ -377,6 +382,15 @@ if [ "${MODE}" = "init" ] ; then
 
 	ifconfig lo0 inet 127.0.0.1 netmask 255.255.255.255
 	ifconfig lo0 up
+
+	echo "Launching ntpd"
+	cat >/mem/lib/ntp.conf << EOF
+server pool.ntp.org
+
+driftfile /tmp/ntp.drift
+EOF
+	ntpd -c /config/ntp.conf -qg
+	ntpd -c /config/ntp.conf
 
 	case "${EVOKE_MOUSED}" in
 		[yY][eE][sS])
