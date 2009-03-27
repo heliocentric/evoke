@@ -91,9 +91,9 @@ do
 	mkdir -p ${SRCDIR}
 	if [ -d ${SRCDIR}/.svn ] ; then
 		cd ${SRCDIR}
-		svn up -r ${URLREV} ${SRCDIR}
+		svn up -r ${URLREV} ${SRCDIR} 1>&2
 	else
-		svn co http://svn.freebsd.org/base/${URL}@${URLREV} ${SRCDIR}
+		svn co http://svn.freebsd.org/base/${URL}@${URLREV} ${SRCDIR} 1>&2
 	fi
 	cd ${SRCDIR} 
 	mkdir -p ${DESTDIR}/usr/src
@@ -108,7 +108,7 @@ do
 	if [ "${RELEASE}" = "7.1" ] ; then
 		cd ${DESTDIR}/usr/src/sys
 		rm -r boot
-		svn co http://svn.freebsd.org/base/stable/7/sys/boot@${URLREV} boot
+		svn co http://svn.freebsd.org/base/stable/7/sys/boot@${URLREV} boot 1>&2
 	fi
 
 	echo -n " * ${target} = Patching World"
