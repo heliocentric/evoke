@@ -188,7 +188,7 @@ resolve_libs() {
 
 
 cd ${DESTDIR}/mnt/bin/
-for lib in $(resolve_libs ${PROGS} pam*.so.?)
+for lib in $(resolve_libs ${PROGS} ganglia/modcpu.so ganglia/moddisk.so ganglia/modload.so ganglia/modmem.so ganglia/modmulticpu.so ganglia/modnet.so ganglia/modproc.so ganglia/modsys.so)
 do
 	cat $(basename ${lib}) >${FSDIR}${N_LIB}/${lib}
 	ln -s $(basename ${lib}) ${FSDIR}${N_LIB}/$(echo $(basename ${lib}) | cut -d "." -f 1-2)

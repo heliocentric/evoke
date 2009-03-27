@@ -229,7 +229,7 @@ export EVOKE_CFGDIR=/config
 export TRACKFILE_PUBLIC_KEY=/config/evoke_public.rsa
 
 export EVOKE_SYSCONFIG_DIR=/mem/sysconfig
-mkdir -p ${EVOKE_SYSCONFIG_CDIR}
+mkdir -p ${EVOKE_SYSCONFIG_DIR}
 
 export EVOKE_CURUSER=/mem/curuser
 mkdir -p ${EVOKE_CURUSER}
