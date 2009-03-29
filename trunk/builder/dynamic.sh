@@ -193,6 +193,7 @@ do
 	DIRECTORY="$(dirname ${lib})"
 	FILE="$(basename ${lib})"
 
+	echo "Working on ${lib}" 1>&2
 	if [ "${DIRECTORY}" = "." ] ; then
 		DEST="${FSDIR}/${N_LIB}/${FILE}"
 	else
@@ -200,6 +201,7 @@ do
 	fi
 
 	cat ${lib} >${DEST}
+	echo "Copying to ${DEST}" 1>&2
 	case "${lib}" in
 		*.so.*)
 			ln -s ${FILE} $(echo $(echo ${DEST} | cut -d "." -f 1-2))
