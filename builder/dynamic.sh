@@ -168,6 +168,7 @@ PROGS="${PROGS} $(grep ^B ${BUILDDIR}/portlist | cut -d : -f 2)"
 resolve_libs() {
 	for file in "$@"
 	do
+		echo "${file}" >&2
 		TYPE="$(OPTIONS="quiet" filetype ${file})"
 		case "${TYPE}" in
 			application/x-executable)
@@ -177,6 +178,7 @@ resolve_libs() {
 			;;
 			application/x-sharedlib)
 				DEPENDENCIES=$(${CROSSTOOLSPATH}/readelf -d ${file} | grep '(NEEDED)' | cut -d [ -f 2 | cut -d ] -f 1)
+				echo "${file}"
 				echo "${DEPENDENCIES}"
 				resolve_libs ${DEPENDENCIES}
 			;;
@@ -197,6 +199,7 @@ do
 	if [ "${DIRECTORY}" = "." ] ; then
 		DEST="${FSDIR}/${N_LIB}/${FILE}"
 	else
+		mkdir -p ${FSDIR}/${N_LIB}/${DIRECTORY}
 		DEST="${FSDIR}/${N_LIB}/${DIRECTORY}/${FILE}"
 	fi
 
