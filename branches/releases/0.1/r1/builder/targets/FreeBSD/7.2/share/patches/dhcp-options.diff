@@ -1,5 +1,5 @@
---- lib/libstand/bootp.c	2009-02-20 12:30:55.000000000 -0500
-+++ lib/libstand/bootp.c	2009-03-06 16:43:01.000000000 -0500
+--- lib/libstand/bootp.c	2009-03-13 10:03:55.000000000 -0400
++++ lib/libstand/bootp.c	2009-03-25 23:09:59.000000000 -0400
 @@ -47,6 +47,12 @@
  #define BOOTP_DEBUGxx
  #define SUPPORT_DHCP
@@ -36,7 +36,7 @@
  	while (cp < ep) {
  		tag = *cp++;
  		size = *cp++;
-@@ -412,3 +427,317 @@
+@@ -412,3 +427,318 @@
  	}
  }
  #endif
@@ -195,7 +195,8 @@
 +	{85,	__IP,	"nds-servers"},
 +	{86,	__TXT,	"nds-tree-name"},
 +	{87,	__TXT,	"nds-context"},
-+	{100,	__TXT,	"tzsetup"},
++	{100,	__TXT,	"tz-pcode"},
++	{101,	__TXT,	"tz-tcode"},
 +	{210,	__TXT,	"authenticate"},
 +
 +	/* use the following entries for arbitrary variables */

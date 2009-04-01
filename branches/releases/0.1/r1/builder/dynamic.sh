@@ -166,8 +166,9 @@ PROGS="${PROGS} $(grep ^B ${BUILDDIR}/portlist | cut -d : -f 2)"
 # See? Simple. Just, slightly confusing if you aren't used to dealing with loop constructs like this.
 
 resolve_libs() {
-	for file in $@
+	for file in "$@"
 	do
+		echo "${file}" >&2
 		TYPE="$(OPTIONS="quiet" filetype ${file})"
 		case "${TYPE}" in
 			application/x-executable)
@@ -177,6 +178,7 @@ resolve_libs() {
 			;;
 			application/x-sharedlib)
 				DEPENDENCIES=$(${CROSSTOOLSPATH}/readelf -d ${file} | grep '(NEEDED)' | cut -d [ -f 2 | cut -d ] -f 1)
+				echo "${file}"
 				echo "${DEPENDENCIES}"
 				resolve_libs ${DEPENDENCIES}
 			;;
@@ -188,10 +190,26 @@ resolve_libs() {
 
 
 cd ${DESTDIR}/mnt/bin/
-for lib in $(resolve_libs ${PROGS} pam*.so.?)
+for lib in $(resolve_libs ${PROGS} ganglia/modcpu.so ganglia/moddisk.so ganglia/modload.so ganglia/modmem.so ganglia/modmulticpu.so ganglia/modnet.so ganglia/modproc.so ganglia/modsys.so)
 do
-	cat $(basename ${lib}) >${FSDIR}${N_LIB}/${lib}
-	ln -s $(basename ${lib}) ${FSDIR}${N_LIB}/$(echo $(basename ${lib}) | cut -d "." -f 1-2)
+	DIRECTORY="$(dirname ${lib})"
+	FILE="$(basename ${lib})"
+
+	echo "Working on ${lib}" 1>&2
+	if [ "${DIRECTORY}" = "." ] ; then
+		DEST="${FSDIR}/${N_LIB}/${FILE}"
+	else
+		mkdir -p ${FSDIR}/${N_LIB}/${DIRECTORY}
+		DEST="${FSDIR}/${N_LIB}/${DIRECTORY}/${FILE}"
+	fi
+
+	cat ${lib} >${DEST}
+	echo "Copying to ${DEST}" 1>&2
+	case "${lib}" in
+		*.so.*)
+			ln -s ${FILE} $(echo $(echo ${DEST} | cut -d "." -f 1-2))
+		;;
+	esac
 done
 
 # Strip and copy the binaries to the FSDIR
