@@ -1,9 +1,9 @@
 #summary 0.1 Release Notes
-#labels Release
+#labels Release,Doc
 <wiki:comment>
 	type: release-doc
 	author: heliocentric
-	name: notes
+	name: intro
 	svnid: $Id$
 	svnauthor: $Author$
 	svnrevision: $Revision$
@@ -12,10 +12,7 @@
 <wiki:toc max_depth="3" />
 == Todo ==
 
- * installer needs to be able to install to a thumb drive.
  * 6.4 and 7.1 for i386 need to be on the image.
- * Add timezone support.
- * Bump the bootcode forward to 7.2 to fix some regressions.
 
 == Warnings ==
 
@@ -25,7 +22,7 @@ Warning: Evoke now uses gzip to compress the kernel and all modules. There are r
 
 === SSH ===
 
-Like the pilot, 0.1 supports ssh, however because evoke is currently single user, the ssh daemon is disabled. To enable it, add the following to /evoke/site.conf:
+Like the pilot, 0.1 supports ssh, however because evoke is currently single user, the ssh daemon is disabled. To enable it, add the following to /evoke/misc/site.conf:
 
   evoke.sshkey="ssh-rsa AAAAB3NzaC1yc2EAAAABI...."
 
@@ -79,8 +76,8 @@ Jamie Ivanov of RadioactiveRussian.com for providing another test machine for th
 
 ==== Targets ====
 
- * FreeBSD 6.4-RELEASE-p3/i386
- * FreeBSD 7.1-RELEASE-p3/i386
+ * FreeBSD 6.4-RELEASE-p4/i386
+ * FreeBSD 7.1-RELEASE-p4/i386
 
 ==== Security Updates ====
 

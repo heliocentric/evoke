@@ -94,3 +94,10 @@ device       snd_uaudio
 nooptions         AHC_REG_PRETTY_PRINT
 nooptions         AHD_REG_PRETTY_PRINT
 device ale
+device		smbus		# Bus support, required for smb below.
+device		ichsmb
+device		amdsmb
+device		nfsmb
+device		smb
+device		iicbus		# Bus support, required for ic/iic/iicsmb below.
+device		iicsmb		# smb over i2c bridge

@@ -76,8 +76,8 @@ main_installer () {
 		echo ""
 		echo "-----------------------------"
 		echo ""
-		echo " 2) Install FreeBSD"
 		echo " 1) Install Evoke "
+		echo " 2) Install FreeBSD"
 		echo " a) Activater"
 		echo " q) Exit "
 		echo ""
@@ -279,6 +279,7 @@ EOF
 cat >>${DESTDIR}/etc/fstab << EOF
 /dev/ufs/${BOOTHASH}	/	ufs	rw,noatime	1	1
 EOF
+echo "/boot/loader" >${DESTDIR}/boot.config
 	mounter unmount ${DESTDIR}
 	mounter unmount ${SOURCEDIR}
 	rmdir ${SOURCEDIR}

@@ -91,9 +91,9 @@ do
 	mkdir -p ${SRCDIR}
 	if [ -d ${SRCDIR}/.svn ] ; then
 		cd ${SRCDIR}
-		svn up -r ${URLREV} ${SRCDIR}
+		svn up -r ${URLREV} ${SRCDIR} 1>&2
 	else
-		svn co http://svn.freebsd.org/base/${URL}@${URLREV} ${SRCDIR}
+		svn co http://svn.freebsd.org/base/${URL}@${URLREV} ${SRCDIR} 1>&2
 	fi
 	cd ${SRCDIR} 
 	mkdir -p ${DESTDIR}/usr/src
@@ -104,6 +104,11 @@ do
 		echo "Source dist extraction failed."
 		echo "Error code: ${ERROR}"
 		exit 1
+	fi
+	if [ "${RELEASE}" = "7.1" ] ; then
+		cd ${DESTDIR}/usr/src/sys
+		rm -r boot
+		svn co http://svn.freebsd.org/base/stable/7/sys/boot@${URLREV} boot 1>&2
 	fi
 
 	echo -n " * ${target} = Patching World"
@@ -271,6 +276,18 @@ ln -s /mem  ${FSDIR}/var
 ln -s /mem/scratch ${FSDIR}/tmp
 ln -s /bin ${FSDIR}/sbin
 
+# Needed for ganglia
+mkdir -p ${FSDIR}/usr/local
+ln -s /lib ${FSDIR}/usr/local/lib
+ln -s /bin ${FSDIR}/usr/local/bin
+ln -s /bin ${FSDIR}/usr/local/sbin
+ln -s /bin ${FSDIR}/usr/bin
+ln -s /bin ${FSDIR}/usr/sbin
+ln -s /bin ${FSDIR}/usr/local/libexec
+ln -s /bin ${FSDIR}/usr/libexec
+ln -s /config ${FSDIR}/usr/local/etc
+
+
 
 cd ${ROOTDIR}
 # Mirror directory tree of share/
@@ -287,6 +304,11 @@ do
 	grep -v "^#" ${file} | grep -v ^$ >>${FSDIR}/system/${file}
 	chmod a+rx ${FSDIR}/system/${file}
 done
+
+mkdir -p ${FSDIR}/system/share/lib/zoneinfo
+
+cd ${DESTDIR}/usr/share/zoneinfo
+tar -cf - * | tar -xpf - -C ${FSDIR}/system/share/lib/zoneinfo/
 
 cp "${EVOKE_BUILDER_PUBLIC}" "${FSDIR}/system/share/lib/evoke_public.rsa"
 echo "/dev/md0		/	ufs	rw	1	1" >${FSDIR}/system/share/lib/fstab
@@ -371,8 +393,7 @@ export TRACKFILE=${BOOTDIR}${BOOTPREFIX}/trackfile
 export TRACKFILE_PRIVATE_KEY="${EVOKE_BUILDER_PRIVATE}"
 
 cd ${BOOTDIR}${BOOTPREFIX}
-
-OPTIONS="write quiet" verify *
+TRACKFILE_AUTHORITY="${EVOKE_BUILDER_USER_UUID}" TRACKFILE_USER="${EVOKE_BUILDER_AUTHORITY_UUID}" OPTIONS="write quiet" verify *
 
 echo "					[DONE]"
 

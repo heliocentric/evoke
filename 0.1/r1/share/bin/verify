@@ -137,6 +137,18 @@ verify() {
 	RECURSE="yes"
 	TRACKFILE_ONLYRSA="no"
 
+	if [ "$(is_uuid ${TRACKFILE_AUTHORITY})" = "yes" ] ; then
+		TRACKFILE_AUTHORITY="${TRACKFILE_AUTHORITY}"
+	else
+		TRACKFILE_AUTHORITY=""
+	fi
+
+	if [ "$(is_uuid ${TRACKFILE_USER})" = "yes" ] ; then
+		TRACKFILE_USER="${TRACKFILE_USER}"
+	else
+		TRACKFILE_USER=""
+	fi
+
 	if [ "${OPTIONS}" != "" ] ; then
 		for option in ${OPTIONS}
 		do
@@ -175,24 +187,42 @@ verify() {
 	if [ "${RTRACKFILE}" != "" ] ; then
 		TYPES="sha256"
 
+		# Test the openssl signing abilities, to figure out the size of the resulting signature.
+		if [ -r "${TRACKFILE_PUBLIC_KEY}" ] ; then
+			TRACKFILE_REAL_PUBLICKEY="${TRACKFILE_PUBLIC_KEY}"
+		else
+			if [ -r "${EVOKE_KEYRING}/${TRACKFILE_AUTHORITY}/${TRACKFILE_USER}/public.rsa" ] ; then
+				TRACKFILE_REAL_PUBLICKEY="${EVOKE_KEYRING}/${TRACKFILE_AUTHORITY}/${TRACKFILE_USER}/public.rsa"
+			fi
+		fi
+
 		if [ "${WRITE}" = "yes" ] ; then
 
 			# Test the openssl signing abilities, to figure out the size of the resulting signature.
 			if [ -r "${TRACKFILE_PRIVATE_KEY}" ] ; then
-				sha256 -qs "test" | openssl rsautl -sign -inkey "${TRACKFILE_PRIVATE_KEY}" -out "${SCRATCHDIR}/testsign" 2>${DEVICES}/null
+				TRACKFILE_REAL_PRIVATEKEY="${TRACKFILE_PRIVATE_KEY}"
+			else
+				if [ -r "${EVOKE_KEYRING}/${TRACKFILE_AUTHORITY}/${TRACKFILE_USER}/private.rsa" ] ; then
+					TRACKFILE_REAL_PRIVATEKEY="${EVOKE_KEYRING}/${TRACKFILE_AUTHORITY}/${TRACKFILE_USER}/private.rsa"
+				fi
+			fi
+
+			if [ "${TRACKFILE_REAL_PRIVATEKEY}" != "" ] ; then
+				sha256 -qs "test" | openssl rsautl -sign -inkey "${TRACKFILE_REAL_PRIVATEKEY}" -out "${SCRATCHDIR}/testsign" 2>${DEVICES}/null
 				SIGNATURE_BYTES="$(stat -f '%z' ${SCRATCHDIR}/testsign)"
 				rm ${SCRATCHDIR}/testsign 2>${DEVICES}/null
 			else
 				SIGNATURE_BYTES="0"
 			fi
 
+
 #			TIMESTAMP="$(date -j -f "%a %b %d %T %Z %Y" "`date`" "+%s")"
 			TRACKDATA="$(verify_loop "$@")"
-			TRACKDATA="$(printf "I:trackfile:1.2:${TRACKFILE_DATE}:${SIGNATURE_BYTES}\n${TRACKDATA}\n#")"
+			TRACKDATA="$(printf "I:trackfile:1.2:${TRACKFILE_DATE}:${SIGNATURE_BYTES}:${TRACKFILE_AUTHORITY}:${TRACKFILE_USER}\n${TRACKDATA}\n#")"
 			echo "${TRACKDATA}" | dd bs=512 fillchar=" " conv=sync "of=${SCRATCHDIR}/head" 2>${DEVICES}/null
 			
-			if [ -r "${TRACKFILE_PRIVATE_KEY}" ] ; then
-				sha256 -q "${SCRATCHDIR}/head" | openssl rsautl -sign -inkey "${TRACKFILE_PRIVATE_KEY}" -out "${SCRATCHDIR}/sign" 2>${DEVICES}/null
+			if [ -r "${TRACKFILE_REAL_PRIVATEKEY}" ] ; then
+				sha256 -q "${SCRATCHDIR}/head" | openssl rsautl -sign -inkey "${TRACKFILE_REAL_PRIVATEKEY}" -out "${SCRATCHDIR}/sign" 2>${DEVICES}/null
 				PADSIZE="$(( ${SIGNATURE_BYTES} % 512 ))"
 				if [ "${PADSIZE}" != "0" ] ; then
 					PADSIZE="$(( 512 - (${SIGNATURE_BYTES} % 512) ))"
@@ -219,7 +249,7 @@ verify() {
 					dd if=${RTRACKFILE} bs=512 skip=${OFFSET} count=${SIGSIZE} 2>${DEVICES}/null | dd bs=1 skip="${PAD}" "of=${SCRATCHDIR}/sig" 2>${DEVICES}/null
 					RTRACKFILE="${SCRATCHDIR}/head"
 					RHASH="$(sha256 -q "${RTRACKFILE}")"
-					SHASH="$(openssl rsautl -verify -pubin -inkey "${TRACKFILE_PUBLIC_KEY}" -in "${SCRATCHDIR}/sig" 2>${DEVICES}/null)"
+					SHASH="$(openssl rsautl -verify -pubin -inkey "${TRACKFILE_REAL_PUBLICKEY}" -in "${SCRATCHDIR}/sig" 2>${DEVICES}/null)"
 					if [ "${RHASH}" = "${SHASH}" ] ; then
 						if [ "${QUIET}" = "no" ] ; then
 							echo "RSA Verification Passed"

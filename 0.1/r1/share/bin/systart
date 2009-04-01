@@ -160,6 +160,8 @@ if [ "${MODE}" = "init" ] ; then
 	export EVOKE_VERSION="$(kenv -q evoke.version)"
 	export EVOKE_USEONLY="$(kenv -q evoke.useonly)"
 	export EVOKE_MONITOR="$(kenv -q evoke.monitor)"
+	export EVOKE_TIMEZONE_PCODE="$(kenv -q dhcp.tz-pcode)"
+	export EVOKE_TIMEZONE_TCODE="$(kenv -q dhcp.tz-tcode)"
 
 	echo "Verifying root filesystem"
 	ROOTDEV=${DEVICES}/$(mount | awk '{ if ($3 == "/") { print $1 } }')
@@ -227,13 +229,18 @@ export EVOKE_CFGDIR=/config
 export TRACKFILE_PUBLIC_KEY=/config/evoke_public.rsa
 
 export EVOKE_SYSCONFIG_DIR=/mem/sysconfig
-mkdir -p ${EVOKE_SYSCONFIG_CDIR}
+mkdir -p ${EVOKE_SYSCONFIG_DIR}
 
 export EVOKE_CURUSER=/mem/curuser
 mkdir -p ${EVOKE_CURUSER}
 
 
 if [ "${MODE}" = "init" ] ; then
+
+	echo "Set timezone"
+	if [ -f "/system/share/lib/zoneinfo/${EVOKE_TIMEZONE_TCODE}" ] ; then
+		ln -s /system/share/lib/zoneinfo/${EVOKE_TIMEZONE_TCODE} /config/localtime
+	fi
 
 	echo "Adding swap, dump,  and entropy"
 	SWAPLIST="$(mounter list swap)"
@@ -375,6 +382,15 @@ if [ "${MODE}" = "init" ] ; then
 
 	ifconfig lo0 inet 127.0.0.1 netmask 255.255.255.255
 	ifconfig lo0 up
+
+	echo "Launching ntpd"
+	cat >/mem/lib/ntp.conf << EOF
+server pool.ntp.org
+
+driftfile /tmp/ntp.drift
+EOF
+	ntpd -c /config/ntp.conf -qg
+	ntpd -c /config/ntp.conf
 
 	case "${EVOKE_MOUSED}" in
 		[yY][eE][sS])
