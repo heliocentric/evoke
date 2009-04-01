@@ -276,6 +276,18 @@ ln -s /mem  ${FSDIR}/var
 ln -s /mem/scratch ${FSDIR}/tmp
 ln -s /bin ${FSDIR}/sbin
 
+# Needed for ganglia
+mkdir -p ${FSDIR}/usr/local
+ln -s /lib ${FSDIR}/usr/local/lib
+ln -s /bin ${FSDIR}/usr/local/bin
+ln -s /bin ${FSDIR}/usr/local/sbin
+ln -s /bin ${FSDIR}/usr/bin
+ln -s /bin ${FSDIR}/usr/sbin
+ln -s /bin ${FSDIR}/usr/local/libexec
+ln -s /bin ${FSDIR}/usr/libexec
+ln -s /config ${FSDIR}/usr/local/etc
+
+
 
 cd ${ROOTDIR}
 # Mirror directory tree of share/
