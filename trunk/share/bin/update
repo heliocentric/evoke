@@ -583,6 +583,9 @@ activater() {
 			echo "No versions found"
 			return 65
 		else
+			if [ -f "${PDESTDIR}/boot/loader" ] ; then
+				VERSIONLIST="$(printf "${VERSIONLIST}\nFreeBSD/PCBSD/DesktopBSD")"
+			fi
 			if [ "${VERSION}" = "" ] ; then
 				VERSION="$(menu "Available Versions" "${VERSIONLIST}" "$(printf "o:Options\nb:Back")")"
 			fi
@@ -593,6 +596,9 @@ activater() {
 					;;
 					Options)
 						option_menu
+					;;
+					FreeBSD*)
+						echo "/boot/loader" >${PDESTDIR}/boot.config
 					;;
 					*)
 						if [ -f "${LDESTDIR}/${VERSION}/trackfile" ] ; then
