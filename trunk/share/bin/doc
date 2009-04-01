@@ -204,7 +204,7 @@ wiki_display () {
 }
 
 strip_wiki () {
-	grep -v ^#summary "${1}" | grep -v ^#labels | grep -v ^#sidebar | awk '/<wiki:comment>/, /<\/wiki:comment>/ { next; } { print }'
+	grep -v ^#summary "${1}" | grep -v ^#labels | grep -v ^#sidebar | awk '/<wiki:comment>/, /<\/wiki:comment>/ { next; } { print }' | awk '/<wiki:/, /\/>/ { next; } { print }'
 }
 
 display_page() {
