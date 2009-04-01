@@ -1,5 +1,5 @@
 #summary 0.1 Release Notes
-#labels Release, Doc
+#labels Release,Doc
 <wiki:comment>
 	type: release-doc
 	author: heliocentric
@@ -22,7 +22,7 @@ Warning: Evoke now uses gzip to compress the kernel and all modules. There are r
 
 === SSH ===
 
-Like the pilot, 0.1 supports ssh, however because evoke is currently single user, the ssh daemon is disabled. To enable it, add the following to /evoke/site.conf:
+Like the pilot, 0.1 supports ssh, however because evoke is currently single user, the ssh daemon is disabled. To enable it, add the following to /evoke/misc/site.conf:
 
   evoke.sshkey="ssh-rsa AAAAB3NzaC1yc2EAAAABI...."
 
