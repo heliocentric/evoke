@@ -279,6 +279,7 @@ EOF
 cat >>${DESTDIR}/etc/fstab << EOF
 /dev/ufs/${BOOTHASH}	/	ufs	rw,noatime	1	1
 EOF
+echo "/boot/loader" >${DESTDIR}/boot.config
 	mounter unmount ${DESTDIR}
 	mounter unmount ${SOURCEDIR}
 	rmdir ${SOURCEDIR}
