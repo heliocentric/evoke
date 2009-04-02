@@ -19,6 +19,7 @@ B:vac:devel/plan9port:
 B:vacfs:devel/plan9port:
 B:vcat:devel/plan9port:
 B:unvac:devel/plan9port:
+B:9pfuse:devel/plan9port:
 #B:Xorg:x11-servers/xorg-server:
 #B:xterm:x11/xterm:
 #B:xauth:x11/xauth:
