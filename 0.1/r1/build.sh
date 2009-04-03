@@ -85,7 +85,7 @@ export PATH="${ROOTDIR}/share/bin:/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/
 unset WRKDIRPREFIX
 export ERRFILE=${ROOTDIR}/logs/$(date +%Y%m%d%H%M%S).log
 
-echo -n " * share = Cleaning up"
+echo " * share = Cleaning up"
 
 
 OBJENV="$(mounter list object 2>${DEVICES}/null)"
@@ -105,7 +105,6 @@ if [ "${DISTENV}" != "" ] ; then
 fi
 
 export BUILDDIR=${ROOTDIR}/builder
-echo "						[DONE]"
 
 ${BUILDDIR}/build.sh 2>>${ERRFILE}
 if [ "${OBJENV}" != "" ] ; then 
