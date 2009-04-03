@@ -410,6 +410,11 @@ mount_proto () {
 					prep_transport
 					webdav_mount
 				;;
+				9p|ninep)
+					M_PTYPE="NET"
+					prep_transport
+					ninep_mount
+				;;
 				ftp|ftps)
 					M_PTYPE="NET"
 					prep_transport
@@ -725,6 +730,20 @@ encfs_mount () {
 }
 
 
+# 9p filesystem wrapper
+
+ninep_mount () {
+	echo_config
+	if [ "${M_STYPE}" = "URI" ] ; then
+		if [ "${M_PORT}" != "" ] ; then
+			9pfuse "tcp!${M_HOST}!${M_PORT}" ${M_DESTINATION}
+		else
+			9pfuse "tcp!${M_HOST}" ${M_DESTINATION}
+		fi
+	else
+		mexit 8
+	fi
+}
 # WebDAV filesystem wrapper; supports both http and https
 
 webdav_mount () {
@@ -1022,7 +1041,7 @@ list_proto () {
 	echo "dump"
 	echo "object"
 	echo "dists"
-	for fuse in wdfs sshfs curlftpfs ntfs-3g encfs cryptofs vacfs fusepod
+	for fuse in wdfs sshfs curlftpfs ntfs-3g encfs cryptofs vacfs fusepod 9pfuse
 	do
 		command -v ${fuse} >${DEVICES}/null 
 		if [ "$?" != "127" ] ; then
@@ -1033,6 +1052,10 @@ list_proto () {
 				curlftpfs) 
 					echo ftp 
 					echo ftps
+				;;
+				9pfuse) 
+					echo 9p 
+					echo ninep
 				;;
 				cryptofs) echo cryptofs ;;
 				wdfs) 
