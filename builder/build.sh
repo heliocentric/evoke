@@ -111,7 +111,7 @@ do
 		svn co http://svn.freebsd.org/base/stable/7/sys/boot@${URLREV} boot 1>&2
 	fi
 
-	echo -n " * ${target} = Patching World"
+	echo " * ${target} = Patching World"
 
 
 	# Before we do anything else, apply all diffs in the shared directory for the release.
@@ -201,7 +201,7 @@ do
 		;;
 	esac
 
-	echo -n " * ${target} = Compressing Kernel"
+	echo " * ${target} = Compressing Kernel"
 	cd ${DESTDIR}/boot/${KERNCONF}/
 
 	# Grab port modules and copy them to the kernel directory.
@@ -237,9 +237,8 @@ do
 		done
 	fi
 
-	echo "				[DONE]"
 
-	echo -n " * ${target} = Populating BOOTPATH"
+	echo " * ${target} = Populating BOOTPATH"
 
 	# Shouldn't tar be doing this?
 	mkdir -p ${BOOTDIR}${BOOTPATH}/defaults 1>&2
@@ -249,11 +248,10 @@ do
 
 	cp ${BOOTDIR}${BOOTPATH}/pxeboot ${BOOTDIR}${BOOTPATH}/pxeboot-qemu && chmod o+w ${BOOTDIR}${BOOTPATH}/pxeboot-qemu && echo >> ${BOOTDIR}${BOOTPATH}/pxeboot-qemu
 	mv "${BOOTDIR}${BOOTPATH}/pxeboot-qemu" "${BOOTDIR}${BOOTPATH}/pxeboot"
-	echo "				[DONE]"
 
 done
 
-echo -n " * share = Populating FSDIR"
+echo " * share = Populating FSDIR"
 
 # These directories are defined in the Hierarchy.
 mkdir -p ${FSDIR}/bin
@@ -326,10 +324,9 @@ if [ -d "${ROOTDIR}/doc" ] ; then
  	done
 fi
 
-echo "					[DONE]"
 
 
-echo -n " * share = Creating root.fs"
+echo " * share = Creating root.fs"
 # Make evoke.fs, the main product filesystem.
 mkdir -p ${BOOTDIR}${PRODUCTDIR}
 cd ${BOOTDIR}${PRODUCTDIR}
@@ -366,10 +363,9 @@ boot_multicons="YES"
 kern.hz=100
 EOF
 
-echo "					[DONE]"
 
 
-echo -n " * share = Making cmdlist, modlist and abi"
+echo " * share = Making cmdlist, modlist and abi"
 
 # Easier to list it this way now.
 
@@ -383,9 +379,8 @@ do
 	echo ${i}
 done | sort | uniq >>${BOOTDIR}${BOOTPREFIX}/cmdlist
 
-echo "					[DONE]"
 
-echo -n " * share = Creating trackfile"
+echo " * share = Creating trackfile"
 # The trackfile serves two purposes. To make the system verifyable, and to allow us to safely tftp install. Yay!
 
 # This is the location of the trackfile.
@@ -395,9 +390,9 @@ export TRACKFILE_PRIVATE_KEY="${EVOKE_BUILDER_PRIVATE}"
 cd ${BOOTDIR}${BOOTPREFIX}
 TRACKFILE_AUTHORITY="${EVOKE_BUILDER_USER_UUID}" TRACKFILE_USER="${EVOKE_BUILDER_AUTHORITY_UUID}" OPTIONS="write quiet" verify *
 
-echo "					[DONE]"
 
-echo -n " * share = Creating RELEASEDIR"
+
+echo " * share = Creating RELEASEDIR"
 
 # grab a list of already installed versions for create-updates.
 VERSIONLIST="$(cd ${RELEASEDIR}/evoke && find . -not -path "./misc*" -depth 2 | cut -b 3-300 | sort -r | head -n 7 | paste - - - - - - -)"
@@ -407,12 +402,12 @@ cd ${BOOTDIR}${BOOTPREFIX}
 tar -cf - * | tar -xf - -C ${RELEASEDIR}${BOOTPREFIX}/
 echo ""
 
-echo -n " * share = Generating Binary Diffs"
+echo " * share = Generating Binary Diffs"
 update create "${VERSION}/${REVISION}" "${BOOTDIR}${BOOTPREFIX}" ${VERSIONLIST} 1>&2
 #cd "${RELEASEDIR}" && tar -cf - "evoke/misc/BIN-UPDATES/${VERSION}/${REVISION}" | tar -xvpf - -C "${BOOTDIR}/"
 echo ""
 
-echo -n " * share = Making ISO image"
+echo " * share = Making ISO image"
 
 # Don't ask; cdboot is the main reason why bootloader versioning was turned off for so damned long.
 
@@ -465,6 +460,4 @@ if [ "${EVOKE_PUSH_MIRROR}" != "" ] ; then
 		mounter umount "${MOUNTPOINT}"
 	done
 fi
-
-echo "					[DONE]"
 
