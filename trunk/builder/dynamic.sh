@@ -43,17 +43,17 @@ if [ "${ABI}" = "7" ] ; then
 fi
 cd ${WORKDIR}/usr/src/
 if [ "${NO_BUILD_WORLD}" = "" ] ; then
-	echo -n " * ${target} = Building World "
+	echo " * ${target} = Building World "
 	make -DLOADER_TFTP_SUPPORT LOCAL_DIRS="nsrc" MAGICPATH="/config" buildworld 1>&2
 	echo ""
 fi
 if [ "${NO_BUILD_KERNEL}" = "" ] ; then
-	echo -n " * ${target} = Building Kernel "
+	echo " * ${target} = Building Kernel "
 	make buildkernel 1>&2
 	echo ""
 fi
 
-echo -n " * ${target} = Populating DESTDIR"
+echo " * ${target} = Populating DESTDIR"
 priv make hierarchy 1>&2
 # Keeps a bug in the rescue install from acting up.
 rm -r ${DESTDIR}/rescue 1>&2
@@ -66,9 +66,8 @@ mkdir -p ${DESTDIR}/boot
 cp ${DESTDIR}/usr/src/sys/${TARGET_ARCH}/conf/GENERIC.hints ${DESTDIR}${BOOTPATH}/device.hints
 priv make INSTKERNNAME=${KERNCONF} installkernel 1>&2
 mkdir -p ${DESTDIR}/usr/src
-echo "				[DONE]"
 
-echo -n " * ${target} = Building Ports "
+echo " * ${target} = Building Ports "
 
 if [ "${BUILD_PORTS}" != "" ] ; then
 	# Since we chroot, we need these files in the target root.
@@ -111,9 +110,8 @@ EOF
 	umount ${DESTDIR}/usr/ports
 	umount ${DESTDIR}/dev
 fi
-echo "				[DONE]"
 
-echo -n " * ${target} = Installing Packages "
+echo " * ${target} = Installing Packages "
 
 mkdir -p ${DESTDIR}/usr/local/bin
 mkdir -p ${DESTDIR}/usr/local/sbin
@@ -129,9 +127,8 @@ if [ -d "${NDISTDIR}/${TARGET_HASH}/packages" ] ; then
 		tar -xf ${file} --exclude '+*' -C ${DESTDIR}/usr/local/
 	done
 fi
-echo "				[DONE]"
 
-echo -n " * ${target} = Populating FSDIR"
+echo " * ${target} = Populating FSDIR"
 cp ${DESTDIR}/libexec/ld-elf.so.1 ${FSDIR}${N_LIBEXEC}
 mkdir -p ${DESTDIR}/mnt/bin
 
@@ -259,4 +256,3 @@ IFS="${OLDFS}"
 
 cd ${DESTDIR}/boot && tar -cf - boot mbr gptboot pmbr boot0 boot2 | tar -xvpf - -C ${FSDIR}${N_BOOT}/ 1>&2
 
-echo "				[DONE]"
