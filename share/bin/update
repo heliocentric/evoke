@@ -948,6 +948,34 @@ media_menu() {
 			Options)
 				option_menu
 			;;
+			Other)
+				while [ 1 != 2 ]
+				do
+					echo "Please type in the full URL for the source."
+					echo "ex. "
+					echo ""
+					echo "	* http://www.damnsmallbsd.org/pub/"
+					echo "	* tftp://192.168.1.1/"
+					echo "	* ufs:/dev/ad0s1a"
+					echo "	* 9p://172.16.1.1/"
+					echo "	* cd9660:cd0"
+					echo ""
+					read -p "URL: " URL
+					case "${URL}" in
+						*:*)
+							echo "${URL}" >${TEMPDIR}/mirrorlist
+							break 2
+						;;
+						Back)
+							break
+						;;
+						*)
+							echo "Invalid URL" 
+							read -p "Press any key to continue" NULL
+						;;
+					esac
+				done
+			;;
 			Local\ Site)
 				echo "${EVOKE_UPDATE_MIRROR}" >${TEMPDIR}/mirrorlist
 				break
@@ -1000,6 +1028,14 @@ option_menu() {
 				echo "Disable binary patches"
 			;;
 		esac
+		case ${EVOKE_UPDATE_DEVELOPMENT} in
+			[nN][oO])
+				echo "View all available versions"
+			;;
+			*)
+				echo "Hide development versions"
+			;;
+		esac
 		)"
 
 		MEDIA="$(menu "Options" "${OPTIONLIST}" "$(printf "b:Back")")"
@@ -1015,11 +1051,23 @@ option_menu() {
 				EVOKE_UPDATE_BDIFF="no"
 				break
 			;;
+			Hide\ development\ versions)
+				EVOKE_UPDATE_DEVELOPMENT="no"
+				break
+			;;
+			View\ all\ available\ versions)
+				EVOKE_UPDATE_DEVELOPMENT="yes"
+				break
+			;;
 		esac
 	done
 }
 
 revision_menu () {
+	if [ ! -f "${TEMPDIR}/mirrorlist" ] ; then
+		media_menu
+	fi
+
 	rm ${TEMPDIR}/versionlist 2>${DEVICES}/null
 	find_mirror "evoke/misc/versionlist" "${TEMPDIR}/versionlist"
 	RETURN=$?
@@ -1033,7 +1081,12 @@ revision_menu () {
 				unset REVISIONS
 				unset REVISION
 				clear
-				BRANCH=$(menu "Branch" "$(cut -d "/" -f 1 ${TEMPDIR}/versionlist | sort -r | uniq | grep -v ^$)" "$(printf "a:Activate\no:Options\nq:Quit")")
+				if [ "${EVOKE_UPDATE_DEVELOPMENT}" = "no" ] ; then
+					VERSIONS="$(cut -d "/" -f 1 ${TEMPDIR}/versionlist | sort -r | uniq | grep -v ^$ | grep -v HEAD)"
+				else
+					VERSIONS="$(cut -d "/" -f 1 ${TEMPDIR}/versionlist | sort -r | uniq | grep -v ^$)"
+				fi
+				BRANCH=$(menu "Branch" "${VERSIONS}" "$(printf "a:Activate\ns:Select Media\no:Options\nq:Quit")")
 				if [ "${BRANCH}" != "" ] ; then
 					case "${BRANCH}" in
 						Quit)
@@ -1045,6 +1098,11 @@ revision_menu () {
 						Options)
 							option_menu
 						;;
+						Select\ Media)
+							media_menu
+							rm ${TEMPDIR}/versionlist 2>${DEVICES}/null
+							find_mirror "evoke/misc/versionlist" "${TEMPDIR}/versionlist"
+						;;
 						*)
 							while [ 1 != 2 ]
 							do
@@ -1054,7 +1112,7 @@ revision_menu () {
 
 								REVISIONS="$(awk -F "/" -v branch="${BRANCH}" '{ if ($1 == branch) { print $2; }; }' ${TEMPDIR}/versionlist | sort -r | grep -v ^$ | head -n 18)"
 								clear
-								REVISION=$(menu "Revision" "${REVISIONS}" "$(printf "a:Activate\no:Options\nb:Back\nq:Quit")")
+								REVISION=$(menu "Revision" "${REVISIONS}" "$(printf "a:Activate\ns:Select Media\no:Options\nb:Back\nq:Quit")")
 								if [ "${REVISION}" != "" ] ; then
 									case "${REVISION}" in
 										Quit)
@@ -1068,6 +1126,12 @@ revision_menu () {
 											option_menu
 											break
 										;;
+										Select\ Media)
+											media_menu
+											rm ${TEMPDIR}/versionlist 2>${DEVICES}/null
+											find_mirror "evoke/misc/versionlist" "${TEMPDIR}/versionlist"
+										;;
+
 										Back)
 											break
 										;;
@@ -1116,6 +1180,7 @@ revision_menu () {
 }
 
 update() {
+
 	PREVDIR="$(pwd)"
 
 	SCRATCHDIR="${TMPDIR}/update/$(dd if=/dev/random bs=4m count=1 2>${DEVICES}/null | sha256 -q)"
@@ -1131,21 +1196,18 @@ update() {
 
 	cd "${TEMPDIR}"
 
-	if [ "${EVOKE_UPDATE_MIRROR}" = "" ] ; then
-		MOUNTER_EVOKE_LIST="$(mounter search tag=evoke)"
-		if [ "${MOUNTER_EVOKE_LIST}" = "" ] ; then
-			fetch -q http://evoke.googlecode.com/svn/info/mirrorlist 2>${DEVICES}/null
-			if [ ! -f mirrorlist ] ; then
-				echo "Unable to fetch mirrorlist, Network connection down?"
-				exit 65
-			fi
-		else
-			echo "${MOUNTER_EVOKE_LIST}" >${TEMPDIR}/mirrorlist
-		fi
-	else
+	if [ "${EVOKE_UPDATE_MIRROR}" != "" ] ; then
 		echo "${EVOKE_UPDATE_MIRROR}" >${TEMPDIR}/mirrorlist
 	fi
 
+	case "${EVOKE_VERSION}" in
+		HEAD/*)
+			EVOKE_UPDATE_DEVELOPMENT="yes"
+		;;
+		*)
+			EVOKE_UPDATE_DEVELOPMENT="no"
+		;;
+	esac
 	VERBOSE="NO"
 
 	if [ "${OPTIONS}" != "" ] ; then
