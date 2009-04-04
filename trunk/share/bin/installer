@@ -170,7 +170,6 @@ partdisk() {
 								;;
 							esac
 						fi
-						gpt add -t 12f31621-10a0-4a3c-a0e8-9406c2e485f0 ${DEVICES}/${RESULT}
 					fi
 					BOOTHASH="$(rand)"
 					BOOTDEVICE="$(mounter list boot-ufs | grep "${RESULT}" | head -n 1)"
