@@ -30,3 +30,4 @@ B:gmond:sysutils/ganglia-monitor-core:
 B:mkisofs:sysutils/cdrtools:
 B:cdrecord:sysutils/cdrtools:
 B:uuidgen:misc/e2fsprogs-libuuid:
+B:dmidecode:sysutils/dmidecode:
