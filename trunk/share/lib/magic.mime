@@ -1011,3 +1011,14 @@
 9564	belong		0x00011954	application/vnd.evoke.fs.ufs.1.be
 42332	belong		0x19540119	application/vnd.evoke.fs.ufs.2.be
 66908	belong		0x19540119	application/vnd.evoke.fs.ufs.2.be
+0x438   leshort         0xEF53          
+>0x45c  lelong          ^0x0000004      application/vnd.evoke.fs.ext.2
+>0x45c  lelong          &0x0000004      application/vnd.evoke.fs.ext.3
+
+# SGI XFS filesystem - Nathan Scott <nathans@debian.org>
+0	belong		0x58465342	application/vnd.evoke.fs.xfs
+32769    string    CD001
+>38913   string   !NSR0      application/vnd.evoke.fs.cd9660
+>38913   string    NSR0      application/vnd.evoke.fs.udf
+0x10034		string	ReIsErFs	application/vnd.evoke.fs.reiserfs.3.5
+0x10034		string	ReIsEr2Fs	application/vnd.evoke.fs.reiserfs.3.6
