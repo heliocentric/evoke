@@ -1022,3 +1022,7 @@
 >38913   string    NSR0      application/vnd.evoke.fs.udf
 0x10034		string	ReIsErFs	application/vnd.evoke.fs.reiserfs.3.5
 0x10034		string	ReIsEr2Fs	application/vnd.evoke.fs.reiserfs.3.6
+
+3	string		NTFS		application/vnd.evoke.fs.ntfs
+54	string		FAT16		application/vnd.evoke.fs.msdosfs.16
+82	string		FAT32		application/vnd.evoke.fs.msdosfs.32
