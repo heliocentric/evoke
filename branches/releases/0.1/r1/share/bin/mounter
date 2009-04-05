@@ -385,6 +385,11 @@ mount_proto () {
 					prep_transport
 					cryptofs_mount
 				;;
+				fs)
+					M_PTYPE="DEV"
+					prep_transport
+					fs_mount
+				;;
 				remount)
 					M_PTYPE="REMOUNT"
 					prep_transport
@@ -530,8 +535,7 @@ mdconfig_handler () {
 				print $1;
 			}
 		}
-	}')"
-
+	}' | head -n 1)"
 	if [ "${EXISTINGDEV}" = "" ] ; then
 		local MD_DEV=$(mdconfig -af "${M_FILE}" 2>/dev/null)
 	else
@@ -541,7 +545,7 @@ mdconfig_handler () {
 			mounter "remount:${DIRECTORY}" "${M_DESTINATION}"
 			mexit 0
 		else
-			local MD_DEV=$(mdconfig -af "${M_FILE}" 2>/dev/null)
+			local MD_DEV=${EXISTINGDEV}
 		fi
 	fi
 	local ERROR=$?
@@ -688,6 +692,53 @@ remount_mount () {
 			fi
 		fi
 		 mounter "${PROTO}:${M_FILE}" ${M_DESTINATION}
+	else
+		mexit 8
+	fi
+}
+
+# remounter wrapper.
+
+fs_mount () {
+	echo_config
+	if [ "${M_STYPE}" = "GEOM" ] ; then
+		echo "${M_FILE}"
+		MIME_TYPE="$(OPTIONS="norecurse quiet" filetype "${DEVICES}/${M_FILE}")"
+		ERRNO=$?
+		if [ "${ERRNO}" = "0" ] ; then
+			case "${MIME_TYPE}" in
+				application/vnd.evoke.fs.ufs*)
+					PROTO="ufs"
+				;;
+				application/vnd.evoke.fs.reiserfs*)
+					PROTO="reiserfs"
+				;;
+				application/vnd.evoke.fs.ext*)
+					PROTO="ext2fs"
+				;;
+				application/vnd.evoke.fs.xfs*)
+					PROTO="xfs"
+				;;
+				application/vnd.evoke.fs.cd9660*)
+					PROTO="cd9660"
+				;;
+				application/vnd.evoke.fs.udf*)
+					PROTO="udf"
+				;;
+				application/vnd.evoke.fs.msdosfs*)
+					PROTO="msdosfs"
+				;;
+				application/vnd.evoke.fs.ntfs*)
+					PROTO="ntfs"
+				;;
+				*)
+					mexit 4
+				;;
+			esac
+			mounter "${PROTO}:${M_FILE}" ${M_DESTINATION}
+		else
+			mexit 4
+		fi
 	else
 		mexit 8
 	fi
@@ -1041,6 +1092,7 @@ list_proto () {
 	echo "dump"
 	echo "object"
 	echo "dists"
+	echo "fs"
 	for fuse in wdfs sshfs curlftpfs ntfs-3g encfs cryptofs vacfs fusepod 9pfuse
 	do
 		command -v ${fuse} >${DEVICES}/null 
@@ -1115,9 +1167,6 @@ mounter_command () {
 		# /media named after their geom name. ie, /media/da0s1a, etc.
 			case "${2}" in
 				[pP][rR][oO][tT][oO])
-					list_proto					
-				;;
-				[fF][sS])
 					list_proto					
 				;;
 
