@@ -385,6 +385,11 @@ mount_proto () {
 					prep_transport
 					cryptofs_mount
 				;;
+				fs)
+					M_PTYPE="DEV"
+					prep_transport
+					fs_mount
+				;;
 				remount)
 					M_PTYPE="REMOUNT"
 					prep_transport
@@ -687,6 +692,38 @@ remount_mount () {
 				PROTO=nullfs
 			fi
 		fi
+		 mounter "${PROTO}:${M_FILE}" ${M_DESTINATION}
+	else
+		mexit 8
+	fi
+}
+
+# remounter wrapper.
+
+fs_mount () {
+	echo_config
+	if [ "${M_STYPE}" = "GEOM" ] ; then
+		MIME_TYPE="$(OPTIONS="norecurse quiet" filetype "${DEVICES}/${M_FILE}")"
+		case "${MIME_TYPE}" in
+			application/vnd.evoke.fs.ufs*)
+				PROTO="ufs"
+			;;
+			application/vnd.evoke.fs.reiserfs*)
+				PROTO="reiserfs"
+			;;
+			application/vnd.evoke.fs.ext*)
+				PROTO="ext2fs"
+			;;
+			application/vnd.evoke.fs.xfs*)
+				PROTO="xfs"
+			;;
+			application/vnd.evoke.fs.cd9660*)
+				PROTO="cd9660"
+			;;
+			application/vnd.evoke.fs.udf*)
+				PROTO="udf"
+			;;
+		esac
 		 mounter "${PROTO}:${M_FILE}" ${M_DESTINATION}
 	else
 		mexit 8
@@ -1041,6 +1078,7 @@ list_proto () {
 	echo "dump"
 	echo "object"
 	echo "dists"
+	echo "fs"
 	for fuse in wdfs sshfs curlftpfs ntfs-3g encfs cryptofs vacfs fusepod 9pfuse
 	do
 		command -v ${fuse} >${DEVICES}/null 

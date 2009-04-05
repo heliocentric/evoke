@@ -27,6 +27,14 @@
 # $Id$
 FORFS="
 "
+if [ ! -c "${DEVICES}/null" ] ; then
+	if [ -c "/dev/null" ] ; then
+		DEVICES=/dev
+	else
+		echo "Error, no device nodes found"
+		exit 1
+	fi
+fi
 
 type_check() {
 	MIME="$(getextattr -q user mime_type "${1}")"
@@ -45,7 +53,7 @@ type_check() {
 			if [ "${WARNING}" = "yes" ] ; then
 				echo "WARNING: 1 ${1}"
 			fi
-			MIME="$(file -bL --mime-type "${1}" | cut -d , -f 1)"
+			MIME="$(file -sbL --mime-type "${1}" | cut -d , -f 1)"
 			setextattr -q user mime_type "${MIME}" "${1}"
 			setextattr -q user mime_mtime "$(date "+%s")" "${1}"
 		fi
@@ -111,7 +119,13 @@ filetype () {
 						type_check "${1}" "inode/fifo"
 					;;
 					"Character Device")
-						type_check "${1}" "inode/chardevice"
+						GEOM="$(echo ${1} | sed s@${DEVICES}/@@g)"
+						MATCHEDGEOMS="$(lsvol | grep ${GEOM} )"
+						if [ "${MATCHEDGEOMS}" = "" ] ; then
+							type_check "${1}" "inode/chardevice"
+						else
+							type_check "${1}"
+						fi
 					;;
 					"Symbolic Link")
 						type_check "${1}"
@@ -134,3 +148,4 @@ else
 fi
 
 filetype $@
+
