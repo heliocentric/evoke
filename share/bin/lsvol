@@ -34,7 +34,7 @@ fi
 freebsd_disk_list() {
 	sysctl -b kern.geom.conftxt | \
 	awk '{
-		if ($2 == "DISK") {
+		if ($2 == "DISK" || $2 == "MD") {
 			if ($3 ~ /cd/) {
 				print "cd9660:"$3;
 			}
