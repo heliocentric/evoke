@@ -1155,9 +1155,6 @@ mounter_command () {
 				[pP][rR][oO][tT][oO])
 					list_proto					
 				;;
-				[fF][sS])
-					list_proto					
-				;;
 
 				*)
 					if [ "${2}" != "" ] ; then
