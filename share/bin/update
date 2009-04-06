@@ -985,6 +985,7 @@ media_menu() {
 				break
 			;;
 			CD/DVD\ ROM)
+				clear
 				CHOICE="$(menu "CD Drives" "$(mounter list cd9660)" "$(printf "b:Back")")"
 				if [ "${CHOICE}" != "Back" ] ; then
 					if [ "$(mounter list cd9660 | grep "${CHOICE}")" = "" ] ; then
