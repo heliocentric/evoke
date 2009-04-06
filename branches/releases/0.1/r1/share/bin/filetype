@@ -120,7 +120,7 @@ filetype () {
 					;;
 					"Character Device")
 						GEOM="$(echo ${1} | sed s@${DEVICES}/@@g)"
-						MATCHEDGEOMS="$(lsvol | grep ${GEOM} )"
+						MATCHEDGEOMS="$(sysctl -b kern.geom.conftxt | grep ${GEOM} )"
 						if [ "${MATCHEDGEOMS}" = "" ] ; then
 							type_check "${1}" "inode/chardevice"
 						else
