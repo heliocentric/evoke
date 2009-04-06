@@ -702,7 +702,6 @@ remount_mount () {
 fs_mount () {
 	echo_config
 	if [ "${M_STYPE}" = "GEOM" ] ; then
-		echo "${M_FILE}"
 		MIME_TYPE="$(OPTIONS="norecurse quiet" filetype "${DEVICES}/${M_FILE}")"
 		ERRNO=$?
 		if [ "${ERRNO}" = "0" ] ; then
