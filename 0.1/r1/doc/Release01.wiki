@@ -10,9 +10,6 @@
 </wiki:comment>
 
 <wiki:toc max_depth="3" />
-== Todo ==
-
- * 6.4 and 7.1 for i386 need to be on the image.
 
 == Warnings ==
 
@@ -72,11 +69,12 @@ Jamie Ivanov of RadioactiveRussian.com for providing another test machine for th
 
 == Revisions ==
 
-=== [http://code.google.com/p/evoke/source/browse/#svn/branches/releases/0.1/R1 R1] ===
+=== [http://www.damnsmallbsd.org/pub/evoke/misc/ISO-IMAGES/0.1/R1/ R1] ===
+
+Released: 04/07/2009
 
 ==== Targets ====
 
- * FreeBSD 6.4-RELEASE-p4/i386
  * FreeBSD 7.1-RELEASE-p4/i386
 
 ==== Security Updates ====
