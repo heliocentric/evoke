@@ -18,10 +18,13 @@
 || boot.netif.netmask	|| Netmask for static IP address.						||
 || boot.netif.gateway	|| Gateway for static IP address.						||
 || boot.netif.dns	|| DNS Server to use.								||
+|| dhcp.tz.pcode	|| Timezone PCode,  ex. EST5EDT.						||
+|| dhcp.tz-tcode	|| Timezone TCode, ex. America/New_York.					||
 
 == DHCP options ==
 
-|| variable		|| value	|| description							||
-|| option-100		|| Timezone	|| ex. EST5EDT, America/New_York.				||
-|| ip-forwarding	|| Bool		|| 'true' if the host should forward packets.			||
-|| ntp-servers		|| IP list	|| list of ntp servers, the order is precendence		||
+|| variable		|| value		|| description							||
+|| option-100		|| Timezone PCode	|| ex. EST5EDT.							||
+|| option-101		|| Timezone TCode	|| ex. America/New_York.					||
+|| ip-forwarding	|| Bool			|| 'true' if the host should forward packets.			||
+|| ntp-servers		|| IP list		|| list of ntp servers, the order is precendence		||
