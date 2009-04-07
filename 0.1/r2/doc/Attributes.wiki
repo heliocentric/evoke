@@ -1,0 +1,20 @@
+#summary Extended attribute lists
+#labels Phase-Design
+
+== Description ==
+
+Evoke is a modern system, so it uses extended attributes wherever logical. This is a list of all attributes we are currently using, organized by namespace.
+
+== System ==
+
+|| Name		|| Type		|| Used?	|| Value					||
+|| creator	|| UUID		|| No		|| UUID of the user that created the file	||
+
+== User ==
+
+|| Name		|| Type		|| Used?	|| Value								||
+|| mime_type	|| String	|| Yes		|| A cache of the file's mime-type, as returned by filetype		||
+|| sha256	|| String	|| Yes		|| SHA256 hash of the file contents, used by verify. Not reliable	||
+|| md5		|| String	|| Yes		|| MD5 hash of the file contents, used by verify. Not reliable		||
+|| icon		|| Binary	|| No		|| An icon image for the file. Not currently used by anything		||
+|| thumbnail	|| Binary	|| No		|| A thumbnail image of the file. Not currently used by anything	||
