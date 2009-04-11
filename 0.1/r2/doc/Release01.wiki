@@ -69,7 +69,7 @@ Jamie Ivanov of RadioactiveRussian.com for providing another test machine for th
 
 == Revisions ==
 
-=== [http://www.damnsmallbsd.org/pub/evoke/misc/ISO-IMAGES/0.1/R1/ R1] ===
+=== [http://www.damnsmallbsd.org/pub/evoke/misc/ISO-IMAGES/0.1/r1/ r1] ===
 
 Released: 04/07/2009
 

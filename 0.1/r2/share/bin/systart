@@ -154,6 +154,7 @@ if [ "${MODE}" = "init" ] ; then
 	export EVOKE_BOOT_SERVER="$(kenv -q boot.nfsroot.server)"
 	export EVOKE_MISC_MESSAGE="$(kenv -q evoke.misc.message)"
 	export EVOKE_MOUSED="$(kenv -q evoke.moused)"
+	export EVOKE_NTPD="$(kenv -q evoke.ntpd)"
 	export EVOKE_USERCONFIG="$(kenv -q evoke.userconfig)"
 	export EVOKE_SYSCONFIG="$(kenv -q evoke.sysconfig)"
 	export EVOKE_SSHKEY="$(kenv -q evoke.sshkey)"
@@ -383,14 +384,20 @@ if [ "${MODE}" = "init" ] ; then
 	ifconfig lo0 inet 127.0.0.1 netmask 255.255.255.255
 	ifconfig lo0 up
 
-	echo "Launching ntpd"
-	cat >/mem/lib/ntp.conf << EOF
+case "${EVOKE_NTPD}" in
+	[nN][oO])
+	;;
+	*)
+		echo "Launching ntpd"
+		cat >/mem/lib/ntp.conf << EOF
 server pool.ntp.org
 
 driftfile /tmp/ntp.drift
 EOF
-	ntpd -c /config/ntp.conf -qg
-	ntpd -c /config/ntp.conf
+		ntpd -c /config/ntp.conf -qg
+		ntpd -c /config/ntp.conf
+	;;
+esac
 
 	case "${EVOKE_MOUSED}" in
 		[yY][eE][sS])
