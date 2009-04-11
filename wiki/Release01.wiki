@@ -34,7 +34,7 @@ Evoke is now installed on your system! You can activate it by doing the followin
 
 Note that 0.1 and r1 are the release and revision you are running, respectively. If you are using 0.2 or HEAD, change them accordingly. (Evoke's 'update' utility has a menu for normal users). 
 
-It is recommended that you read [Config] and the rest of this document /before/ rebooting, so you can for example enable sshd, configure static ip addresses, and other necessary steps.
+It is recommended that you read [Config] and the rest of this document *before* rebooting, so you can for example enable sshd, configure static ip addresses, and other necessary steps.
 
 === SSH ===
 
