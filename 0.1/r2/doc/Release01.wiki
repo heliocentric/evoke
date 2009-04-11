@@ -17,6 +17,25 @@ Warning: Evoke now uses gzip to compress the kernel and all modules. There are r
 
 == Features ==
 
+
+=== Installing evoke on a FreeBSD system ===
+
+First, you need to fetch a release iso, for example:
+
+ fetch http://www.damnsmallbsd.org/pub/evoke/misc/ISO-IMAGES/0.1/r1/evoke.iso 
+
+Then, extract the evoke directory to your / (note, extract only the 'evoke' directory, if you try to extract the entire thing, it will make your / unreadable by non-root users).
+
+ tar -xvpf evoke.iso -C / evoke
+
+Evoke is now installed on your system! You can activate it by doing the following:
+
+ echo "/evoke/0.1/r2/FreeBSD/7.1/i386/loader" >/boot.config
+
+Note that 0.1 and r2 are the release and revision you are running, respectively. If you are using 0.2 or HEAD, change them accordingly. (Evoke's 'update' utility has a menu for normal users). 
+
+It is recommended that you read [Config] and the rest of this document /before/ rebooting, so you can for example enable sshd, configure static ip addresses, and other necessary steps.
+
 === SSH ===
 
 Like the pilot, 0.1 supports ssh, however because evoke is currently single user, the ssh daemon is disabled. To enable it, add the following to /evoke/misc/site.conf:
@@ -68,6 +87,23 @@ N/A
 Jamie Ivanov of RadioactiveRussian.com for providing another test machine for the kenv patch.
 
 == Revisions ==
+
+=== [http://www.damnsmallbsd.org/pub/evoke/misc/ISO-IMAGES/0.1/r2/ r2] ===
+
+Released: N/A
+
+==== Targets ====
+
+ * FreeBSD 7.1-RELEASE-p4/i386
+
+==== Errata ====
+
+ * Add a configuration variable to disable ntpd at startup
+ * Add iostat to the image.
+
+==== Security Updates ====
+
+ * N/A
 
 === [http://www.damnsmallbsd.org/pub/evoke/misc/ISO-IMAGES/0.1/r1/ r1] ===
 
