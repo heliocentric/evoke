@@ -1,0 +1,1268 @@
+#!/bin/sh
+# Copyright 2007-2009 Dylan Cochran
+# All rights reserved
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted providing that the following conditions
+# are met:
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+# IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
+# DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+# STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
+# IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
+
+# $Id$
+
+# the for field specifier, so call for like so: local IFS="${FORFS}" \n for blah in blah
+
+FORFS="
+"
+
+OLDFS=" 	
+"
+
+PATH="${PATH}:/usr/libexec"
+
+if [ ! -c "${DEVICES}/null" ] ; then
+	if [ -c "/dev/null" ] ; then
+		DEVICES=/dev
+	else
+		echo "Error, no device nodes found"
+		exit 1
+	fi
+fi
+
+if [ ! -d "${TMPDIR}" ] ; then
+	TMPDIR="/tmp"
+fi
+
+if [ ! -d "${RELEASEDIR}" ] ; then
+	RELEASEDIR="/releases"
+fi
+
+if [ ! -d "${EVOKE_MNTDIR}" ] ; then
+	EVOKE_MNTDIR="/media"
+	mkdir -p "${EVOKE_MNTDIR}"
+fi
+
+GLOBAL_ERRORCODE="0"
+
+apply_patch() {
+	PATCHFILE="${1}"
+	SOURCEFILE="${2}"
+	DESTFILE="${3}"
+	SOURCEHASH="${4}"
+	DESTHASH="${5}"
+
+	case "${SOURCEFILE}" in
+		*.gz)
+			gunzip -9nc "${SOURCEFILE}" >"${TEMPDIR}/${SOURCEHASH}"
+			RFILE="${TEMPDIR}/${SOURCEHASH}"
+		;;
+		*)
+			RFILE="${SOURCEFILE}"
+		;;
+	esac
+	DFILE="${TEMPDIR}/${DESTHASH}"
+
+	bspatch "${RFILE}" "${DFILE}" "${PATCHFILE}"
+
+	case "${DESTFILE}" in
+		*.gz)
+			rm "${TEMPDIR}/${DESTHASH}.gz" 2>/dev/null 1>/dev/null
+			gzip -9nc "${TEMPDIR}/${DESTHASH}" >"${TEMPDIR}/${DESTHASH}.gz"
+			mv "${TEMPDIR}/${DESTHASH}.gz" "${TEMPDIR}/${DESTHASH}"
+		;;
+		*.bz2)
+		;;
+	esac
+
+	REALHASH="$(sha256 -q "${TEMPDIR}/${DESTHASH}")"
+
+	if [ "${REALHASH}" != "${DESTHASH}" ] ; then
+		echo "4"
+	else
+		echo "0"
+		mv "${TEMPDIR}/${DESTHASH}" "${DESTFILE}"
+	fi
+}
+
+real_update() {
+	if [ -d "${1}" ] ; then
+		DESTDIR="${1}"
+	else
+		echo "Destination directory not found."
+		exit 65
+	fi
+
+	mkdir -p ${SCRATCHDIR}/download
+	mkdir -p ${PATCHDIR}
+
+	VERSION="${2}"
+	find_mirror "evoke/${VERSION}/trackfile" "${TEMPDIR}/trackfile"
+	TRACKFILE="${TEMPDIR}/trackfile" OPTIONS="quiet trackfile_onlyrsa" verify
+	ERRORCODE="$?"
+
+	if [ "${ERRORCODE}" = 0 ] ; then
+		DEST_TRACKFILE="$(grep -a ^F: ${TEMPDIR}/trackfile)"
+	else
+		echo "Trackfile is corrupted"
+		exit "${ERRORCODE}"
+	fi
+
+	DEST_TRACKFILE="$(grep -a ^F: ${TEMPDIR}/trackfile)"
+	mkdir -p "${DESTDIR}/evoke/"
+	cd "${DESTDIR}/evoke/"
+
+	VERSIONLIST="$(for version in $(echo */*/trackfile) 
+	do
+		case "${version}" in
+			misc/*)
+			;;
+			\*/\*/trackfile)
+				echo "error"
+			;;
+			*)
+				echo "$(stat -f '%m' "${version}"):$(dirname ${version})"
+			;;
+		esac
+	done | sort -r | head -n 7 | cut -d : -f 2)"
+
+	# Let's find out how many bytes we have to download.
+	BYTECOUNT="$(echo "${DEST_TRACKFILE}" | awk -F ":" '{ SUM += $4; } END { print SUM; }')"
+	TOTALSIZE="$(blocksize "${BYTECOUNT}")"
+	if [ "${VERBOSE}" = "NO" ] ; then
+		echo "The update utility will attempt to keep the total size of files downloaded to a"
+		echo "minimum, where possible."
+		echo ""
+		echo "In the worst case, update will download ${BYTECOUNT} bytes (~ ${TOTALSIZE})"
+		read -p "Continue? [Y/n]: " PROMPT
+	else
+		PROMPT="y"
+	fi
+	case "${PROMPT}" in
+		[nN])
+		;;
+		*)
+			# No reference points? Just fetch!
+			if [ "${VERSIONLIST}" = "error" ] ; then
+				for filespec in ${DEST_TRACKFILE}
+				do
+					unset RETVAL
+					cd "${DESTDIR}/evoke/"
+
+					vecho "Starting ${FILENAME} \{\n"
+					vecho "\tFetching full files \{\n"
+
+					SIZE="$(echo "${filespec}" | cut -d ":" -f 4)"
+					HASH="$(echo "${filespec}" | cut -d ":" -f 3)"
+					FILENAME="$(echo "${filespec}" | cut -d ":" -f 2)"
+					PDESTDIR="${STAGEDIR}/$(dirname ${FILENAME})"
+					BASENAME="$(basename ${FILENAME})"
+					mkdir -p "${PDESTDIR}"
+					vecho "\tHASH=${HASH}\n"
+					vecho "\tFILENAME=${FILENAME}\n"
+					vecho "\tPDESTDIR=${PDESTDIR}\n"
+					vecho "\tBASENAME=${BASENAME}\n"
+
+
+					RETVAL="$(fetch_full_file "${HASH}" "${FILENAME}" "${PDESTDIR}" "${BASENAME}" "${SIZE}")"
+
+					if [ "${RETVAL}" != "0" ] ; then
+						unset RETVAL
+						echo "File corrupted in transit, bailing out"
+						exit 65
+					else
+						unset RETVAL
+					fi
+				done
+			else
+				for filespec in ${DEST_TRACKFILE}
+				do
+
+					unset RETVAL
+					cd "${DESTDIR}/evoke/"
+					# let's see if HASH matches any already existing file.
+
+					SIZE="$(echo "${filespec}" | cut -d ":" -f 4)"
+					HASH="$(echo "${filespec}" | cut -d ":" -f 3)"
+					FILENAME="$(echo "${filespec}" | cut -d ":" -f 2)"
+					PDESTDIR="${STAGEDIR}/$(dirname ${FILENAME})"
+					BASENAME="$(basename ${FILENAME})"
+					PPATCHDIR="${PATCHDIR}/${HASH}"
+					mkdir -p "${PPATCHDIR}"
+					mkdir -p "${PDESTDIR}"
+					vecho "Starting ${FILENAME} \{\n"
+					vecho "\tChecking existing files \{\n"
+
+					for version in ${VERSIONLIST}
+					do
+						MATCHED_LINE="$(grep -a ^F: "${DESTDIR}/evoke/${version}/trackfile" | grep ${HASH})"
+						if [ "${MATCHED_LINE}" != "" ] ; then
+							SFILENAME="$(echo ${MATCHED_LINE} | cut -d ":" -f 2)"
+							FILEPATH="${DESTDIR}/evoke/${version}/${SFILENAME}"
+							vecho "\t\t${FILEPATH} {\n"
+							cat "${FILEPATH}" | piper "${FILENAME}" "${SIZE}" >${STAGEDIR}/${FILENAME}
+							sh -c "cd ${STAGEDIR} && TRACKFILE="${TEMPDIR}/trackfile" OPTIONS="quiet" verify "${FILENAME}""
+							RETVAL=$?
+							if [ "${RETVAL}" = "0" ] ; then
+								vecho "\t\t\t$Verification passed\n\t\t}\n"
+								break
+							else
+								vecho "\t\t\tVerification failed\n\t\t}\n"
+	
+							fi
+						fi
+					done
+	
+					vecho "\t}\n"
+					if [ "${RETVAL}" = "0" ] ; then
+						unset RETVAL
+						vecho "}\n"
+						continue
+					else
+						unset RETVAL
+					fi
+					case "${EVOKE_UPDATE_BDIFF}" in
+						[Nn][Oo])
+						;;
+						*)
+							vecho "\tGrabbing patches {\n"
+							cd "${PPATCHDIR}"
+							getfile "evoke/misc/BIN-UPDATES/${VERSION}/${HASH}/trackfile" "trackfile" 2>/dev/null 
+				                        TRACKFILE="${PPATCHDIR}/trackfile" OPTIONS="quiet" verify 2>/dev/null
+				                        TRETVAL=$?
+        		        		        if [ "${TRETVAL}" = "65" ] ; then
+								PTRACKFILE="$(grep -a ^F: ${PPATCHDIR}/trackfile | sort -t : -k 4 | cut -d : -f 2)"
+	
+								HASHLIST="$(for hash in ${PTRACKFILE}
+								do
+									for version in ${VERSIONLIST}
+									do
+										FILEHASH="$(grep -a ^F: ${DESTDIR}/evoke/${version}/trackfile | cut -d : -f 3 | grep ${hash})"
+										if [ "${FILEHASH}" != "" ] ; then
+											echo "evoke/misc/BIN-UPDATES/${VERSION}/${HASH}/${hash}" 
+										fi
+									done
+								done)"
+
+								if [ "${HASHLIST}" != "" ] ; then
+									for hash in ${HASHLIST}
+									do
+										realhash="$(basename ${hash})"
+										vecho "\t\tFetching ${realhash} {\n"
+										getfile "${hash}" "${FILENAME}"
+										if [ -f "${realhash}" ] ; then
+											vecho "\t\t\tFile exists: ${realhash}\n"
+											FILE="$(grep -Ha ^F: ${DESTDIR}/evoke/*/*/trackfile | grep ${realhash} | awk -F : '{ FILENAME=$3; "dirname " $1 | getline; print $0 "/" FILENAME; }' | head -n 1)"
+											RETVAL="$(apply_patch "${realhash}" "${FILE}" "${PDESTDIR}/${BASENAME}" "${realhash}" "${HASH}")"
+											if [ "${RETVAL}" = "0" ] ; then
+												vecho "\t\t\tPatch applied successfully: ${realhash}\n"
+												vecho "\t\t}\n"
+												break
+											else
+												vecho "\t\t\tPatch did not apply: ${realhash}\n"
+												vecho "\t\t}\n"
+											fi
+										else
+											vecho "\t\t\tFile doesn't exist: ${realhash}\n"
+											vecho "\t\t}\n"
+										fi
+									done
+								fi
+
+								vecho "\t}\n"
+							fi
+							if [ "${RETVAL}" = "0" ] ; then
+								unset RETVAL
+								vecho "}\n"
+								continue
+							else
+								unset RETVAL
+							fi
+						;;
+					esac
+
+					vecho "\tGrabbing full file {\n"
+					# Ok, fall back on grabbing the file.
+					RETVAL="$(fetch_full_file "${HASH}" "${FILENAME}" "${PDESTDIR}" "${BASENAME}" "${SIZE}")"
+	
+					vecho "\t}\n"
+					if [ "${RETVAL}" != "0" ] ; then
+						unset RETVAL
+						echo "File corrupted in transit, bailing out"
+						exit 65
+					else
+						unset RETVAL
+					fi
+					vecho "}\n"
+				done
+			fi
+			cd "${STAGEDIR}"
+
+			FILELIST="$(echo ${DEST_TRACKFILE} | cut -d : -f 2)"
+			mv "${TEMPDIR}/trackfile" "${STAGEDIR}/"
+			TRACKFILE="${STAGEDIR}/trackfile" OPTIONS="quiet" verify ${FILELIST}
+			RETVAL=$?
+			if [ "${RETVAL}" != "0" ] ; then
+				unset RETVAL
+				echo "The trackfile is incomplete"
+				exit 65
+			else
+				unset RETVAL
+			fi
+			mkdir -p "${DESTDIR}/evoke/${VERSION}"
+			tar -cf - * | tar -xpf - -C "${DESTDIR}/evoke/${VERSION}" 2>${DEVICES}/null
+			# run verify, but this time, let it write the extended attribute out.
+			cd "${DESTDIR}/evoke/${VERSION}"
+			unset TRACKFILE
+			OPTIONS="write" verify *
+			PATCHSIZE="$(blocksize $(("$(du -d 0 ${PATCHDIR} | awk '{ print $1 }')" * "512")))"
+			DOWNLOADSIZE="$(blocksize $(("$(du -d 0 ${SCRATCHDIR}/download | awk '{ print $1 }')" * "512")))"
+			echo "Size of complete files downloaded: ${DOWNLOADSIZE}"
+			echo "Size of patch files downloaded: ${PATCHSIZE}"
+			echo "Total Size of the release: ${TOTALSIZE}"
+			rm -r ${SCRATCHDIR}/download
+			rm -r ${PATCHDIR}
+		;;
+	esac
+}
+
+fetch_full_file() {
+	local HASH="${1}"
+	local FILENAME="${2}"
+	local PDESTDIR="${3}"
+	local BASENAME="${4}"
+	local SIZE="${5}"
+	
+	local PDOWNDIR="${DOWNDIR}/${HASH}"
+	mkdir -p "${PDOWNDIR}"
+
+	cd "${PDOWNDIR}"
+	vecho "\t\tFetching ${FILENAME} {\n" 1>&2
+	getfile "evoke/${VERSION}/${FILENAME}" "${FILENAME}" "${SIZE}"
+
+	cp "${BASENAME}" "${PDESTDIR}/"
+	cd "${STAGEDIR}"
+
+	TRACKFILE="${TEMPDIR}/trackfile" OPTIONS="quiet" verify "${FILENAME}"
+	local ERRORCODE="$?"
+	if [ "${ERRORCODE}" = "0" ] ; then
+		vecho "\t\t\tFile fetched successfully\n" 1>&2
+	else
+		vecho "\t\t\tError! file not found.\n" 1>&2
+	fi
+	vecho "\t\t}\n" 1>&2
+
+	echo "${ERRORCODE}"
+}
+
+
+find_mirror() {
+	FILENAME="${1}"
+	OUTFILENAME="${2}"
+	cd ${TEMPDIR}
+	local RETVAL=0
+	file="$(basename "${FILENAME}")"
+	for mirrorurl in $(sed -e 's/#.*$//g' ${TEMPDIR}/mirrorlist)
+	do
+		vecho "Grabbing file ${FILENAME} \(${file}\) from ${mirrorurl} {\n"
+		protocol="$(echo "${mirrorurl}" | cut -d ":" -f 1)"
+		case "${protocol}" in
+			http)
+				server="$(echo "${mirrorurl}" | sed 's_http://__g' | cut -d "/" -f 1)"
+				filespec="/$(echo "${mirrorurl}" | sed 's_http://__g' | cut -d "/" -f 2-200)"
+				rfilespec="${filespec}/${FILENAME}"
+				fetch -q "http://${server}/${rfilespec}" 2>${DEVICES}/null
+				if [ -r "${file}" ] ; then
+					vecho "\tpassed\n"
+					vecho "}\n"
+					RETVAL="0"
+					PROTOCOL="http"
+					SERVER="${server}"
+					FILESPEC="${filespec}"
+					break
+				else
+					vecho "\tfailed\n"
+					vecho "}\n"
+					RETVAL="65"
+				fi
+			;;
+			ftp)
+				server="$(echo "${mirrorurl}" | sed 's_ftp://__g' | cut -d "/" -f 1)"
+				filespec="/$(echo "${mirrorurl}" | sed 's_ftp://__g' | cut -d "/" -f 2-200)"
+				rfilespec="${filespec}/${FILENAME}"
+				fetch -q "ftp://${server}/${rfilespec}" 2>${DEVICES}/null
+				if [ -r "${file}" ] ; then
+					vecho "\tpassed\n"
+					vecho "}\n"
+					RETVAL="0"
+					PROTOCOL="ftp"
+					SERVER="${server}"
+					FILESPEC="${filespec}"
+					break
+				else
+					vecho "\tfailed\n"
+					vecho "}\n"
+					RETVAL="65"
+				fi
+			;;
+			tftp)
+				server="$(echo "${mirrorurl}" | sed 's_tftp://__g' | cut -d "/" -f 1)"
+				filespec="/$(echo "${mirrorurl}" | sed 's_tftp://__g' | cut -d "/" -f 2-200)"
+				rfilespec="${filespec}/${FILENAME}"
+				printf "binary\nget ${rfilespec}\n" | tftp "${server}" 2>${DEVICES}/null >${DEVICES}/null
+				filesize="$(stat -f '%z' ${file})"
+				if [ "${filesize}" -gt "0" ] ; then
+					vecho "\tpassed\n"
+					vecho "}\n"
+					RETVAL="0"
+					PROTOCOL="tftp"
+					SERVER="${server}"
+					FILESPEC="${filespec}"
+					break
+				else
+					vecho "\tfailed\n"
+					vecho "}\n"
+					RETVAL="65"
+				fi
+			;;
+			*)
+				MIRROR_MOUNTPOINT="${EVOKE_MNTDIR}/$(dd if=/dev/random bs=4m count=1 2>${DEVICES}/null | sha256 -q)"
+				mkdir -p "${MIRROR_MOUNTPOINT}"
+				OPTIONS="readonly" mounter "${mirrorurl}" "${MIRROR_MOUNTPOINT}"
+				M_ERRORCODE="${?}"
+				if [ "${M_ERRORCODE}" = "0" ] ; then
+					if [ -r "${MIRROR_MOUNTPOINT}/${FILENAME}" ] ; then
+						vecho "\tpassed\n"
+						vecho "}\n"
+
+						RETVAL="0"
+						PROTOCOL="${protocol}"
+						cp "${MIRROR_MOUNTPOINT}/${FILENAME}" "${file}"
+						break
+					else
+						vecho "\tmounter fallback: failed\n"
+						vecho "\n}"
+						mounter unmount "${MIRROR_MOUNTPOINT}"
+						RETVAL="65"
+					fi
+				else
+					RETVAL="65"
+				fi
+			;;
+		esac
+	done
+
+	if [ "${RETVAL}" = "0" ] ; then
+		if [ "${TEMPDIR}/${file}" != "${OUTFILENAME}" ] ; then
+			mv "${file}" "${OUTFILENAME}"
+		fi
+	else
+		echo "No usable mirrors found. Bailing out."
+		RETVAL="65"
+	fi
+	return "${RETVAL}"
+}
+
+vecho() {
+	if [ "${VERBOSE}" = "YES" ] ; then
+		printf "$@"
+	fi
+}
+
+
+piper() {
+	if [ "${USE_PV}" = "yes" ] ; then
+		if [ "${2}" = "" ] ; then
+			pv --name "${1}"
+		else
+			pv -s "${2}" --name "${1}"
+		fi
+	else
+		echo "Fetching ${1}" 1>&2
+		dd 2>/dev/null
+	fi
+}
+
+# Wrapper, as our main mirror doesn't support wdfs, so we have to fall back to fetch
+
+getfile() {
+
+	filename="$(basename "${1}")"
+	realfile="${2}"
+	size="${3}"
+
+	case "${PROTOCOL}" in
+		http)
+			fetch -q -o - "http://${SERVER}/${FILESPEC}/${1}" 2>${DEVICES}/null | piper "${realfile}" "${size}" >${filename}
+		;;
+		ftp)
+			fetch -q -o - "ftp://${SERVER}/${FILESPEC}/${1}" 2>${DEVICES}/null | piper "${realfile}" "${size}" >${filename}
+		;;
+		tftp)
+			printf "binary\nget ${FILESPEC}/${1}\n" | tftp "${SERVER}" 2>${DEVICES}/null >${DEVICES}/null
+		;;
+		*)
+			if [ -r "${MIRROR_MOUNTPOINT}/${1}" ] ; then
+				RETVAL="0"
+				cat "${MIRROR_MOUNTPOINT}/${1}" 2>${DEVICES}/null | piper "${realfile}" "${size}" >${filename}
+			fi
+			
+		;;
+	esac
+
+	filesize="$(stat -f '%z' ${filename} 2>/dev/null)"
+
+	if [ "${filesize}" = "0" ] ; then
+		rm "${filename}"
+	fi
+}
+
+
+# Unmount the mirror.
+
+unmount_mirror() {
+
+	case "${PROTOCOL}" in
+		http)
+		;;
+		tftp)
+		;;
+		*)
+			mounter unmount "${MIRROR_MOUNTPOINT}"
+			rmdir "${MIRROR_MOUNTPOINT}" 2>${DEVICES}/null
+		;;
+	esac
+}
+
+list_versions() {
+	cd "${1}"
+	for version in $(echo */*)
+	do
+		case "${version}" in 
+			misc*)
+			;;
+			*)
+				echo ${version}
+			;;
+		esac
+	done | sort -r
+}
+
+activater() {
+	local PREVDIR="$(pwd)"
+	local PDESTDIR="${1}"
+	local LDESTDIR="${1}/evoke"
+	if [ -f "${LDESTDIR}/${2}/trackfile" ] ; then
+		local VERSION="${2}"
+	fi
+
+	if [ ! -d "${LDESTDIR}" ] ; then
+		echo "No evoke directory found"
+		return 65
+	fi
+
+	while [ 1 != 2 ]
+	do
+		VERSIONLIST="$(list_versions ${LDESTDIR})"
+		if [ "${VERSIONLIST}" = "*/*" -o "${VERSIONLIST}" = "" ] ; then
+			echo "No versions found"
+			return 65
+		else
+			if [ -f "${PDESTDIR}/boot/loader" ] ; then
+				VERSIONLIST="$(printf "${VERSIONLIST}\nFreeBSD/PCBSD/DesktopBSD")"
+			fi
+			if [ "${VERSION}" = "" ] ; then
+				VERSION="$(menu "Available Versions" "${VERSIONLIST}" "$(printf "o:Options\nb:Back")")"
+			fi
+			if [ "${VERSION}" != "" ] ; then
+				case "${VERSION}" in
+					Back)
+						break
+					;;
+					Options)
+						option_menu
+					;;
+					FreeBSD*)
+						echo "/boot/loader" >${PDESTDIR}/boot.config
+					;;
+					*)
+						if [ -f "${LDESTDIR}/${VERSION}/trackfile" ] ; then
+							cd "${LDESTDIR}/${VERSION}"
+							KERNELS="$(for name in FreeBSD/*/*/loader OpenBSD/*/* Darwin/*/* NetBSD/*/* DragonFly/*/* Haiku/*/*
+									do
+										case "${name}" in
+											*/\*/\*/loader)
+											;;
+											*/\*/\*)
+											;;
+											*)
+												echo "${name}"
+											;;
+										esac
+									done | awk -F "/" '{ print $1 " " $2 "/" $3; }')"
+							if [ "${KERNELS}" != "" ] ; then
+								NUMKERN="$(echo "${KERNELS}" | wc -l | awk '{ print $1; }')"
+								if [ "${NUMKERN}" = "1" ] ; then
+									KERNEL="${KERNELS}"
+								else
+									KERNEL="$(menu "Kernels" "${KERNELS}" "b:Back")"
+								fi
+								if [ "${KERNEL}" != "" ] ; then
+									case "${KERNEL}" in
+										Back)
+										;;
+										FreeBSD*)
+											BOOTFILE="$(echo "${KERNEL}/loader" | sed 's@\ @/@g')"
+										;;
+									esac
+									BOOTFILE="/evoke/${VERSION}/${BOOTFILE}"
+									echo "${BOOTFILE}" >${PDESTDIR}/boot.config
+									echo ""
+									echo "${VERSION} Activated."
+									echo ""
+									read -p "Press any key to continue " PROMPT
+									break
+								fi
+							fi
+						fi
+					;;
+				esac
+			fi
+		fi
+	done
+	cd "${PREVDIR}"
+}
+
+create_updates () {
+	if [ "${1}" = "" ] ; then
+		echo "Error: No version set"
+		exit 5
+	fi
+
+	DEST="${1}"
+
+	shift
+
+	DESTDIR="${1}"
+
+
+	if [ -d "${PATCHDIR}" ] ; then
+		rm -r "${PATCHDIR}"
+	fi
+
+	BINUPDIR="${RELEASEDIR}/evoke/misc/BIN-UPDATES"
+	mkdir -p "${BINUPDIR}"
+	DECOMDIR="${STAGEDIR}/decom"
+	mkdir -p "${DECOMDIR}"
+	TESTDIR="${STAGEDIR}/test"
+	mkdir -p "${TESTDIR}"
+	PATCHDIR="${STAGEDIR}/patch"
+	mkdir -p "${PATCHDIR}"
+
+
+	if [ ! -f "${DESTDIR}/trackfile" ] ; then
+		echo "Destination does not exist"
+		exit 3
+	else
+		cd "${DESTDIR}"
+		OPTIONS="quiet" TRACKFILE="${DESTDIR}/trackfile" verify
+		ERRORCODE="$?"
+		if [ "${ERRORCODE}" = "0" ] ; then
+			DEST_TRACKFILE="$(grep -a ^F: ${DESTDIR}/trackfile)"
+		else
+			echo "Destination Integrity check failed"
+			exit 3
+		fi
+	fi
+
+	shift
+
+
+	if [ "${1}" != "" ] ; then
+		while [ "${1}" != "" ] 
+		do
+			SOURCE="${1}"
+			SOURCEDIR="${RELEASEDIR}/evoke/${SOURCE}"
+			if [ ! -f "${SOURCEDIR}/trackfile" ] ; then
+				echo "Source does not exist"
+			else
+				cd "${SOURCEDIR}"
+				OPTIONS="quiet" TRACKFILE="${SOURCEDIR}/trackfile" verify
+				ERRORCODE="$?"
+				if [ "${ERRORCODE}" = "0" ] ; then
+					SOURCE_TRACKFILE="$(grep -a ^F: ${SOURCEDIR}/trackfile)"
+				else
+					echo "Source Integrity check failed"
+					break
+				fi
+				IFS="${FORFS}"
+				for filespec in ${DEST_TRACKFILE}
+				do
+					FILENAME="$(echo "${filespec}" | cut -d : -f 2)"
+					DESTHASH="$(echo "${filespec}" | cut -d : -f 3)"
+					DESTSIZE="$(echo "${filespec}" | cut -d : -f 4)"
+					DESTFILE="${DESTDIR}/${FILENAME}"
+					
+					SOURCE_FILESPEC_LIST="$(echo "${SOURCE_TRACKFILE}" | grep "^F:${FILENAME}")"
+	
+					for source_filespec in ${SOURCE_FILESPEC_LIST}
+					do
+						SOURCEFILE="${SOURCEDIR}/$(echo "${source_filespec}" | cut -d ":" -f 2)"
+						SOURCEHASH="$(echo "${source_filespec}" | cut -d ":" -f 3)"
+						if [ -f "${SOURCEFILE}" ] ; then
+							REALHASH="$(sha256 -q "${SOURCEFILE}")"
+							if [ "${REALHASH}" = "${SOURCEHASH}" ] ; then
+								case "${SOURCEFILE}" in
+									*.gz)
+										mkdir -p "${DECOMDIR}"
+										gunzip -9nc "${SOURCEFILE}" >"${DECOMDIR}/${SOURCEHASH}"
+										RFILE="${DECOMDIR}/${SOURCEHASH}"
+									;;
+									*)
+										RFILE="${SOURCEFILE}"
+									;;
+								esac
+		
+								case "${DESTFILE}" in
+									*.gz)
+										mkdir -p "${DECOMDIR}"
+										gunzip -9nc "${DESTFILE}" >"${DECOMDIR}/${DESTHASH}"
+										DFILE="${DECOMDIR}/${DESTHASH}"
+									;;
+									*)
+										DFILE="${DESTFILE}"
+									;;
+								esac
+		
+								PATCHFILE="${PATCHDIR}/${DESTHASH}/${SOURCEHASH}"
+								mkdir -p ${PATCHDIR}/${DESTHASH}/
+								echo "Generating ${SOURCEFILE} -> ${DESTFILE}"
+								bsdiff "${RFILE}" "${DFILE}" "${PATCHFILE}"
+								PATCHSIZE="$(stat -f '%z' ${PATCHFILE})"
+								if [ "${PATCHSIZE}" -ge "${DESTSIZE}" ] ; then
+									rm "${PATCHFILE}"
+								else
+									mkdir -p "${TESTDIR}"
+									bspatch "${RFILE}" "${TESTDIR}/${DESTHASH}" "${PATCHFILE}"	
+									case "${DESTFILE}" in
+										*.gz)
+											mkdir -p "${DECOMDIR}"
+											rm "${TESTDIR}/${DESTHASH}.gz" 2>/dev/null 1>/dev/null	
+											gzip -9nc "${TESTDIR}/${DESTHASH}" >"${TESTDIR}/${DESTHASH}.gz"
+											mv "${TESTDIR}/${DESTHASH}.gz" "${TESTDIR}/${DESTHASH}"
+										;;
+										*.bz2)
+										;;
+										*)
+										RFILE="${FILENAME}"
+										;;
+									esac
+									REALHASH="$(sha256 -q "${TESTDIR}/${DESTHASH}")"
+									if [ "${REALHASH}" != "${DESTHASH}" ] ; then
+										echo "Patch failed"
+										exit 4
+									fi
+								fi
+							fi
+						fi
+					done
+				done
+			fi
+			IFS="${OLDFS}"
+			shift
+		done
+
+		# Generate a trackfile for supporting http without webdav, and tftp.
+
+		for filespec in ${DEST_TRACKFILE}
+		do
+			DESTHASH="$(echo "${filespec}" | cut -d : -f 3)"
+			DESTPATH="${PATCHDIR}/${DESTHASH}"
+			if [ -d "${DESTPATH}" ] ; then
+				cd "${DESTPATH}"
+				HASHFILELIST="$(echo *)"
+				if [ "${HASHFILELIST}" != "" -a "${HASHFILELIST}" != "*" ] ; then
+					OPTIONS="write quiet" TRACKFILE="${TESTDIR}/${DESTHASH}" verify ${HASHFILELIST}
+					mv ${TESTDIR}/${DESTHASH} ${DESTPATH}/trackfile
+				fi
+			fi
+		done
+
+		mkdir -p "${BINUPDIR}/${DEST}"
+		cd "${PATCHDIR}" && tar -cf - * | tar -xvpf - -C "${BINUPDIR}/${DEST}" 2>/dev/null >/dev/null
+	fi
+}
+choose_boot() {
+	BOOTFS="$(mounter search tag=boot | cut -d : -f 2-100)"
+	if [ "${BOOTFS}" != "" ] ; then
+		local CHOICE=$(menu "Boot filesystem" "${BOOTFS}" "q:Quit")
+		if [ "${CHOICE}" != "" ] ; then
+			case "${CHOICE}" in
+				Quit)
+					echo "No destination directory specified!"
+					GLOBAL_ERRORCODE="65"
+					return
+				;;
+				*)
+					echo "${CHOICE}"
+				;;
+			esac
+		else
+			echo "No destination directory specified!"
+			GLOBAL_ERRORCODE="65"
+			return
+		fi
+	else
+		echo "Bootable filesystems not found."
+		GLOBAL_ERRORCODE="65"
+		return
+	fi
+}
+
+update_menu() {
+	if [ "${1}" != "" ] ; then
+		local DESTDIR="${1}"
+	fi
+
+	if [ ! -d "${DESTDIR}" ] ; then
+		if [ -c "${DEVICES}/ufs/${BOOTHASH}" ] ; then
+			BOOTDEVICE="ufs/${BOOTHASH}"
+		else
+			BOOTDEVICE="$(choose_boot)"
+			if [ "${BOOTDEVICE}" = "" ] ; then
+				return
+			fi
+		fi
+
+		local DESTDIR="${EVOKE_MNTDIR}/$(dd if=/dev/random bs=4m count=1 2>/dev/null | sha256 -q)"
+		mkdir -p "${DESTDIR}"
+		mounter "boot-ufs:${BOOTDEVICE}" "${DESTDIR}"
+		DESTDIR_IS_MOUNTED="yes"
+
+	fi
+
+	. $(command -v menu)
+	while [ 1 != 2 ]
+	do
+		clear
+		OPTION="$(menu "Evoke System Manager" "$(printf "Install New Version\nDeinstall Version\nSelect Media\nActivate")" "$(printf "o:Options\nq:Quit")")"
+		case "${OPTION}" in
+			Quit)
+				break
+			;;
+			Activate)
+				activater "${DESTDIR}"
+			;;
+			Options)
+				option_menu
+			;;
+			Install\ New\ Version)
+				revision_menu
+			;;
+			Deinstall\ Version)
+				deinstall_menu "${DESTDIR}"
+			;;
+			Select\ Media)
+				media_menu
+			;;
+		esac
+	done
+}
+
+deinstall_menu() {
+	LDESTDIR="${1}/evoke"
+	VERSIONLIST="$(list_versions ${LDESTDIR})"
+	while [ 1 != 2 ] 
+	do
+		clear
+		VERSION="$(menu "Available Versions" "${VERSIONLIST}" "$(printf "o:Options\nb:Back")")"
+		case "${VERSION}" in
+			Back)
+				break
+			;;
+			Options)
+				option_menu
+			;;
+			*)
+				if [ -f "${LDESTDIR}/${VERSION}/trackfile" ] ; then
+					read -p "Are you sure you want to remove ${VERSION}? [y/N]: " RESPONSE
+					case "${RESPONSE}" in
+						[yY])
+							rm -r ${LDESTDIR}/${VERSION}
+							if [ -f "${LDESTDIR}/misc/versionlist" ] ; then
+								grep -v "${VERSION}" ${LDESTDIR}/misc/versionlist >${SCRATCHDIR}/versionlist
+								mv ${SCRATCHDIR}/versionlist ${LDESTDIR}/misc/versionlist
+							fi
+						;;
+					esac
+					break
+				fi
+			;;
+		esac
+	done
+}
+
+media_menu() {
+	while [ 1 != 2 ]
+	do
+		clear
+
+		MEDIALIST="$(case ${EVOKE_BOOT_MODE} in
+			cdboot)
+				echo "CD/DVD ROM"
+			;;
+			pxeboot)
+				echo "Local Boot Server"
+			;;
+		esac
+
+		if [ "${EVOKE_UPDATE_MIRROR}" != "" ] ; then
+			echo "Local Site"
+		fi
+
+		echo "Official Site"
+		echo "Other"
+
+		)"
+
+		MEDIA="$(menu "Mirrors" "${MEDIALIST}" "$(printf "o:Options\nb:Back")")"
+		case "${MEDIA}" in
+			Back)
+				break
+			;;
+			Options)
+				option_menu
+			;;
+			Other)
+				while [ 1 != 2 ]
+				do
+					echo "Please type in the full URL for the source."
+					echo "ex. "
+					echo ""
+					echo "	* http://www.damnsmallbsd.org/pub/"
+					echo "	* tftp://192.168.1.1/"
+					echo "	* ufs:/dev/ad0s1a"
+					echo "	* 9p://172.16.1.1/"
+					echo "	* cd9660:cd0"
+					echo ""
+					read -p "URL: " URL
+					case "${URL}" in
+						*:*)
+							echo "${URL}" >${TEMPDIR}/mirrorlist
+							break 2
+						;;
+						Back)
+							break
+						;;
+						*)
+							echo "Invalid URL" 
+							read -p "Press any key to continue" NULL
+						;;
+					esac
+				done
+			;;
+			Local\ Site)
+				echo "${EVOKE_UPDATE_MIRROR}" >${TEMPDIR}/mirrorlist
+				break
+			;;
+			Local\ Boot\ Server)
+				echo "tftp://${EVOKE_BOOT_SERVER}/" >${TEMPDIR}/mirrorlist
+				break
+			;;
+			CD/DVD\ ROM)
+				clear
+				CHOICE="$(menu "CD Drives" "$(mounter list cd9660)" "$(printf "b:Back")")"
+				if [ "${CHOICE}" != "Back" ] ; then
+					if [ "$(mounter list cd9660 | grep "${CHOICE}")" = "" ] ; then
+						echo "Drive not found!"
+					else
+						echo "cd9660:${CHOICE}" >${TEMPDIR}/mirrorlist
+						break
+					fi
+				fi
+			;;
+			Official\ Site)
+				MOUNTER_EVOKE_LIST="$(mounter search tag=evoke)"
+				if [ "${MOUNTER_EVOKE_LIST}" = "" ] ; then
+					cd ${TEMPDIR}
+					fetch -q http://evoke.googlecode.com/svn/info/mirrorlist 2>${DEVICES}/null
+					if [ ! -f mirrorlist ] ; then
+						echo "Unable to fetch mirrorlist, Network connection down?"
+					else
+						break
+					fi
+				else
+					echo "${MOUNTER_EVOKE_LIST}" >${TEMPDIR}/mirrorlist
+					break
+				fi
+			;;
+		esac
+	done
+}
+
+option_menu() {
+	while [ 1 != 2 ]
+	do
+		clear
+
+		OPTIONLIST="$(
+		case ${EVOKE_UPDATE_BDIFF} in
+			[nN][oO])
+				echo "Enable binary patches"
+			;;
+			*)
+				echo "Disable binary patches"
+			;;
+		esac
+		case ${EVOKE_UPDATE_DEVELOPMENT} in
+			[nN][oO])
+				echo "View all available versions"
+			;;
+			*)
+				echo "Hide development versions"
+			;;
+		esac
+		)"
+
+		MEDIA="$(menu "Options" "${OPTIONLIST}" "$(printf "b:Back")")"
+		case "${MEDIA}" in
+			Back)
+				break
+			;;
+			Enable\ binary\ patches)
+				EVOKE_UPDATE_BDIFF="yes"
+				break
+			;;
+			Disable\ binary\ patches)
+				EVOKE_UPDATE_BDIFF="no"
+				break
+			;;
+			Hide\ development\ versions)
+				EVOKE_UPDATE_DEVELOPMENT="no"
+				break
+			;;
+			View\ all\ available\ versions)
+				EVOKE_UPDATE_DEVELOPMENT="yes"
+				break
+			;;
+		esac
+	done
+}
+
+revision_menu () {
+	if [ ! -f "${TEMPDIR}/mirrorlist" ] ; then
+		media_menu
+	fi
+
+	rm ${TEMPDIR}/versionlist 2>${DEVICES}/null
+	find_mirror "evoke/misc/versionlist" "${TEMPDIR}/versionlist"
+	RETURN=$?
+	if [ "${RETURN}" = "0" ] ; then
+		if [ -f "${TEMPDIR}/versionlist" ] ; then
+			while [ 1 != 2 ]
+			do
+				unset BRANCH
+				unset RESULT
+				unset REVISIONS
+				unset REVISION
+				clear
+				if [ "${EVOKE_UPDATE_DEVELOPMENT}" = "no" ] ; then
+					VERSIONS="$(cut -d "/" -f 1 ${TEMPDIR}/versionlist | sort -r | uniq | grep -v ^$ | grep -v HEAD)"
+				else
+					VERSIONS="$(cut -d "/" -f 1 ${TEMPDIR}/versionlist | sort -r | uniq | grep -v ^$)"
+				fi
+				BRANCH=$(menu "Branch" "${VERSIONS}" "$(printf "a:Activate\ns:Select Media\no:Options\nq:Quit")")
+				if [ "${BRANCH}" != "" ] ; then
+					case "${BRANCH}" in
+						Quit)
+							break
+						;;
+						Activate)
+							activater "${DESTDIR}"
+						;;
+						Options)
+							option_menu
+						;;
+						Select\ Media)
+							media_menu
+							rm ${TEMPDIR}/versionlist 2>${DEVICES}/null
+							find_mirror "evoke/misc/versionlist" "${TEMPDIR}/versionlist"
+						;;
+						*)
+							while [ 1 != 2 ]
+							do
+								unset RESULT
+								unset REVISIONS
+								unset REVISION
+
+								REVISIONS="$(awk -F "/" -v branch="${BRANCH}" '{ if ($1 == branch) { print $2; }; }' ${TEMPDIR}/versionlist | sort -r | grep -v ^$ | head -n 18)"
+								clear
+								REVISION=$(menu "Revision" "${REVISIONS}" "$(printf "a:Activate\ns:Select Media\no:Options\nb:Back\nq:Quit")")
+								if [ "${REVISION}" != "" ] ; then
+									case "${REVISION}" in
+										Quit)
+											break 2
+										;;
+										Activate)
+											activater "${DESTDIR}"
+											break
+										;;
+										Options)
+											option_menu
+											break
+										;;
+										Select\ Media)
+											media_menu
+											rm ${TEMPDIR}/versionlist 2>${DEVICES}/null
+											find_mirror "evoke/misc/versionlist" "${TEMPDIR}/versionlist"
+										;;
+
+										Back)
+											break
+										;;
+										*)
+											VERSION="${BRANCH}/${REVISION}"
+											real_update "${DESTDIR}" "${VERSION}"
+											if [ -d "${DESTDIR}/evoke/${VERSION}" ] ; then
+												if [ -f "${DESTDIR}/evoke/misc/versionlist" ] ; then
+													( cat "${DESTDIR}/evoke/misc/versionlist" ; echo "${VERSION}") | sort -r | uniq >"${SCRATCHDIR}/versiontest"
+													mv "${SCRATCHDIR}/versiontest" "${DESTDIR}/evoke/misc/versionlist"
+												else
+													mkdir -p ${DESTDIR}/evoke/misc
+													echo "${VERSION}" >>${DESTDIR}/evoke/misc/versionlist
+												fi
+
+												echo "Activate ${VERSION} now?"
+												read -p "[Y/n]: " PROMPT
+												case "${PROMPT}" in
+													[nN])
+													;;
+													*)	
+														activater "${DESTDIR}" "${VERSION}"
+													;;
+												esac
+											fi
+										;;
+									esac
+								else
+									echo "Revision not found! - Press any key to continue" 
+									read RESULT
+								fi
+							done
+						;;
+					esac
+				else
+					echo "Branch not found! - Press any key to continue" 
+					read RESULT
+				fi
+			done
+			cd ${PREVDIR}
+			unmount_mirror
+		fi
+	else
+	fi
+}
+
+update() {
+
+	PREVDIR="$(pwd)"
+
+	SCRATCHDIR="${TMPDIR}/update/$(dd if=/dev/random bs=4m count=1 2>${DEVICES}/null | sha256 -q)"
+	mkdir -p "${SCRATCHDIR}"
+	TEMPDIR="${SCRATCHDIR}/tmp"
+	mkdir -p "${TEMPDIR}"
+	STAGEDIR="${SCRATCHDIR}/stage"
+	mkdir -p "${STAGEDIR}"
+	PATCHDIR="${SCRATCHDIR}/patch"
+	mkdir -p "${PATCHDIR}"
+	DOWNDIR="${SCRATCHDIR}/download"
+	mkdir -p "${DOWNDIR}"
+
+	cd "${TEMPDIR}"
+
+	if [ "${EVOKE_UPDATE_MIRROR}" != "" ] ; then
+		echo "${EVOKE_UPDATE_MIRROR}" >${TEMPDIR}/mirrorlist
+	fi
+
+	case "${EVOKE_VERSION}" in
+		HEAD/*)
+			EVOKE_UPDATE_DEVELOPMENT="yes"
+		;;
+		*)
+			EVOKE_UPDATE_DEVELOPMENT="no"
+		;;
+	esac
+	VERBOSE="NO"
+
+	if [ "${OPTIONS}" != "" ] ; then
+		for option in ${OPTIONS}
+		do
+			case "${option}" in
+				verbose)
+					VERBOSE="YES"
+				;;
+				quiet)
+					VERBOSE="NO"
+				;;
+			esac
+		done
+	fi
+
+	case "${1}" in
+		[iI][nN][sS][tT][aA][lL][lL])
+			if [ "${3}" != "" ] ; then
+				real_update "${2}" "${3}" 2>&1
+			fi
+		;;
+		[aA][cC][tT][iI][vV][aA][tT][eE])
+			if [ -d "${2}" ] ; then
+				activater "${2}" "${3}"
+				GLOBAL_ERRORCODE="${?}"
+			else
+				FS="$(choose_boot)"
+				if [ "${FS}" = "" ] ; then
+					echo "Destination directory does not exist"
+					GLOBAL_ERRORCODE=65
+				else
+					local DESTDIR="${EVOKE_MNTDIR}/$(dd if=/dev/random bs=4m count=1 2>/dev/null | sha256 -q)"
+					mkdir -p "${DESTDIR}"
+					mounter "boot-ufs:${FS}" "${DESTDIR}"
+					activater "${DESTDIR}"
+					mounter "unmount" "${DESTDIR}"
+					rmdir "${DESTDIR}"
+				fi
+			fi
+		;;
+		[mM][eE][nN][uU])
+			update_menu "${2}"
+		;;
+		[cC][rR][eE][aA][tT][eE])
+			shift
+			create_updates "${@}"
+		;;
+		*)
+			update_menu "${1}"
+		;;
+	esac
+	cd "${PREVDIR}"
+	rm -r ${SCRATCHDIR}
+	unmount_mirror
+	exit "${GLOBAL_ERRORCODE}"
+}
+
+update $@
