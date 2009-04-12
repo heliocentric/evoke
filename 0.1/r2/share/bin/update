@@ -1072,7 +1072,6 @@ revision_menu () {
 	rm ${TEMPDIR}/versionlist 2>${DEVICES}/null
 	find_mirror "evoke/misc/versionlist" "${TEMPDIR}/versionlist"
 	RETURN=$?
-
 	if [ "${RETURN}" = "0" ] ; then
 		if [ -f "${TEMPDIR}/versionlist" ] ; then
 			while [ 1 != 2 ]
@@ -1139,8 +1138,7 @@ revision_menu () {
 										*)
 											VERSION="${BRANCH}/${REVISION}"
 											real_update "${DESTDIR}" "${VERSION}"
-											local RETVAL="${?}"
-											if [ "${RETVAL}" = "0" ] ; then
+											if [ -d "${DESTDIR}/evoke/${VERSION}" ] ; then
 												if [ -f "${DESTDIR}/evoke/misc/versionlist" ] ; then
 													( cat "${DESTDIR}/evoke/misc/versionlist" ; echo "${VERSION}") | sort -r | uniq >"${SCRATCHDIR}/versiontest"
 													mv "${SCRATCHDIR}/versiontest" "${DESTDIR}/evoke/misc/versionlist"
