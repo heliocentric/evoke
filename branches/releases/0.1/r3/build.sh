@@ -30,7 +30,7 @@ export i386_ACTIVE="7.1-RELEASE/i386"
 
 # Evoke Version
 export VERSION="0.1"
-export REVISION="r2"
+export REVISION="r3"
 
 # Release Engineer
 export ENGINEER="Dylan Cochran"
