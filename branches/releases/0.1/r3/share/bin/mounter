@@ -1,0 +1,1189 @@
+#!/bin/sh
+# Copyright 2007-2009 Dylan Cochran
+# All rights reserved
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted providing that the following conditions
+# are met:
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+# IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
+# DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+# STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
+# IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
+
+# $Id$
+
+# We pass options via environment variables, as it makes parsing things
+# simpler. Plus, spaces can be used explicitly.
+#
+
+if [ ! -c "${DEVICES}/null" ] ; then
+	if [ -c "/dev/null" ] ; then
+		DEVICES=/dev
+	else
+		echo "Error, no device nodes found"
+		exit 1
+	fi
+fi
+
+OLDFS=" 	
+"
+OURFS="
+"
+GEOMLIST="$(sysctl -b kern.geom.conftxt)"
+
+# Also, force noatime mounting, it's unnecessary.
+
+
+# XXX helio Protocols in need of implementation, we put them in MASKFS so mounter will throw an error on attempted use.
+
+MASKFS="nfs4 nfs smbfs zfs portalfs unionfs"
+
+
+# mexit is our wrapper for exit. prints a standard error message.
+
+mexit () {
+	echo_config
+	case "${1}" in
+		1)
+			# Use if ${M_HOST} is empty or unusable.
+			echo "No route to host"
+			exit 85
+		;;
+		2)
+			# Use if ${M_FILE} is empty or unusable.
+			echo "No such file or directory"
+			exit 2
+		;;
+		3)
+			# Use if ${M_DESTINATION} isn't set, or isn't a directory.
+			echo "Destination directory required"
+			exit 2
+		;;
+		4)
+			# Use if filesystem type isn't found.
+			echo "Inappropriate file type or format"
+			exit 79
+		;;
+		5)
+			# Use if argument list is empty
+			echo "Invalid Argument"
+			exit 22
+		;;
+		6)
+			# A command we ran external to this utility failed, abort.
+			echo "External command terminated abnormally"
+			exit 255
+		;;
+		7)
+			# Host is empty, but required. abort
+			echo "No route to host"
+			exit 65
+		;;
+		8)
+			# We can't use a proto with this type
+			echo "Operation not supported"
+			exit 45
+		;;
+		9)
+			# The device node doesn't exist, or isn't usable
+			echo "Device not configured"
+			exit 6
+		;;
+		10)
+			# Unable to fsck. Bail
+			echo "Filesystem unable to be cleaned. Bailing out."
+			exit 6
+		;;
+		0)
+			exit 0
+		;;
+		*)
+			echo "General Error" >&2
+			exit 255
+		;;
+	esac
+	# XXX helio an ISTRANSPORT check is needed here, and mdconfig/ggatec destruction should be implemented.
+}
+
+
+vecho() {
+	if [ "${VERBOSE}" = "YES" ] ; then
+		printf "$@"
+	fi
+}
+
+normal_fsck() {
+	FSCK_BIN="${1}"
+	DEVICE="${2}"
+
+	command -v "${FSCK_BIN}" >${DEVICES}/null 
+	vecho "${FSCK_BIN}\n"
+	vecho "${DEVICE}\n"
+
+	if [ "$?" != "127" ] ; then
+		vecho "${FSCK_BIN}" -p "${DEVICES}/${DEVICE}"
+		"${FSCK_BIN}" -p "${DEVICES}/${DEVICE}"
+		case $? in
+	                0)
+                        ;;
+	                2)
+	                        mexit 10
+                        ;;
+	                4)
+				mexit 10
+                        ;;
+	            	8)
+				echo "Simple filesystem cleaning failed."
+				echo "Would you like to do a force clean?"
+				read -p "[Y/n]: " ANSWER
+				case "${ANSWER}" in 
+					[nN])
+						mexit 11
+					;;
+					*)
+		                                "${FSCK_BIN}" -y "${DEVICES}/${DEVICE}"
+		                                case $? in
+			                                0)
+		                                        ;;
+			                                *)
+			                                        mexit 10
+        		                                ;;
+                		                esac
+					;;
+				esac
+			;;
+		esac
+	fi
+}
+
+# Echo configuration parameters if DEBUG is set.
+
+echo_config () {
+	if [ "${DEBUG}" != "" ] ; then
+		echo "options=${OPTIONS}"
+		echo "proto=${M_PROTO}"
+		echo "prototype=${M_PTYPE}"
+		echo "transport=${M_TRANSPORT}"
+		echo "type=${M_STYPE}"
+		echo "username=${M_USERNAME}"
+		echo "password=${M_PASSWORD}"
+		echo "host=${M_HOST}"
+		echo "port=${M_PORT}"
+		echo "file=${M_FILE}"
+		echo "mountpoint=${M_DESTINATION}"
+		echo "istransport=${ISTRANSPORT}"
+	fi
+}
+
+mounter () {
+	if [ "${1}" != "" ] ; then
+		# if a : is in the first argument, we treat it as a proto:source, rather then a command
+		if [ "$( echo ${1} | grep :)" != "" ] ; then
+
+			M_PROTO="$(echo "${1}" | cut -d : -f 1)"
+			M_SOURCE="$(echo "${1}" | cut -d : -f 2-60)"
+			echo_config
+
+			# If it's in the form proto+transport, set M_TRANSPORT first, then M_PROTO to the 'real' protocol.
+			
+			if [ "$( echo ${M_PROTO} | grep +)" != "" ] ; then
+				M_TRANSPORT="$(echo "${M_PROTO}" | cut -d + -f 2)"
+				M_PROTO="$(echo "${M_PROTO}" | cut -d + -f 1)"
+			fi
+
+			# If it's in the form tag-proto, set the environment variable to yes, then M_PROTO to the 'real' protocol.
+			
+			if [ "$( echo ${M_PROTO} | grep -)" != "" ] ; then
+				M_PROTO="$(echo "${M_PROTO}" | cut -d "-" -f 2)"
+				M_TAG="$(echo "${M_PROTO}" | cut -d "-" -f 1)"
+				case "${M_TAG}" in	
+					[bB][oO][oO][tT])
+						M_BOOTABLE="yes"
+					;;
+				esac
+			fi
+
+			# We handle four specifications:
+			# 	proto://URI
+			#	proto:/file/name
+			#	proto:geomname
+			#	proto:all
+
+			case "${M_SOURCE}" in
+				//*)
+					M_SOURCE="$(echo ${M_SOURCE} | cut -b 3-400 )"
+					M_STYPE="URI"
+
+					# Everything after the first / is treated as a file specification.
+					# This does cause things to blow up, particularly if your password contains 
+					# a /. Unfortunately, there is no way to handle this, yet.
+
+					if [ "$( echo ${M_SOURCE} | grep /)" != "" ] ; then
+						M_FILE="/$(echo ${M_SOURCE} | cut -d / -f 2-400)"
+						M_SOURCE="$(echo ${M_SOURCE} | cut -d / -f 1)"
+					fi
+
+					# Everything after the first @ is considered a host, before it, part of the 
+					# auth. This also breaks unusual passwords. Sorry.
+
+					if [ "$( echo ${M_SOURCE} | grep @)" != "" ] ; then
+						M_AUTH="$(echo ${M_SOURCE} | cut -d @ -f 1)"
+						if [ "$( echo ${M_AUTH} | grep :)" != "" ] ; then
+							M_USERNAME="$( echo ${M_AUTH} | cut -d : -f 1)"
+							M_PASSWORD="$( echo ${M_AUTH} | cut -d : -f 2)"
+						else
+							M_USERNAME="${M_AUTH}"
+						fi
+						unset M_AUTH
+						M_SOURCE="$(echo ${M_SOURCE} | cut -d @ -f 2)"
+					fi
+
+					# We need to check if it's an ipv6 address, or a hostname/ipv4 address, as 
+					# it changes how M_PORT is used (due to ipv6 notation using the : character)
+					# 
+					# ipv6 addresses use a [host]:port notation, everything else uses
+					# host:port
+
+					if [ "$( echo ${M_SOURCE} | cut -b 1)" = "[" ] ; then
+						M_HOST="$( echo ${M_SOURCE} | cut -d [ -f 2 | cut -d ] -f 1)"
+						M_PORT="$( echo ${M_SOURCE} | cut -d [ -f 2 | cut -d ] -f 2 | cut -d : -f 2 )"
+					else
+						if [ "$( echo ${M_SOURCE} | grep :)" != "" ] ; then
+							M_HOST="$( echo ${M_SOURCE} | cut -d : -f 1)"
+							M_PORT="$( echo ${M_SOURCE} | cut -d : -f 2)"
+						else
+							M_HOST="${M_SOURCE}"
+						fi
+					fi
+					unset M_SOURCE
+				;;
+				/*)
+					TYPE=$( stat -f "%HT" ${M_SOURCE})
+					case "${TYPE}" in
+						Directory)
+							M_STYPE="DIRECTORY"
+							M_FILE="${M_SOURCE}"
+						;;
+						Character*)
+						# XXX helio this needs to be filled out, we change the M_STYPE but not the M_FILE
+							M_STYPE="GEOM"
+							M_FILE=$(echo ${M_SOURCE} | sed "s@${DEVICES}/@@g")
+						;;
+						*)
+							M_STYPE="FILE"
+							M_FILE="${M_SOURCE}"
+						;;
+					esac
+				;;
+				[aA][lL][lL])
+					M_STYPE="ALL"
+				;;
+				*)
+					M_STYPE="GEOM"
+					M_FILE="${M_SOURCE}"
+				;;
+			esac
+			# shift it so that it is easier to deal with spaces in a destination directory.
+			shift
+
+			mount_proto "${*}"
+		else
+			mounter_command $@
+		fi 
+	else
+		mexit 5
+	fi
+}
+
+
+# Mount protocol wrapper; here we special case fuse and swap.
+# We also detect if a filesystem is 'native' via lsvfs
+# Only two MPTYPEs: NET and DEV
+
+mount_proto () {
+
+	# if it's not in list_proto, abort.
+	if [ "$(list_proto | grep ${M_PROTO})" = "" ] ; then
+		mexit 4
+	fi
+
+	# We check to see if it's either swap or dump, these two do not need a check for M_DESTINATION
+
+	case "${M_PROTO}" in
+		swap)
+			M_PTYPE="DEV"
+			prep_transport
+			if [ "${M_STYPE}" = "GEOM" ] ; then
+				if [ "${M_FILE}" != "" ] ; then
+					if [ "${@}" = "enc" ] ; then
+						geli onetime -d "${DEVICES}/${M_FILE}" && swapon ${DEVICES}/${M_FILE}.eli
+					else
+						swapon ${DEVICES}/${M_FILE}
+					fi
+				else
+					mexit 2
+				fi
+			else
+				mexit 8
+			fi
+		;;
+		dump)
+			M_PTYPE="DEV"
+			prep_transport
+			if [ "${M_STYPE}" = "GEOM" ] ; then
+				if [ "${M_FILE}" != "" ] ; then
+					dumpon ${DEVICES}/${M_FILE}
+				else
+					mexit 2
+				fi
+			else
+				mexit 8
+			fi
+		;;
+	
+		entropy)
+			if [ "${M_STYPE}" = "GEOM" ] ; then
+				if [ "${M_FILE}" != "" ] ; then
+					dd of=${DEVICES}/random if=${DEVICES}/${M_FILE} bs=2048 count=1 2>${DEVICES}/null
+				else
+					mexit 2
+				fi
+			else
+				mexit 8
+			fi
+		
+		;;
+		*)
+			# Bail out if there is no mountpoint specified.
+			if [ "${*}" != "" ] ; then
+				if [ -d "${*}" ] ; then
+					M_DESTINATION="${*}"
+				else
+					mexit 3	
+				fi
+			else
+				mexit 3
+			fi
+	
+			case "${M_PROTO}" in
+				cryptofs)
+					M_PTYPE="REMOUNT"
+					prep_transport
+					cryptofs_mount
+				;;
+				fs)
+					M_PTYPE="DEV"
+					prep_transport
+					fs_mount
+				;;
+				remount)
+					M_PTYPE="REMOUNT"
+					prep_transport
+					remount_mount
+				;;
+				nullfs)
+					M_PTYPE="REMOUNT"
+					prep_transport
+					nullfs_mount
+				;;
+				ipod)
+					M_PTYPE="REMOUNT"
+					prep_transport
+					ipod_mount
+				;;
+				encfs)
+					M_PTYPE="REMOUNT"
+					prep_transport
+					encfs_mount
+				;;
+				http|https)
+					M_PTYPE="NET"
+					prep_transport
+					webdav_mount
+				;;
+				9p|ninep)
+					M_PTYPE="NET"
+					prep_transport
+					ninep_mount
+				;;
+				ftp|ftps)
+					M_PTYPE="NET"
+					prep_transport
+					ftp_mount
+				;;
+				ssh)
+					M_PTYPE="NET"
+					prep_transport
+					ssh_mount
+				;;
+				sysconfig)
+					M_PTYPE="DEV"
+					prep_transport
+					sysconfig_mount
+				;;
+				vac)
+					M_PTYPE="NET"
+					prep_transport
+					vac_mount
+				;;
+				procfs|tmpfs|linsysfs|linprocfs|devfs)
+					M_PTYPE="PSUEDO"
+					prep_transport
+					psuedofs_mount
+				;;
+				ntfs)
+					M_PTYPE="DEV"
+					prep_transport
+					ntfs_mount
+				;;
+				object)
+					M_PTYPE="DEV"
+					prep_transport
+					object_mount
+				;;
+				dists)
+					M_PTYPE="DEV"
+					prep_transport
+					ufs_mount
+				;;
+				ufs)
+					M_PTYPE="DEV"
+					prep_transport
+					ufs_mount
+				;;
+				msdosfs)
+					M_PTYPE="DEV"
+					prep_transport
+					msdosfs_mount
+				;;
+				ext2fs)
+					M_PTYPE="DEV"
+					prep_transport
+					ext2fs_mount
+				;;
+				ext3fs)
+					M_PTYPE="DEV"
+					prep_transport
+					ext2fs_mount
+				;;
+				*)
+					M_PTYPE="DEV"
+					prep_transport
+					nativefs_mount
+				;;
+			esac
+		;;
+	esac
+}
+
+
+# The transport prep routine. Always set M_PTYPE before calling.
+# Note: if the M_PTYPE is NET, then nothing happens. We don't support
+# tunneling as of yet.
+
+prep_transport () {
+	echo_config
+	case "${M_PTYPE}" in
+		DEV)
+			case "${M_STYPE}" in
+				URI)
+					case "${M_TRANSPORT}" in
+						[gG][gG][aA][tT][eE])
+							ggate_handler
+						;;
+						*)
+							ggate_handler
+						;;
+					esac
+				;;
+				FILE)
+					mdconfig_handler
+				;;
+				GEOM)
+					DIRECTORY="$(mount | grep ${DEVICES}/${M_FILE} | cut -d " " -f 3)"
+					if [ "${DIRECTORY}" != "" ] ; then
+						mounter "remount:${DIRECTORY}" "${M_DESTINATION}"
+						mexit 0
+					fi
+				;;
+			esac
+		;;
+	esac
+}
+
+# mdconfig wrapper, trap errors, and terminate if necessary.
+
+mdconfig_handler () {
+	# Check to see if the device has been mdconfig'd already.
+	EXISTINGDEV="$(mdconfig -lv | awk -v FILE="${M_FILE}" '{ 
+		if ($2 == "vnode") {
+			if ($4 == FILE) {
+				print $1;
+			}
+		}
+	}' | head -n 1)"
+	if [ "${EXISTINGDEV}" = "" ] ; then
+		local MD_DEV=$(mdconfig -af "${M_FILE}" 2>/dev/null)
+	else
+		# find the directory to remount.
+		DIRECTORY="$(mount | grep ${DEVICES}/${EXISTINGDEV} | cut -d " " -f 3)"
+		if [ "${DIRECTORY}" != "" ] ; then
+			mounter "remount:${DIRECTORY}" "${M_DESTINATION}"
+			mexit 0
+		else
+			local MD_DEV=${EXISTINGDEV}
+		fi
+	fi
+	local ERROR=$?
+	ISTRANSPORT="yes"
+	# XXX helio someone needs to fill out the error codes mdconfig can return.
+	case "${ERROR}" in
+		0)
+		;;
+		*)
+			mexit 6
+		;;
+	esac
+	M_STYPE="GEOM"
+	M_FILE="${MD_DEV}"
+}
+
+# ggate wrapper, push options into the ggatec command line, then catch errors ggatec can return.
+
+ggate_handler () {
+	if [ "${M_PORT}" != "" ] ; then
+		local GOPTS="-p ${M_PORT}"
+	fi
+	if [ "${M_HOST}" = "" ] ; then
+		mexit 1
+	fi
+	if [ "${M_FILE}" = "" ] ; then
+		mexit 2
+	fi
+	local GATEDEV=$(ggatec create ${GOPTS} ${M_HOST} ${M_FILE})
+	local ERROR=$?
+	ISTRANSPORT="yes"
+	# XXX helio someone needs to fill out the error codes ggatec can return.
+	case "${ERROR}" in
+		0)
+		;;
+		*)
+			mexit 6
+		;;
+	esac
+	M_STYPE="GEOM"
+	M_FILE="${GATEDEV}"
+	# Since ggate runs in the background, it takes some time for it to create the ggate device. 
+	# Make sure we sleep for a second to let it create the node.
+	sleep 1
+}
+
+# MSDOSFS mounting wrapper.
+
+msdosfs_mount () {
+	echo_config
+	if [ "${M_STYPE}" = "GEOM" ] ; then
+		if [ -c "${DEVICES}/${M_FILE}" ] ; then
+			normal_fsck fsck_msdosfs "${M_FILE}"
+			rmount -t ${M_PROTO} ${DEVICES}/${M_FILE} ${M_DESTINATION}
+		else
+			mexit 9
+		fi
+	else
+		mexit 8
+	fi
+}
+
+
+# UFS2 mounting wrapper.
+
+ufs_mount () {
+	echo_config
+	if [ "${M_STYPE}" = "GEOM" ] ; then
+		if [ -c "${DEVICES}/${M_FILE}" ] ; then
+			normal_fsck fsck_ffs "${M_FILE}"
+			rmount -t ufs ${DEVICES}/${M_FILE} ${M_DESTINATION}
+		else
+			mexit 9
+		fi
+	else
+		mexit 8
+	fi
+}
+
+ext2fs_mount () {
+	echo_config
+	if [ "${M_STYPE}" = "GEOM" ] ; then
+		if [ -c "${DEVICES}/${M_FILE}" ] ; then
+			normal_fsck e2fsck "${M_FILE}"
+			rmount -t ext2fs ${DEVICES}/${M_FILE} ${M_DESTINATION}
+		else
+			mexit 9
+		fi
+	else
+		mexit 8
+	fi
+}
+
+
+# Native filesystem mounter. For filesystems that can be used via nmount.
+
+nativefs_mount () {
+	echo_config
+	if [ "${M_STYPE}" = "GEOM" ] ; then
+		if [ -c "${DEVICES}/${M_FILE}" ] ; then
+			rmount -t ${M_PROTO} ${DEVICES}/${M_FILE} ${M_DESTINATION}
+		else
+			mexit 9
+		fi
+	else
+		mexit 8
+	fi
+}
+
+
+# Psuedofilesystem mounter, note that if a psuedofilesystem is passed a directory, we attempt to mimic the structure.
+# XXX helio structure mapping only works for devfs. We mask out the others because of semantic issues.
+
+psuedofs_mount () {
+	rmount -t ${M_PROTO} ${M_PROTO} ${M_DESTINATION}
+	if [ "${M_STYPE}" = "Directory" -a "${M_PROTO}" = "devfs" ] ; then
+		
+	fi
+}
+
+# ipod wrapper.
+
+ipod_mount () {
+	echo_config
+	if [ "${M_STYPE}" = "DIRECTORY" ] ; then
+		IPOD_DIR="${M_FILE}" fusepod ${M_DESTINATION}
+	else
+		mexit 8
+	fi
+}
+
+# remounter wrapper.
+
+remount_mount () {
+	echo_config
+	if [ "${M_STYPE}" = "DIRECTORY" ] ; then
+		if [ -f "${M_FILE}/.cryptofs" ] ; then
+			PROTO=cryptofs
+		else 
+			if [ -f "${M_FILE}/.encfs6.xml" ] ; then
+				PROTO=encfs
+			else
+				PROTO=nullfs
+			fi
+		fi
+		 mounter "${PROTO}:${M_FILE}" ${M_DESTINATION}
+	else
+		mexit 8
+	fi
+}
+
+# remounter wrapper.
+
+fs_mount () {
+	echo_config
+	if [ "${M_STYPE}" = "GEOM" ] ; then
+		MIME_TYPE="$(OPTIONS="norecurse quiet" filetype "${DEVICES}/${M_FILE}")"
+		ERRNO=$?
+		if [ "${ERRNO}" = "0" ] ; then
+			case "${MIME_TYPE}" in
+				application/vnd.evoke.fs.ufs*)
+					PROTO="ufs"
+				;;
+				application/vnd.evoke.fs.reiserfs*)
+					PROTO="reiserfs"
+				;;
+				application/vnd.evoke.fs.ext*)
+					PROTO="ext2fs"
+				;;
+				application/vnd.evoke.fs.xfs*)
+					PROTO="xfs"
+				;;
+				application/vnd.evoke.fs.cd9660*)
+					PROTO="cd9660"
+				;;
+				application/vnd.evoke.fs.udf*)
+					PROTO="udf"
+				;;
+				application/vnd.evoke.fs.msdosfs*)
+					PROTO="msdosfs"
+				;;
+				application/vnd.evoke.fs.ntfs*)
+					PROTO="ntfs"
+				;;
+				*)
+					mexit 4
+				;;
+			esac
+			mounter "${PROTO}:${M_FILE}" ${M_DESTINATION}
+		else
+			mexit 4
+		fi
+	else
+		mexit 8
+	fi
+}
+
+# nullfs wrapper.
+
+nullfs_mount () {
+	echo_config
+	if [ "${M_STYPE}" = "DIRECTORY" ] ; then
+		rmount -t nullfs "${M_FILE}" ${M_DESTINATION}
+	else
+		mexit 8
+	fi
+}
+
+# cryptofs wrapper.
+
+cryptofs_mount () {
+	echo_config
+	if [ "${M_STYPE}" = "DIRECTORY" ] ; then
+		cryptofs -r "${M_FILE}" ${M_DESTINATION}
+	else
+		mexit 8
+	fi
+}
+
+# encfs wrapper
+encfs_mount () {
+	echo_config
+	if [ "${M_STYPE}" = "DIRECTORY" ] ; then
+		if [ "${M_PASSWORD}" = "" ] ; then
+			encfs "${M_FILE}" "${M_DESTINATION}"
+		else
+			echo ${M_PASSWORD} | encfs -S "${M_FILE}" "${M_DESTINATION}"
+		fi
+	else
+		mexit 8
+	fi
+}
+
+
+# 9p filesystem wrapper
+
+ninep_mount () {
+	echo_config
+	if [ "${M_STYPE}" = "URI" ] ; then
+		if [ "${M_PORT}" != "" ] ; then
+			9pfuse "tcp!${M_HOST}!${M_PORT}" ${M_DESTINATION}
+		else
+			9pfuse "tcp!${M_HOST}" ${M_DESTINATION}
+		fi
+	else
+		mexit 8
+	fi
+}
+# WebDAV filesystem wrapper; supports both http and https
+
+webdav_mount () {
+	echo_config
+	if [ "${M_STYPE}" = "URI" ] ; then
+		local WDFS_OPTIONS="-o locking"
+		if [ "${M_PROTO}" = "https" ] ; then
+			local WDFS_OPTIONS="${WDFS_OPTIONS} -o accept_sslcert "
+		fi
+		if [ "${M_USERNAME}" != "" ]; then
+			local WDFS_OPTIONS="${WDFS_OPTIONS} -o username=${M_USERNAME}"
+			if [ "${M_PASSWORD}" != "" ]; then
+				local WDFS_OPTIONS="${WDFS_OPTIONS} -o password=${M_PASSWORD}"
+			fi
+		fi
+		if [ "${M_HOST}" != "" ] ; then
+			local HOST=${M_HOST}
+			if [ "${M_PORT}" != "" ] ; then
+				local HOST="${HOST}:${M_PORT}"
+			fi
+			if [ "${M_FILE}" != "" ] ; then
+				local HOST="${HOST}${M_FILE}"
+			fi
+			wdfs ${WDFS_OPTIONS} ${M_PROTO}://${HOST} ${M_DESTINATION}
+		else
+			mexit 7
+		fi
+	else
+		mexit 8
+	fi
+}
+
+
+# FTP filesystem wrapper; supports ftp and ftps.
+
+ftp_mount () {
+	echo_config
+	if [ "${M_STYPE}" = "URI" ] ; then
+		local FTPFS_OPTIONS="-o transform_symlinks"
+		if [ "${M_PROTO}" = "ftps" ] ; then
+			local FTPFS_OPTIONS="${FTPFS_OPTIONS} -o ssl -o no_verify_hostname -o no_verify_peer"
+		else
+			local FTPFS_OPTIONS="${FTPFS_OPTIONS} -o ssl_try"
+		fi
+		if [ "${M_USERNAME}" != "" ]; then
+			local USER=${M_USERNAME}
+			if [ "${M_PASSWORD}" != "" ]; then
+				local USER=${USER}:${M_PASSWORD}
+			fi
+			local FTPFS_OPTIONS="${FTPFS_OPTIONS} -o user=${USER}"
+		fi
+		if [ "${M_HOST}" != "" ] ; then
+			HOST=${M_HOST}
+			if [ "${M_PORT}" != "" ] ; then
+				HOST="${HOST}:${M_PORT}"
+			fi
+			if [ "${M_FILE}" != "" ] ; then
+				HOST="${HOST}${M_FILE}"
+			fi
+			curlftpfs ${FTPFS_OPTIONS} ${M_PROTO}://${HOST} ${M_DESTINATION}
+		else
+			mexit 7
+		fi
+	else
+		mexit 8
+	fi
+}
+
+
+# SFTP filesystem support. 
+
+ssh_mount () {
+	echo_config
+	if [ "${M_STYPE}" = "URI" ] ; then
+		local SSHFS_OPTIONS="-o workaround=all -o idmap=user -o transform_symlinks"
+		local SSHFS_OPTIONS="${SSHFS_OPTIONS} -o push_symlinks_in -o compression=yes"
+		if [ "${M_PORT}" != "" ] ; then
+			local SSHFS_OPTIONS="${SSHFS_OPTIONS} -o port=${M_PORT}"
+		fi
+		if [ "${M_HOST}" != "" ] ; then
+			local HOST=${M_HOST}:
+			if [ "${M_USERNAME}" != "" ] ; then
+				local HOST="${M_USERNAME}@${HOST}"
+			fi
+			if [ "${M_FILE}" != "" ] ; then
+				local HOST="${HOST}${M_FILE}"
+			fi
+			sshfs ${SSHFS_OPTIONS} ${HOST} ${M_DESTINATION}
+			# sshfs can throw bad file descripter in some cases, if it's accessed to early.
+			# Add a 5 second sleep
+			sleep 5
+		else
+			mexit 7
+		fi
+	else
+		mexit 8
+	fi
+}
+
+# Vac filesystem wrapper; mount is always read-only
+
+vac_mount () {
+	echo_config
+	if [ "${M_STYPE}" = "URI" ] ; then
+		local SCORE=$(echo ${M_FILE} | cut -d / -f 2)
+		VACFILE="/mem/scratch/$(dd if=/dev/random bs=4m count=1 | md5 -q).vac"
+		echo "vac:${SCORE}" >${VACFILE}
+		if [ "${M_HOST}" = "" ] ; then
+			vacfs -m ${M_DEST} -h ${M_HOST} ${VACFILE}
+		else
+			vacfs -m ${M_DEST} ${VACFILE}
+		fi
+	else
+		mexit 8
+	fi
+}
+
+# NTFS filesystem mounter. If ntfs-3g is available, use it.
+
+ntfs_mount () {
+	echo_config
+	if [ "${M_STYPE}" = "GEOM" ] ; then
+		if [ -c "${DEVICES}/${M_FILE}" ] ; then
+			command -v ntfs-3g >${DEVICES}/null 
+			if [ "$?" != "127" ] ; then
+				ntfs-3g ${DEVICES}/${M_FILE} ${M_DESTINATION}
+			else
+				rmount -t ${M_PROTO} ${DEVICES}/${M_FILE} ${M_DESTINATION}
+			fi
+		else
+			mexit 9
+		fi
+	else
+		mexit 8
+	fi
+}
+# Object file store mounter. We newfs it before we use it, as it's faster then a full clean.
+
+object_mount () {
+	echo_config
+	if [ "${M_STYPE}" = "GEOM" ] ; then
+		if [ -c "${DEVICES}/${M_FILE}" ] ; then
+			newfs ${DEVICES}/${M_FILE} >&2
+			ufs_mount
+		else
+			mexit 9
+		fi
+	else
+		mexit 8
+	fi
+}
+
+
+# sysconfig basic wrapper.
+
+sysconfig_mount () {
+
+}
+
+# Wrapper for the real mount binary. Set default options here 
+
+rmount () {
+	local ROPTIONS="noatime"
+	if [ "${M_PROTO}" = "ufs" ] ; then
+		ROPTIONS="${ROPTIONS},acls"
+	fi
+	for option in "${OPTIONS}"
+	do
+		case "${option}" in
+			[rR][eE][aA][dD][oO][nN][lL][yY])
+				ROPTIONS="${ROPTIONS},ro"
+			;;
+		esac
+	done
+	mount -o ${ROPTIONS} $@
+}
+
+unmount_handler () {
+	DEVICE="${1}"
+	TYPE="$(echo "${GEOMLIST}" | awk -v DEVICE="${DEVICE}" '{
+			if ($3 == DEVICE) {
+				print $2;
+			}
+		}'
+	)"
+	case "${TYPE}" in
+		DISK)
+			GEOMS="$(echo "${GEOMLIST}" | awk -v DEVICE="${DEVICE}" '{
+					if ($3 == DEVICE) {
+						retval = 0;
+						while (retval == 0) {
+							RET=getline;
+							if ($1 == 0 || RET == 0) {
+								retval = 1;
+							} else {
+								print $3;
+							}
+						}
+					}
+				}' | sort -r
+			)"
+
+			IFS="${OURFS}"
+			for geom in ${GEOMS}
+			do
+				mounter unmount "${geom}"
+			done
+			IFS="${OLDFS}"
+		;;
+		*)
+			if [ "${TYPE}" = "" ] ; then
+				if [ -d "${DEVICE}" ] ; then
+					DIR="$(dirname ${DEVICE})"
+					if [ "${DIR}" = "/" ] ; then
+						MOUNTSPEC="/$(basename ${DEVICE})"
+					else
+						MOUNTSPEC="${DIR}/$(basename ${DEVICE})"
+					fi
+					mount | awk -v MOUNTSPEC="${MOUNTSPEC}" -v DEVICES=${DEVICES} '
+					function unmount(spec) {
+						system("umount " spec);
+						close("umount " spec);			
+					}
+
+					{
+						mount=$3
+						devicenode=$1
+						if (mount == MOUNTSPEC) {
+							if (devicenode ~ /fuse/) {
+								unmount(devicenode);
+							} else {
+								unmount(mount);
+								if (devicenode ~ /md/) {
+									# This strips ${DEVICES} and md from the node name, so mdconfig -d -u # will work
+									sub(DEVICES"/md","",devicenode)
+									system("mdconfig -d -u " devicenode " 2>/dev/null >/dev/null");
+									close("mdconfig -d -u " devicenode " 2>/dev/null >/dev/null");
+
+								}
+								if (devicenode ~ /ggate/) {
+									# same as md
+									sub(DEVICES"/ggate","",devicenode)
+									system("ggatec destroy -u " devicenode " 2>/dev/null >/dev/null");
+									close("ggatec destroy -u " devicenode " 2>/dev/null >/dev/null");
+								}
+							}
+						
+						}
+					}'
+				fi
+			else
+				local DEST="$(mount | awk -v DEVICES="${DEVICES}" -v DEVICE="${DEVICE}" '{
+						if ($1 == DEVICES "/" DEVICE) {
+							print $3;
+						}
+					 }'
+				)"
+				if [ "${DEST}" = "" ] ; then
+					swapinfo | awk -v DEVICES="${DEVICES}" -v DEVICE="${DEVICE}" '{
+						if ($1 == DEVICES "/" DEVICE) {
+							system("swapoff " $1 ">/dev/null");
+							close("swapoff " $1 ">/dev/null");
+						}
+					 }'
+				else
+					mounter unmount "${DEST}"
+				fi
+			fi
+		;;
+	esac
+}
+
+# List available protocols to stdout in newline deliminated form.
+
+list_proto () {
+	lsvfs | awk -v MASKFS="${MASKFS}" '{ 
+		count = split(MASKFS, filesystems, " ");
+		if (NR > 2) 
+		{
+			if ($1 != "fusefs" && $1 != "ntfs") {
+				for(i=0; i <= count; i++) {
+					if (filesystems[i] == $1) {
+						next;
+					}
+				}
+				print $1;
+			}
+		}
+	}'
+	echo "boot-ufs"
+	echo "swap"
+	echo "remount"
+	echo "entropy"
+	echo "sysconfig"
+	echo "dump"
+	echo "object"
+	echo "dists"
+	echo "fs"
+	for fuse in wdfs sshfs curlftpfs ntfs-3g encfs cryptofs vacfs fusepod 9pfuse
+	do
+		command -v ${fuse} >${DEVICES}/null 
+		if [ "$?" != "127" ] ; then
+			case "${fuse}" in
+				sshfs) echo ssh ;;
+				ntfs-3g) echo ntfs ;;
+				fusepod) echo ipod ;;
+				curlftpfs) 
+					echo ftp 
+					echo ftps
+				;;
+				9pfuse) 
+					echo 9p 
+					echo ninep
+				;;
+				cryptofs) echo cryptofs ;;
+				wdfs) 
+					echo http
+					echo https
+				;;
+				encfs) 
+					echo encfs
+				;;
+				vacfs)
+					echo vac
+				;;
+			esac
+		fi
+	done
+}
+
+# The main command parsing portion.
+# It's static, and could be shared, but isn't for other reasons.
+
+mounter_command () {
+
+	QUIET="yes"
+
+	if [ "${OPTIONS}" != "" ] ; then
+		for option in ${OPTIONS}
+		do
+			case "${option}" in
+				quiet)
+					QUIET="yes"
+				;;
+				verbose)
+					QUIET="no"
+				;;
+			esac
+		done
+	fi
+
+	case "${1}" in
+		[uU][nN][mM][oO][uU][nN][tT])
+			unmount_handler "${2}"
+		;;
+		# For compat purposes
+		[uU][mM][oO][uU][nN][tT])
+			unmount_handler "${2}"
+		;;
+		[sS][eE][aA][rR][cC][hH])
+			shift
+			lsvol $@
+		;;
+	  	[lL][iI][sS][tT])
+	
+		# We silently drop if someone types 'mounter list', however, 
+		# if the third argument is a directory, we assume the user 
+		# wants to automount volumes into that directory. For example, 
+		# mounter list ufs /media will mount all ufs partitions into 
+		# /media named after their geom name. ie, /media/da0s1a, etc.
+			case "${2}" in
+				[pP][rR][oO][tT][oO])
+					list_proto					
+				;;
+
+				*)
+					if [ "${2}" != "" ] ; then
+						for i in $( lsvol )
+						do
+							if [ "${2}" = $(echo "${i}" | cut -d : -f 1) ] ; then
+								echo "${i}" | cut -d : -f 2
+							fi
+						done
+					fi
+				;;
+			esac
+		;;
+		*)
+			echo "usage:"
+		;;
+	esac
+}
+mounter $@

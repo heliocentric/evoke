@@ -1,0 +1,151 @@
+#!/bin/sh
+# Copyright 2007-2009 Dylan Cochran
+# All rights reserved
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted providing that the following conditions
+# are met:
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+# IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
+# DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+# STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
+# IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
+
+# $Id$
+FORFS="
+"
+if [ ! -c "${DEVICES}/null" ] ; then
+	if [ -c "/dev/null" ] ; then
+		DEVICES=/dev
+	else
+		echo "Error, no device nodes found"
+		exit 1
+	fi
+fi
+
+type_check() {
+	MIME="$(getextattr -q user mime_type "${1}")"
+	CACHE_MTIME="$(getextattr -q user mime_mtime "${1}")"
+
+	if [ "${CACHE_MTIME}" = "" ] ; then
+		CACHE_MTIME=0
+	fi
+
+	REAL_MTIME="$(stat -f "%m" "${1}" 2>/dev/null)"
+
+	if [ "${2}" != "" ] ; then
+		MIME="${2}"
+	else
+		if [ "${MIME}" = "" -o "${FORCE_WRITE_MIME}" = "yes" -o "${REAL_MTIME}" -gt "${CACHE_MTIME}" -o "${FILEDB_MTIME}" -gt "${CACHE_MTIME}" ] ; then
+			if [ "${WARNING}" = "yes" ] ; then
+				echo "WARNING: 1 ${1}"
+			fi
+			MIME="$(file -sbL --mime-type "${1}" | cut -d , -f 1)"
+			setextattr -q user mime_type "${MIME}" "${1}"
+			setextattr -q user mime_mtime "$(date "+%s")" "${1}"
+		fi
+	fi
+	if [ "${ECHO_FILE}" != "no" ] ; then
+		echo "${1}:" "${MIME}"
+	else
+		echo "${MIME}"
+	fi
+}
+
+filetype () {
+	FORCE_WRITE_MIME="no"
+	if [ "${OPTIONS}" != "" ] ; then
+		for option in ${OPTIONS}
+		do
+			case "${option}" in
+				norecurse)
+					EVOKE_FTRECURSE="no"
+				;;
+				recurse)
+					EVOKE_FTRECURSE="yes"
+				;;
+				seperatemount)
+					EVOKE_MOUNTPOINTTYPE="yes"
+				;;
+				quiet)
+					ECHO_FILE="no"
+				;;
+				write)
+					FORCE_WRITE_MIME="yes"
+				;;
+			esac
+		done
+	fi
+	while [ "${1}" != "" ]
+	do
+		case "${1}" in
+			*)
+				eval local $(stat -f "STAT_DEV=%d STAT_TYPE=\"%HT\"" "${1}")
+				case "${STAT_TYPE}" in
+					Directory)
+						local STAT_NDEV=$(stat -f "%d" "$(dirname ${1})")
+						if [ "${STAT_NDEV}" != "${STAT_DEV}" -a "${EVOKE_MOUNTPOINTTYPE}" = "yes" ] ; then
+							type_check "${1}" "inode/mount-point"
+						else
+							type_check "${1}" "inode/directory"
+						fi
+						if [ "${EVOKE_FTRECURSE}" != "no" ] ; then
+							for entry in $(ls -a "${1}")
+							do
+									if [ "${entry}" != "." -a "${entry}" != ".." ] ; then
+									filetype "${1}/${entry}"
+								fi
+							done
+						fi
+	
+					;;
+					"Socket")
+						type_check "${1}" "inode/socket"
+					;;
+					"Fifo File")
+						type_check "${1}" "inode/fifo"
+					;;
+					"Character Device")
+						GEOM="$(echo ${1} | sed s@${DEVICES}/@@g)"
+						MATCHEDGEOMS="$(sysctl -b kern.geom.conftxt | grep ${GEOM} )"
+						if [ "${MATCHEDGEOMS}" = "" ] ; then
+							type_check "${1}" "inode/chardevice"
+						else
+							type_check "${1}"
+						fi
+					;;
+					"Symbolic Link")
+						type_check "${1}"
+					;;
+					"Regular File")
+						type_check "${1}"
+					;;
+				esac
+			;;
+		esac
+		shift
+	done
+}
+
+
+if [ -d /system ] ; then
+	FILEDB_MTIME="$(stat -f "%m" /system/share/lib/magic.mime 2>/dev/null)"
+else
+	FILEDB_MTIME="$(stat -f "%m" /usr/share/misc/magic.mime 2>/dev/null)"
+fi
+
+filetype $@
+
