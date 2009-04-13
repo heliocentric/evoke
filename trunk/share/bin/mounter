@@ -1171,9 +1171,24 @@ mounter_command () {
 
 				*)
 					if [ "${2}" != "" ] ; then
+						SEARCHPROTO="${2}"
+						local STRIP="yes"
+						case "${SEARCHPROTO}" in
+							*-*)
+								STRIP="no"
+							;;
+						esac
 						for i in $( lsvol )
 						do
-							if [ "${2}" = $(echo "${i}" | cut -d : -f 1) ] ; then
+							PROTO="$(echo "${i}" | cut -d : -f 1)"
+							if [ "${STRIP}" = "yes" ] ; then
+								case "${PROTO}" in 
+									*-*)
+										PROTO="$(echo "${PROTO}" | cut -d - -f 2)"
+									;;
+								esac
+							fi
+							if [ "${SEARCHPROTO}" = "${PROTO}" ] ; then
 								echo "${i}" | cut -d : -f 2
 							fi
 						done
