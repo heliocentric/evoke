@@ -138,7 +138,7 @@ evoke_chooser() {
 
 # Disk partitioning function
 partdisk() {
-	RESULT=$(menu "Choose Disk" "$(mounter list disk)")
+	RESULT=$(menu "Choose Disk" "$(mounter list real-disk)")
 	echo -n "Do you want to use the entire disk? [yN]: "
 	read ANSWER
 	case "${1}" in
