@@ -106,7 +106,7 @@ create () {
 
 	mkdir -p "${EVOKE_SYSCONFIG_DIR}/${UUID}"
 
-	ENCTYPE=$(menu "Encryption Method" "$(mounter list proto | grep encfs; mounter list proto | grep cryptofs; echo none)"
+	ENCTYPE=$(menu "Encryption Method" "$(mounter list proto | grep encfs; mounter list proto | grep cryptofs; echo none)" )
 	case "${ENCTYPE}" in
 		encfs)
 			mounter encfs:${EVOKE_SYSCONFIG_DIR}/${UUID} ${EVOKE_CURUSER} 1>&2
