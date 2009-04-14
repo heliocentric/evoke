@@ -34,7 +34,10 @@ fi
 freebsd_disk_list() {
 	sysctl -b kern.geom.conftxt | \
 	awk '{
-		if ($2 == "DISK" || $2 == "MD") {
+		if ($2 == "MD") {
+			print "disk:"$3;
+		}
+		if ($2 == "DISK") {
 			if ($3 ~ /cd/) {
 				print "cd9660:"$3;
 			}
@@ -43,7 +46,7 @@ freebsd_disk_list() {
 					print "floppy:"$3;
 				}
 				else {
-					print "disk:"$3;
+					print "real-disk:"$3;
 				}
 			}
 		}
