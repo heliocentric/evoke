@@ -1,0 +1,33 @@
+#!/bin/sh
+# $Id$
+
+if [ "${EVOKE_NOCLEAR}" != "yes" ] ; then
+	echo ""
+	echo ""
+	echo ""
+	echo ""
+	echo ""
+	echo ""
+	echo ""
+	echo ""
+	echo ""
+	echo ""
+	echo ""
+	echo ""
+	echo ""
+	echo ""
+	echo ""
+	echo ""
+	echo ""
+	echo ""
+	echo ""
+	echo ""
+	echo ""
+	echo ""
+	echo ""
+	echo ""
+	echo ""
+	echo ""
+	echo ""
+	echo ""
+fi
