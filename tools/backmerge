@@ -32,10 +32,10 @@ BEGIN="$(svn log -l 1 --xml | awk '/<logentry/, />/' | grep revision | cut -d \"
 END="$(svnversion | sed s_M__g)"
 
 if [ "${2}" = "" ] ; then
-	if [ "${1} = "" ] ; then
+	if [ "${1}" = "" ] ; then
 	else
 		END="${1}"
-		BEGIN="$((${1} - 1))"
+		BEGIN="$(( ${1} - 1 ))"
 	fi
 else
 	END="${2}"
