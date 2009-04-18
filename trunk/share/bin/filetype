@@ -147,5 +147,5 @@ else
 	FILEDB_MTIME="$(stat -f "%m" /usr/share/misc/magic.mime 2>/dev/null)"
 fi
 
-filetype $@
+filetype "$@"
 

@@ -95,7 +95,7 @@ verify_loop() {
 					RHASH=$(${type} -q "${1}" 2>${DEVICES}/null)
 					if [ "${RTRACKFILE}" != "" ]; then
 						if [ "${WRITE}" = "yes" ] ; then
-							echo "F:${1}:${RHASH}:$(stat -f '%z:%Su:%Sg:%Sp:%m:%c:' "${1}")"
+							echo "F:${1}:${RHASH}:$(stat -f '%z:%Su:%Sg:%Sp:%m:%c' "${1}"):${MIME_TYPE}:"
 						else
 							unset FHASH
 							FHASH=$(grep -a ^F: "${RTRACKFILE}" | awk -v FILENAME="${1}" -F ":" '{ if ($2 == FILENAME) { print $3; } }' 2>${DEVICES}/null)
