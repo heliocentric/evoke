@@ -32,8 +32,8 @@ Update is a binary update utility, that aggressively tries to grab the correct f
 == Implementation ==
 
  # update fetches the trackfile for the target release from the mirrors.
- # We use the sha256 hash of the destination file, to build a url like so: http://www.damnsmallbsd.org/pub/evoke/misc/BIN-UPDATES/0.1/r1/${HASH}/
- # We go through the trackfiles for any currently installed releases, starting with the most recent timestamped directory (as it's most likely to match), and attempt to fetch it, based on the source hash, for example: http://www.damnsmallbsd.org/pub/evoke/misc/BIN-UPDATES/0.1/r1/${HASH}/${SOURCEHASH}.
+ # We use the sha256 hash of the destination file, to build a url like so: http://www.damnsmallbsd.org/pub/evoke/misc/BIN-UPDATES/0.1/r1/${HASH}/trackfile
+ # This trackfile contains a list of source hashes available. They are sorted by size, and we filter out all source hashes that don't exist on any previous releases trackfiles.
  # If we can fetch the file, we check to see if the destination or source has a .gz, or .bz2 extension. If it does, we first uncompress it to the staging area.
  # We now run bspatch over the source, using the downloaded file, saving it to the staging area.
  # If the destination's extension was .gz or .bz2, we compress it.
