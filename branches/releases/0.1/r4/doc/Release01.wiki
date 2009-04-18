@@ -99,6 +99,7 @@ Released: N/A
 ==== Errata ====
 
  * Set 7.1's bootcode directly to 7.2, rather then 7-STABLE.
+ * Add directoy support to trackfiles, and teach update and verify to use them.
 
 ==== Security Updates ====
 
