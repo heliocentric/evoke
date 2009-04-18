@@ -124,6 +124,7 @@ real_update() {
 	fi
 
 	DEST_TRACKFILE="$(grep -a ^F: ${TEMPDIR}/trackfile)"
+	DEST_DIRECTORIES="$(grep -a ^D: ${TEMPDIR}/trackfile)"
 	mkdir -p "${DESTDIR}/evoke/"
 	cd "${DESTDIR}/evoke/"
 
@@ -157,6 +158,11 @@ real_update() {
 		[nN])
 		;;
 		*)
+			for filespec in ${DEST_DIRECTORIES}
+			do
+				DIRNAME="$(echo "${filespec}" | cut -d ":" -f 2)"
+				mkdir -p "${STAGEDIR}/${DIRNAME}"
+			done
 			# No reference points? Just fetch!
 			if [ "${VERSIONLIST}" = "error" ] ; then
 				for filespec in ${DEST_TRACKFILE}
