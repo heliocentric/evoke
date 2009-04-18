@@ -76,6 +76,11 @@ verify_loop() {
 		export MIME_TYPE="$(OPTIONS="quiet norecurse" filetype "${1}")"
 		case "${MIME_TYPE}" in	
 			inode/directory)
+				if [ "${RTRACKFILE}" != "" ]; then
+						if [ "${WRITE}" = "yes" ] ; then
+							echo "D:${1}:$(stat -f '%Su:%Sg:%Sp:%m:%c:' "${1}")"
+						fi
+				fi
 				dircheck "${MIME_TYPE}" "${1}"
 			;;
 			inode/mount-point)
