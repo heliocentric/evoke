@@ -88,6 +88,22 @@ Jamie Ivanov of RadioactiveRussian.com for providing another test machine for th
 
 == Revisions ==
 
+=== [http://www.damnsmallbsd.org/pub/evoke/misc/ISO-IMAGES/0.1/r4/ r4] ===
+
+Released: N/A
+
+==== Targets ====
+
+ * FreeBSD 7.1-RELEASE-p4/i386
+
+==== Errata ====
+
+ * Set 7.1's bootcode directly to 7.2, rather then 7-STABLE.
+
+==== Security Updates ====
+
+ * N/A
+
 === [http://www.damnsmallbsd.org/pub/evoke/misc/ISO-IMAGES/0.1/r3/ r3] ===
 
 Released: 04/15/2009
