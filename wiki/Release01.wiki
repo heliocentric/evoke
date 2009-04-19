@@ -103,6 +103,7 @@ Released: N/A
  * Fix a bug in filetype that prevented stat from working correctly on files with spaces.
  * Add 'mime type' to the end of each file record in a trackfile.
  * If the TRACKFILE_DATE environment variable isn't set, verify will use date +%s
+ * Change the PRINTF_BUFR_SIZE to 128.
 
 ==== Security Updates ====
 
