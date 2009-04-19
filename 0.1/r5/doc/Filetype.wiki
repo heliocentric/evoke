@@ -1,0 +1,26 @@
+#summary Return the mime type for a file.
+#labels Command, Doc
+<wiki:comment>
+	type: command
+	author: heliocentric
+	program-class fileop
+	name: filetype
+	programming-language: sh
+	svnid: $Id$
+	svnauthor: $Author$
+	svnrevision: $Revision$
+</wiki:comment>
+
+`filetype file1 [file2] [...]`
+
+
+== Description ==
+
+Return the mime type for a file, consult the file's type field in stat, the user.mime_type extended attribute, and then file's --mime-type option.
+
+== Required Files ==
+
+ * stat - base
+    NetBSD-like stat, which supports -f "%HT"
+ * file - base
+    Needs to support --mime-type.
