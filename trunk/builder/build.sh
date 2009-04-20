@@ -108,7 +108,7 @@ do
 	if [ "${RELEASE}" = "7.1" ] ; then
 		cd ${DESTDIR}/usr/src/sys
 		rm -r boot
-		svn co http://svn.freebsd.org/base/releng/7.2/sys/boot@${URLREV} boot 1>&2
+		svn co http://svn.freebsd.org/base/releng/7.2/sys/boot boot 1>&2
 	fi
 
 	echo " * ${target} = Patching World"
