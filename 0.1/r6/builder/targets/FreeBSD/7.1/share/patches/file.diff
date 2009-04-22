@@ -1,0 +1,18 @@
+--- contrib/file/fsmagic.c	2009-03-13 10:00:02.000000000 -0400
++++ contrib/file/fsmagic.c	2009-04-04 18:19:58.000000000 -0400
+@@ -96,15 +96,6 @@
+ 		return 1;
+ 	}
+ 
+-	if (mime) {
+-		if ((sb->st_mode & S_IFMT) != S_IFREG) {
+-			if ((mime & MAGIC_MIME_TYPE) &&
+-			    file_printf(ms, "application/x-not-regular-file")
+-			    == -1)
+-				    return -1;
+-			return 1;
+-		}
+-	}
+ 	else {
+ #ifdef S_ISUID
+ 		if (sb->st_mode & S_ISUID) 
