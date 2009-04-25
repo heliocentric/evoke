@@ -237,7 +237,7 @@ umount ${DESTDIR}/mnt/bin
 umount ${DESTDIR}/mnt/bin
 
 
-echo "Copying Directories to ${N_BINSHARE}"
+echo " * ${target} = Copying Directories to ${N_BINSHARE}"
 
 for file in $(grep -v ^# ${BUILDDIR}/portlist | grep ^D: | awk -F : '{ if ($4 == "binshare") { print $2; } }')
 do
