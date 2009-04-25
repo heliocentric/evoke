@@ -325,7 +325,8 @@ if [ -d "${ROOTDIR}/doc" ] ; then
  	done
 fi
 
-
+chmod -R 555 ${FSDIR}/system
+chflags -R schg ${FSDIR}/system
 
 echo " * share = Creating root.fs"
 # Make evoke.fs, the main product filesystem.
