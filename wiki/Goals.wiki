@@ -21,6 +21,18 @@
 || The system should be cache-coherent, if a file is different, it's name should be different.			|| 0.1		|| 3	||
 || Split the released system files, from the site or machine specific files.					|| 0.1		|| 2	||
 || Fix file's readelf.c so filetype will return information that the build system can use.			|| 0.2		|| 0	||
+|| Replace parts of systart with nexusd, and use nexusd instead of init						|| N/A		|| 0	||
+
+=== nexusd ===
+
+Currently, single user mode on evoke is broken. This is because to get a full dynamic linking environment, systart has to do nullfs mounting. Since systart isn't run in single user mode, this does not get done, and single user mode is extremely limited. To fix this, we will replace the init binary with nexusd.
+
+ * nullfs mount the architecture and abi specific directories.
+ * set up any variables for systart, including abi/architecture/etc.
+ * Integrate watchdogd and powerd (routines should be started before systart). May also integrate some devd functionality, not sure if that's viable yet.
+ * Support threading, but don't bother starting services or doing anything other 'init replacements' try to do. 
+ * The threading will mainly be for watchdogd, powerd, and a control thread.
+ * Start a control thread, listening on a UDS, to allow users to control it from a non-root user using the kernel's credential suppoort.
 
 == User Management ==
 
