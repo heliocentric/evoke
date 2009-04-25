@@ -152,7 +152,7 @@ chflags -R noschg *
 chmod a+w *
 
 
-PROGS="${PROGS} $(grep ^B ${BUILDDIR}/portlist | cut -d : -f 2)"
+PROGS="${PROGS} $(grep -v ^# ${BUILDDIR}/portlist | grep ^B: | cut -d : -f 2)"
 
 # "Mommy Mommy! Can I see some ugly shell scripting?"
 # "Yes dear, but only if you gouge one eye out first"
@@ -246,7 +246,8 @@ do
 	DIRECTORY="$(basename ${file})"
 	if [ -d "${DESTDIR}/${DIRNAME}" ] ; then
 		cd ${DESTDIR}/${DIRNAME}
-		tar -cf - "${DIRECTORY}" | tar -xvpf - -C "${N_BINSHARE}"
+		echo " * ${target} = Copying ${DESTDIR}/${DIRNAME}/${DIRECTORY} to ${N_BINSHARE}"
+		tar -cf - "${DIRECTORY}" | tar -xvpf - -C "${N_BINSHARE}/"
 	fi
 done
 
