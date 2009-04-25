@@ -236,6 +236,20 @@ umount ${DESTDIR}/mnt/bin
 umount ${DESTDIR}/mnt/bin
 umount ${DESTDIR}/mnt/bin
 
+
+echo "Copying Directories to ${N_BINSHARE}"
+
+for file in $(grep -v ^# ${BUILDDIR}/portlist | grep ^D: | awk -F : '{ if ($4 == "binshare") { print $2; } }')
+do
+
+	DIRNAME="$(dirname ${file})"
+	DIRECTORY="$(basename ${file})"
+	if [ -d "${DESTDIR}/${DIRNAME}" ] ; then
+		cd ${DESTDIR}/${DIRNAME}
+		tar -cf - "${DIRECTORY}" | tar -xvpf - -C "${N_BINSHARE}"
+	fi
+done
+
 # Copy geom libs to FSDIR too
 cp -r ${DESTDIR}/lib/geom ${FSDIR}${N_LIB}
 
