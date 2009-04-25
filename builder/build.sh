@@ -206,7 +206,7 @@ do
 	cd ${DESTDIR}/boot/${KERNCONF}/
 
 	# Grab port modules and copy them to the kernel directory.
-	for file in $(grep ^M ${BUILDDIR}/portlist | cut -d : -f 2)
+	for file in $(grep -v ^# ${BUILDDIR}/portlist | grep ^M: | cut -d : -f 2)
 	do
 		if [ -f ${DESTDIR}/usr/local/modules/${file}.ko ] ; then
 			cp ${DESTDIR}/usr/local/modules/${file}.ko ./
@@ -219,7 +219,7 @@ do
 		gzip -9nc kernel >kernel.gz
 		rm kernel
 	fi
-	for file in $(grep ^M ${BUILDDIR}/portlist | cut -d : -f 2) ${MODULES}
+	for file in $(grep -v ^# ${BUILDDIR}/portlist | grep ^M: | cut -d : -f 2) ${MODULES}
 	do
 		if [ "${EVOKE_BUILDER_GZIPKERN}" = "yes" ] ; then
 			gzip -9nc ${file}.ko >${file}.ko.gz
@@ -232,7 +232,7 @@ do
 	rm -r *.ko
 	rm -r *.hints
 	if [ "${EVOKE_BUILDER_GZIPKERN}" != "yes" ] ; then
-		for file in $(grep ^M ${BUILDDIR}/portlist | cut -d : -f 2) ${MODULES}
+		for file in $(grep -v ^# ${BUILDDIR}/portlist | grep ^M: | cut -d : -f 2) ${MODULES}
 		do
 				mv ${file}.ka ${file}.ko
 		done
@@ -375,7 +375,7 @@ do
 	echo ${i} >>${BOOTDIR}${BOOTPREFIX}/modlist
 done
 
-for i in ${PROGS} $(grep ^B ${BUILDDIR}/portlist | cut -d : -f 2) $(grep CRUNCH_LINKS ${BUILDDIR}/lazybox.dynamic | grep -v ^# | grep -v for | cut -d ' ' -f 2-20 | paste -d " " - - - - - - - - - - - - - - - - - - - - - ) $(grep CRUNCH_PROGS ${BUILDDIR}/lazybox.dynamic | grep -v ^# | grep -v for | cut -d ' ' -f 2-20 | paste -d " " - - - - - - - - - - - - - - - - - - - - -) 
+for i in ${PROGS} $(grep -v ^# ${BUILDDIR}/portlist | grep ^B: | cut -d : -f 2) $(grep CRUNCH_LINKS ${BUILDDIR}/lazybox.dynamic | grep -v ^# | grep -v for | cut -d ' ' -f 2-20 | paste -d " " - - - - - - - - - - - - - - - - - - - - - ) $(grep CRUNCH_PROGS ${BUILDDIR}/lazybox.dynamic | grep -v ^# | grep -v for | cut -d ' ' -f 2-20 | paste -d " " - - - - - - - - - - - - - - - - - - - - -) 
 do
 	echo ${i}
 done | sort | uniq >>${BOOTDIR}${BOOTPREFIX}/cmdlist
