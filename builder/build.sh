@@ -70,11 +70,13 @@ do
 	export N_LIB=${N_DIR}/lib
 	export N_LIBEXEC=${N_DIR}/libexec
 	export N_BOOT=${N_DIR}/boot
+	export N_BINSHARE=${N_DIR}/share
 
 	mkdir -p ${FSDIR}${N_BIN} 1>&2
 	mkdir -p ${FSDIR}${N_LIB} 1>&2
 	mkdir -p ${FSDIR}${N_LIBEXEC} 1>&2
 	mkdir -p ${FSDIR}${N_BOOT} 1>&2
+	mkdir -p ${FSDIR}${N_BINSHARE} 1>&2
 
 	# This forces same architecture buildworld/buildkernels to build cross-tools
 	# and build-tools adequately.
