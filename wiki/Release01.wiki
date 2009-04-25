@@ -88,6 +88,22 @@ Jamie Ivanov of RadioactiveRussian.com for providing another test machine for th
 
 == Revisions ==
 
+=== [http://www.damnsmallbsd.org/pub/evoke/misc/ISO-IMAGES/0.1/r6/ r6] ===
+
+Released: N/A
+
+==== Targets ====
+
+ * FreeBSD 7.1-RELEASE-p5/i386
+
+==== Errata ====
+
+ * Just chmod -R /system to 555, and add the immutable flag. We can do this because we cleanly seperate system and user.
+
+==== Security Updates ====
+
+ * N/A
+
 === [http://www.damnsmallbsd.org/pub/evoke/misc/ISO-IMAGES/0.1/r5/ r5] ===
 
 Released: 04/22/2009
