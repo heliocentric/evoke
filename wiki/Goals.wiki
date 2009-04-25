@@ -1,6 +1,8 @@
 #summary Long term design goals
 #labels Phase-Design,Featured
 
+<wiki:toc max_depth="3" />
+
 == Key ==
 
 || #	|| Description											||
@@ -22,6 +24,7 @@
 || Split the released system files, from the site or machine specific files.					|| 0.1		|| 2	||
 || Fix file's readelf.c so filetype will return information that the build system can use.			|| 0.2		|| 0	||
 || Replace parts of systart with nexusd, and use nexusd instead of init						|| 0.2		|| 0	||
+
 
 === nexusd ===
 
@@ -70,11 +73,13 @@ Currently, single user mode on evoke is broken. This is because to get a full dy
 
 With just the Xorg binary, the xinit binary, the xauth binary, and the xterm binary. Differences:
 
+
 === r846 (without Xorg) ===
 Build time:
  10860.604u 2462.413s 5:49:23.04 63.5%   -1444+1144k 451451+1187583io 508844pf+49w
 Size:
  23258 1024 byte blocks
+
 
 === r851 (with Xorg) ===
 Build time:
