@@ -131,6 +131,7 @@ fi
 echo " * ${target} = Populating FSDIR"
 cp ${DESTDIR}/libexec/ld-elf.so.1 ${FSDIR}${N_LIBEXEC}
 mkdir -p ${DESTDIR}/mnt/bin
+mkdir -p ${DESTDIR}/mnt/lib
 
 # Dear lord this is ugly. Still, it simplifies other things. That's my story, and I'm sticking to it.
 mount_nullfs -o union ${DESTDIR}/usr/local/plan9/bin ${DESTDIR}/mnt/bin
@@ -142,12 +143,15 @@ mount_nullfs -o union ${DESTDIR}/usr/local/bin ${DESTDIR}/mnt/bin
 mount_nullfs -o union ${DESTDIR}/usr/local/sbin ${DESTDIR}/mnt/bin
 mount_nullfs -o union ${DESTDIR}/usr/local/libexec ${DESTDIR}/mnt/bin
 mount_nullfs -o union ${DESTDIR}/usr/libexec ${DESTDIR}/mnt/bin
-mount_nullfs -o union ${DESTDIR}/lib ${DESTDIR}/mnt/bin
-mount_nullfs -o union ${DESTDIR}/usr/lib ${DESTDIR}/mnt/bin
-mount_nullfs -o union ${DESTDIR}/usr/local/lib ${DESTDIR}/mnt/bin
+mount_nullfs -o union ${DESTDIR}/lib ${DESTDIR}/mnt/lib
+mount_nullfs -o union ${DESTDIR}/usr/lib ${DESTDIR}/mnt/lib
+mount_nullfs -o union ${DESTDIR}/usr/local/lib ${DESTDIR}/mnt/lib
 
 # Clear flags and permissions.
 cd ${DESTDIR}/mnt/bin
+chflags -R noschg *
+chmod a+w *
+cd ${DESTDIR}/mnt/lib
 chflags -R noschg *
 chmod a+w *
 
@@ -169,12 +173,12 @@ resolve_libs() {
 		TYPE="$(OPTIONS="quiet" filetype ${file})"
 		case "${TYPE}" in
 			application/x-executable)
-				DEPENDENCIES=$(${CROSSTOOLSPATH}/readelf -d ${file} | grep '(NEEDED)' | cut -d [ -f 2 | cut -d ] -f 1)
+				DEPENDENCIES=$(${CROSSTOOLSPATH}/readelf -d ${DESTDIR}/mnt/bin/${file} | grep '(NEEDED)' | cut -d [ -f 2 | cut -d ] -f 1)
 				echo "${DEPENDENCIES}"
 				resolve_libs ${DEPENDENCIES}
 			;;
 			application/x-sharedlib)
-				DEPENDENCIES=$(${CROSSTOOLSPATH}/readelf -d ${file} | grep '(NEEDED)' | cut -d [ -f 2 | cut -d ] -f 1)
+				DEPENDENCIES=$(${CROSSTOOLSPATH}/readelf -d ${DESTDIR}/mnt/lib/${file} | grep '(NEEDED)' | cut -d [ -f 2 | cut -d ] -f 1)
 				echo "${file}"
 				echo "${DEPENDENCIES}"
 				resolve_libs ${DEPENDENCIES}
@@ -200,7 +204,7 @@ do
 		DEST="${FSDIR}/${N_LIB}/${DIRECTORY}/${FILE}"
 	fi
 
-	cat ${lib} >${DEST}
+	cat ${DESTDIR}/mnt/lib/${lib} >${DEST}
 	echo "Copying to ${DEST}" 1>&2
 	case "${lib}" in
 		*.so.*)
