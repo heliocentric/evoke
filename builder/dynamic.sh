@@ -217,6 +217,7 @@ done
 ${CROSSTOOLSPATH}/strip --remove-section=.note --remove-section=.comment --strip-unneeded ${PROGS}
 tar -cLf - ${PROGS} | tar -xpf - -C ${FSDIR}${N_BIN}/	
 cd ${FSDIR}${N_BIN}
+chmod 555 *
 
 # We were going to use a packer, but it did absolutely nothing to size (it can't compress libs, and they are the literal bulk of the size)
 #upx ${PROGS}
@@ -225,6 +226,7 @@ cd ${FSDIR}${N_BIN}
 cd ${OBJDIR}
 cd ${FSDIR}${N_LIB}
 ${CROSSTOOLSPATH}/strip --remove-section=.note --remove-section=.comment --strip-unneeded *
+chmod 555 *
 
 # Remove all the nullfs mounts... nasty nasty nasty....
 umount ${DESTDIR}/mnt/bin
