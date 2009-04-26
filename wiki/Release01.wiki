@@ -99,6 +99,7 @@ Released: N/A
 ==== Errata ====
 
  * Just chmod -R /system to 555, and add the immutable flag. We can do this because we cleanly seperate system and user.
+ * Modify the file patches so that file -i won't add setuid/setgid to the beginning of the type.
 
 ==== Security Updates ====
 
