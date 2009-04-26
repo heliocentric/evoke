@@ -236,9 +236,9 @@ umount ${DESTDIR}/mnt/bin
 umount ${DESTDIR}/mnt/bin
 umount ${DESTDIR}/mnt/bin
 umount ${DESTDIR}/mnt/bin
-umount ${DESTDIR}/mnt/bin
-umount ${DESTDIR}/mnt/bin
-umount ${DESTDIR}/mnt/bin
+umount ${DESTDIR}/mnt/lib
+umount ${DESTDIR}/mnt/lib
+umount ${DESTDIR}/mnt/lib
 
 
 echo " * ${target} = Copying Directories to ${N_BINSHARE}"
