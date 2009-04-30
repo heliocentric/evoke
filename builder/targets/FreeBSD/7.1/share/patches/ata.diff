@@ -5,7 +5,7 @@
  
      device_printf(dev, "%juMB <%s%s %.8s> at ata%d-%s %s%s\n",
 -		  adp->total_secs / (1048576 / DEV_BSIZE),
-+		  adp->total_secs,
++		  adp->total_secs * DEV_BSIZE,
  		  vendor, product, atadev->param.revision,
  		  device_get_unit(ch->dev),
  		  (atadev->unit == ATA_MASTER) ? "master" : "slave",
