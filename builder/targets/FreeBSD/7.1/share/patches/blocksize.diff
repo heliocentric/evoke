@@ -1,0 +1,123 @@
+diff -ruN sys/cam/scsi/scsi_da.c sys/cam/scsi/scsi_da.c
+--- sys/cam/scsi/scsi_da.c	2009-03-13 10:05:34.000000000 -0400
++++ sys/cam/scsi/scsi_da.c	2009-04-30 19:36:49.000000000 -0400
+@@ -1625,7 +1625,7 @@
+ 				        "%juMB (%ju %u byte sectors: %dH %dS/T "
+                                         "%dC)", (uintmax_t)
+ 	                                (((uintmax_t)dp->secsize *
+-				        dp->sectors) / (1024*1024)),
++				        dp->sectors) / 1000000,
+ 			                (uintmax_t)dp->sectors,
+ 				        dp->secsize, dp->heads,
+                                         dp->secs_per_track, dp->cylinders);
+diff -ruN sys/dev/aac/aac_disk.c sys/dev/aac/aac_disk.c
+--- sys/dev/aac/aac_disk.c	2009-03-13 10:06:51.000000000 -0400
++++ sys/dev/aac/aac_disk.c	2009-04-30 19:28:18.000000000 -0400
+@@ -400,7 +400,7 @@
+ 	sc->ad_cylinders = (sc->ad_size / (sc->ad_heads * sc->ad_sectors));
+ 
+ 	device_printf(dev, "%juMB (%ju sectors)\n",
+-		      (intmax_t)sc->ad_size / ((1024 * 1024) / AAC_BLOCK_SIZE),
++		      ((intmax_t)sc->ad_size * AAC_BLOCK_SIZE) / 1000000,
+ 		      (intmax_t)sc->ad_size);
+ 
+ 	/* attach a generic disk device to ourselves */
+diff -ruN sys/dev/amr/amr_disk.c sys/dev/amr/amr_disk.c
+--- sys/dev/amr/amr_disk.c	2009-03-13 10:06:34.000000000 -0400
++++ sys/dev/amr/amr_disk.c	2009-04-30 19:30:43.000000000 -0400
+@@ -224,7 +224,7 @@
+     sc->amrd_dev = dev;
+ 
+     device_printf(dev, "%uMB (%u sectors) RAID %d (%s)\n",
+-		  sc->amrd_drive->al_size / ((1024 * 1024) / AMR_BLKSIZE),
++		  (sc->amrd_drive->al_size * AMR_BLKSIZE) / 1000000,
+ 		  sc->amrd_drive->al_size, sc->amrd_drive->al_properties & AMR_DRV_RAID_MASK, 
+ 		  amr_describe_code(amr_table_drvstate, AMR_DRV_CURSTATE(sc->amrd_drive->al_state)));
+ 
+diff -ruN sys/dev/ata/ata-disk.c sys/dev/ata/ata-disk.c
+--- sys/dev/ata/ata-disk.c	2009-03-13 10:07:05.000000000 -0400
++++ sys/dev/ata/ata-disk.c	2009-04-30 19:24:16.000000000 -0400
+@@ -456,7 +456,7 @@
+     }
+ 
+     device_printf(dev, "%juMB <%s%s %.8s> at ata%d-%s %s%s\n",
+-		  adp->total_secs / (1048576 / DEV_BSIZE),
++		  (adp->total_secs * DEV_BSIZE) / 1000000,
+ 		  vendor, product, atadev->param.revision,
+ 		  device_get_unit(ch->dev),
+ 		  (atadev->unit == ATA_MASTER) ? "master" : "slave",
+diff -ruN sys/dev/ata/ata-raid.c sys/dev/ata/ata-raid.c
+--- sys/dev/ata/ata-raid.c	2009-03-13 10:07:05.000000000 -0400
++++ sys/dev/ata/ata-raid.c	2009-04-30 19:26:27.000000000 -0400
+@@ -164,7 +164,7 @@
+     disk_create(rdp->disk, DISK_VERSION);
+ 
+     printf("ar%d: %juMB <%s %s%s> status: %s\n", rdp->lun,
+-	   rdp->total_sectors / ((1024L * 1024L) / DEV_BSIZE),
++	   (rdp->total_sectors * DEV_BSIZE) / 1000000,
+ 	   ata_raid_format(rdp), ata_raid_type(rdp),
+ 	   buffer, ata_raid_flags(rdp));
+ 
+diff -ruN sys/dev/ata/atapi-cd.c sys/dev/ata/atapi-cd.c
+--- sys/dev/ata/atapi-cd.c	2009-03-13 10:07:05.000000000 -0400
++++ sys/dev/ata/atapi-cd.c	2009-04-30 19:29:41.000000000 -0400
+@@ -1009,7 +1009,7 @@
+ 		      cdp->disk_size, cdp->block_size,
+ 		      cdp->toc.hdr.ending_track-cdp->toc.hdr.starting_track+1);
+ 	if (cdp->toc.tab[0].control & 4)
+-	    printf("%dMB\n", cdp->disk_size * cdp->block_size / 1048576);
++	    printf("%dMB\n", (cdp->disk_size * cdp->block_size) / 1000000);
+ 	else
+ 	    printf("%d:%d audio\n",
+ 		   cdp->disk_size / 75 / 60, cdp->disk_size / 75 % 60);
+diff -ruN sys/dev/ata/atapi-fd.c sys/dev/ata/atapi-fd.c
+--- sys/dev/ata/atapi-fd.c	2009-03-13 10:07:05.000000000 -0400
++++ sys/dev/ata/atapi-fd.c	2009-04-30 19:25:31.000000000 -0400
+@@ -398,9 +398,9 @@
+     char sizestring[16];
+ 
+     if (fdp->mediasize > 1048576 * 5)
+-	sprintf(sizestring, "%juMB", fdp->mediasize / 1048576);
++	sprintf(sizestring, "%juMB", fdp->mediasize / 1000000);
+     else if (fdp->mediasize)
+-	sprintf(sizestring, "%juKB", fdp->mediasize / 1024);
++	sprintf(sizestring, "%juKB", fdp->mediasize / 1000);
+     else
+ 	strcpy(sizestring, "(no media)");
+  
+diff -ruN sys/dev/ida/ida_disk.c sys/dev/ida/ida_disk.c
+--- sys/dev/ida/ida_disk.c	2009-03-13 10:07:04.000000000 -0400
++++ sys/dev/ida/ida_disk.c	2009-04-30 19:31:39.000000000 -0400
+@@ -199,7 +199,7 @@
+ 	 * other initialization
+ 	 */
+ 	device_printf(dev, "%uMB (%u sectors), blocksize=%d\n",
+-	    drv->secperunit / ((1024 * 1024) / drv->secsize),
++	    (drv->secperunit * drv->secsize) / 1000000,
+ 	    drv->secperunit, drv->secsize);
+ 
+ 	drv->disk = disk_alloc();
+diff -ruN sys/dev/mfi/mfi_disk.c sys/dev/mfi/mfi_disk.c
+--- sys/dev/mfi/mfi_disk.c	2009-03-13 10:06:38.000000000 -0400
++++ sys/dev/mfi/mfi_disk.c	2009-04-30 19:27:08.000000000 -0400
+@@ -130,7 +130,7 @@
+ 		break;
+ 	}
+ 	device_printf(dev, "%juMB (%ju sectors) RAID volume '%s' is %s\n",
+-		      sectors / (1024 * 1024 / secsize), sectors,
++		      (sectors * secsize) / 1000000, sectors,
+ 		      ld_info->ld_config.properties.name,
+ 		      state);
+ 
+diff -ruN sys/dev/mlx/mlx_disk.c sys/dev/mlx/mlx_disk.c
+--- sys/dev/mlx/mlx_disk.c	2009-03-13 10:06:32.000000000 -0400
++++ sys/dev/mlx/mlx_disk.c	2009-04-30 19:32:47.000000000 -0400
+@@ -217,7 +217,7 @@
+     }
+ 
+     device_printf(dev, "%uMB (%u sectors) RAID %d (%s)\n",
+-		  sc->mlxd_drive->ms_size / ((1024 * 1024) / MLX_BLKSIZE),
++		  (sc->mlxd_drive->ms_size * MLX_BLKSIZE) / 1000000,
+ 		  sc->mlxd_drive->ms_size, sc->mlxd_drive->ms_raidlevel, state);
+ 
+     sc->mlxd_disk = disk_alloc();
