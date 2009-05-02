@@ -94,12 +94,14 @@ Released: N/A
 
 ==== Targets ====
 
+ * FreeBSD 7.2-RELEASE/i386
  * FreeBSD 7.1-RELEASE-p5/i386
 
 ==== Errata ====
 
  * Just chmod -R /system to 555, and add the immutable flag. We can do this because we cleanly seperate system and user.
  * Modify the file patches so that file -i won't add setuid/setgid to the beginning of the type.
+ * Modify the dmesg output to report the proper sizes of disks.
 
 ==== Security Updates ====
 
