@@ -26,11 +26,11 @@
 # $Id$
 
 # Our build targets for the root.fs image.
-export i386_ACTIVE="7.1-RELEASE/i386"
+export i386_ACTIVE="7.2-RELEASE/i386"
 
 # Evoke Version
 export VERSION="0.1"
-export REVISION="r5"
+export REVISION="r6"
 
 # Release Engineer
 export ENGINEER="Dylan Cochran"
