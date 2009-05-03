@@ -63,7 +63,7 @@ do
 
 	# N_ prefix variables are for the file copies from DESTDIR to FSDIR, the 
 	# targets are arch and abi specific.
-	export N_DIR=/system/FreeBSD-${ABI}/${TARGET}
+	export N_DIR=/system/FreeBSD-${RELEASE}/${TARGET}
 	export N_SHAREBIN=/system/share/bin
 	export N_SHARELIB=/system/share/lib
 	export N_BIN=${N_DIR}/bin
