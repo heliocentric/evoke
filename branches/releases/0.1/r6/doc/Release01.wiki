@@ -102,6 +102,7 @@ Released: N/A
  * Just chmod -R /system to 555, and add the immutable flag. We can do this because we cleanly seperate system and user.
  * Modify the file patches so that file -i won't add setuid/setgid to the beginning of the type.
  * Modify the dmesg output to report the proper sizes of disks.
+ * Use major and minor version numbers for the ABI, that way there are no syncing issues.
 
 ==== Security Updates ====
 
