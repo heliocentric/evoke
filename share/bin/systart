@@ -186,7 +186,7 @@ export EVOKE_MEMDIR=/mem
 # create a large ramdisk.
 
 if [ "${EVOKE_SYSTEM_OS}" = "FreeBSD" ] ; then
-	if [ "${EVOKE_SYSTEM_ABI}" -ge "7" ] ; then
+	if [ "$(echo ${EVOKE_SYSTEM_ABI} | cut -d . -f 1)" -ge "7" ] ; then
 		mount -t tmpfs tmpfs ${EVOKE_MEMDIR}
 	else
 		mdmfs -s60m md ${EVOKE_MEMDIR}
