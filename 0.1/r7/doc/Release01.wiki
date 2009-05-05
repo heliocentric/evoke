@@ -88,6 +88,23 @@ Jamie Ivanov of RadioactiveRussian.com for providing another test machine for th
 
 == Revisions ==
 
+=== [http://www.damnsmallbsd.org/pub/evoke/misc/ISO-IMAGES/0.1/r7/ r7] ===
+
+Released: 05/05/2009
+
+==== Targets ====
+
+ * FreeBSD 7.2-RELEASE/i386
+ * FreeBSD 7.1-RELEASE-p5/i386
+
+==== Errata ====
+
+ * Fix a broken backmerge.
+
+==== Security Updates ====
+
+ * N/A
+
 === [http://www.damnsmallbsd.org/pub/evoke/misc/ISO-IMAGES/0.1/r6/ r6] ===
 
 Released: N/A
