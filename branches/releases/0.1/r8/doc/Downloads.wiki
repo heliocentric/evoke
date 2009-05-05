@@ -1,0 +1,9 @@
+== Download ==
+
+The easiest way to obtain Evoke is by using one of the mirrors below. Just click on one to get started!
+
+== Mirrors ==
+
+ * [http://www.damnsmallbsd.org/pub/]
+
+Want to help us out by donating some file mirroring? Please [Downloads leave a comment here].

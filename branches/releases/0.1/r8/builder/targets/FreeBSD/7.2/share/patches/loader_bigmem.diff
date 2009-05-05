@@ -1,0 +1,17 @@
+--- sys/boot/i386/loader/main.c	2009-04-17 19:29:13.000000000 -0400
++++ sys/boot/i386/loader/main.c	2009-04-18 15:58:05.000000000 -0400
+@@ -96,14 +96,9 @@
+      */
+     bios_getmem();
+ 
+-#if defined(LOADER_BZIP2_SUPPORT) || defined(LOADER_FIREWIRE_SUPPORT) || defined(LOADER_GPT_SUPPORT)
+     heap_top = PTOV(memtop_copyin);
+     memtop_copyin -= 0x300000;
+     heap_bottom = PTOV(memtop_copyin);
+-#else
+-    heap_top = (void *)bios_basemem;
+-    heap_bottom = (void *)end;
+-#endif
+     setheap(heap_bottom, heap_top);
+ 
+     /* 

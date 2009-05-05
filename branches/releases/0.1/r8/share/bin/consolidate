@@ -1,0 +1,74 @@
+#!/bin/sh
+# Copyright 2007-2009 Dylan Cochran
+# All rights reserved
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted providing that the following conditions
+# are met:
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+# IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
+# DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+# STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
+# IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
+
+# $Id$
+
+HASHDIR=/hash
+
+
+merge_links () {
+	local HASH=$(sha256 -q ${1})
+	local HEADER=$(echo ${HASH} | cut -b 1-4)
+	local TAIL=$(echo ${HASH} | cut -b 5-64)
+	if [ ! -d "${HASHDIR}/${HEADER}" ] ; then
+		mkdir -p "${HASHDIR}/${HEADER}"
+	fi
+	if [ -f "${HASHDIR}/${HEADER}/${TAIL}" ] ; then
+		EHASH=$(sha256 -q "${HASHDIR}/${HEADER}/${TAIL}")
+		if [ "${EHASH}" = "${HASH}" ] ; then
+			ln -f "${HASHDIR}/${HEADER}/${TAIL}" "${1}"
+		else
+			mv "${HASHDIR}/${HEADER}/${TAIL}" "${HASHDIR}/${HEADER}/${TAIL}temp"
+			merge_links "${HASHDIR}/${HEADER}/${TAIL}temp"
+			ln -f "${1}" "${HASHDIR}/${HEADER}/${TAIL}"
+		fi
+	else
+		ln -f "${1}" "${HASHDIR}/${HEADER}/${TAIL}"
+	fi
+}
+
+consolidate_loop () {
+	while [ "${1}" != "" ]
+	do
+		local STAT_TYPE="$(OPTIONS="quiet norecurse" filetype "${1}")"
+		case "${STAT_TYPE}" in
+			inode/directory)
+				for entry in $(ls -a "${1}")
+				do
+					if [ "${entry}" != "." -a "${entry}" != ".." ] ; then
+						consolidate_loop "${1}/${entry}"
+					fi
+				done
+			;;
+			*)
+				merge_links "${1}"
+			;;
+		esac
+		shift
+	done
+}
+
+consolidate_loop $@
