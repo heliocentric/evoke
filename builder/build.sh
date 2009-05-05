@@ -185,7 +185,7 @@ do
 
 	# This copies nsrc to src/, to compile our own code. For some reason does not work, but non-critical.
 
-	cd ${BUILDDIR}
+	cd ${BUILDDIR}/targets/FreeBSD/share/
 	tar -cf - nsrc | tar -xf - -C ${DESTDIR}/usr/src/
 
 	# Allow us to build both statically and dynamically. Note, it needs to be automated more.
