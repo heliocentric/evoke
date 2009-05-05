@@ -2,6 +2,8 @@
 # $FreeBSD$
 
 PROG=	nexusd
+MAN=    nexusd.8
+
 PRECIOUSPROG=
 INSTALLFLAGS=-b -B.bak
 WARNS?=	6
