@@ -11,7 +11,9 @@
 #include <sys/uio.h>
 #include <signal.h>
 #include <sha256.h>
+#include <kenv.h>
 
+#define HEX_DIGEST_LENGTH 65	
 
 int setctty(const char *);
 int remount(const char *sourcepath, const char *destpath, int flags);
@@ -26,6 +28,30 @@ int remount(const char *sourcepath, const char *destpath, int flags);
 #define BOOTPATH "/system/%%ABI%%/%%ARCH%%/boot"
 
 int main() {
+
+	char buffer[HEX_DIGEST_LENGTH];
+	char *realhash;
+	realhash = SHA256_File("/dev/md0", buffer);
+
+	if (!realhash) {
+		return 3;
+	} else {
+		char storedhash[HEX_DIGEST_LENGTH];
+		int ret;
+	        ret = kenv(KENV_GET, "evoke.fingerprint", storedhash, sizeof(storedhash));
+		if (ret == -1) {
+			return (ret);
+		} else {
+			if (storedhash[64] != '\0') {
+				return 4;
+			} else {
+				if (strncmp(realhash, storedhash, 64) != 0) {
+					return 5;
+				}
+			}
+		}
+	}
+
 	if (getpid() == 1) {
 
                 openlog("init", LOG_CONS|LOG_ODELAY, LOG_AUTH);
@@ -42,11 +68,14 @@ int main() {
 		close(1);
 		close(2);
 
+
 		remount(BINPATH, "/bin", MNT_NOATIME|MNT_RDONLY|MNT_UNION);
 		remount(LIBPATH, "/lib", MNT_NOATIME|MNT_RDONLY|MNT_UNION);
 		remount(LIBEXECPATH, "/libexec", MNT_NOATIME|MNT_RDONLY|MNT_UNION);
 		remount(BOOTPATH, "/boot", MNT_NOATIME|MNT_RDONLY|MNT_UNION);
 		remount("/system/share/bin", "/bin", MNT_NOATIME|MNT_RDONLY|MNT_UNION);
+
+		printf("system initialized");
 	} 
 	/* How the hell did we get here? */
 	return 1;
