@@ -16,7 +16,12 @@
 #define HEX_DIGEST_LENGTH 65	
 
 int setctty(const char *);
+
 int remount(const char *sourcepath, const char *destpath, int flags);
+
+int realmain(void);
+
+int checkhash(void);
 
 #define SYSTART "/system/share/bin/systart"
 #define SYSTOP "/system/share/bin/systop"
@@ -27,33 +32,22 @@ int remount(const char *sourcepath, const char *destpath, int flags);
 #define LIBEXECPATH "/system/%%ABI%%/%%ARCH%%/libexec"
 #define BOOTPATH "/system/%%ABI%%/%%ARCH%%/boot"
 
+int main(void);
+
 int main() {
+	int ret;
+	ret = realmain();
+	/* How the hell did we get here? */
+	return 1;
+}
 
-	char buffer[HEX_DIGEST_LENGTH];
-	char *realhash;
-	realhash = SHA256_File("/dev/md0", buffer);
-
-	if (!realhash) {
-		return 3;
-	} else {
-		char storedhash[HEX_DIGEST_LENGTH];
-		int ret;
-	        ret = kenv(KENV_GET, "evoke.fingerprint", storedhash, sizeof(storedhash));
-		if (ret == -1) {
-			return (ret);
-		} else {
-			if (storedhash[64] != '\0') {
-				return 4;
-			} else {
-				if (strncmp(realhash, storedhash, 64) != 0) {
-					return 5;
-				}
-			}
-		}
-	}
-
+int realmain() {
+	int ret;
 	if (getpid() == 1) {
-
+		ret = checkhash();
+		if (ret != 0) {
+			return (ret);
+		}
                 openlog("init", LOG_CONS|LOG_ODELAY, LOG_AUTH);
 
 		if (setsid() < 0) {
@@ -77,8 +71,34 @@ int main() {
 
 		printf("system initialized");
 	} 
-	/* How the hell did we get here? */
-	return 1;
+	return 0;
+}
+
+int checkhash() {
+	char buffer[HEX_DIGEST_LENGTH];
+	char *realhash;
+	realhash = SHA256_File("/dev/md0", buffer);
+
+	if (!realhash) {
+		return 3;
+	} else {
+		char storedhash[HEX_DIGEST_LENGTH];
+		int ret;
+	        ret = kenv(KENV_GET, "evoke.fingerprint", storedhash, sizeof(storedhash));
+		if (ret == -1) {
+			return (ret);
+		} else {
+			if (storedhash[64] != '\0') {
+				return 4;
+			} else {
+				if (strncmp(realhash, storedhash, 64) == 0) {
+					return 0;
+				} else {
+					return 5;
+				}
+			}
+		}
+	}
 }
 
 int setctty(const char *name) {
