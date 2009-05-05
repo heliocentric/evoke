@@ -1,12 +1,12 @@
 diff -ruN sys/cam/scsi/scsi_da.c sys/cam/scsi/scsi_da.c
 --- sys/cam/scsi/scsi_da.c	2009-03-13 10:05:34.000000000 -0400
-+++ sys/cam/scsi/scsi_da.c	2009-04-30 19:36:49.000000000 -0400
++++ sys/cam/scsi/scsi_da.c	2009-05-01 14:40:01.000000000 -0400
 @@ -1625,7 +1625,7 @@
  				        "%juMB (%ju %u byte sectors: %dH %dS/T "
                                          "%dC)", (uintmax_t)
  	                                (((uintmax_t)dp->secsize *
 -				        dp->sectors) / (1024*1024)),
-+				        dp->sectors) / 1000000,
++				        dp->sectors) / 1000000),
  			                (uintmax_t)dp->sectors,
  				        dp->secsize, dp->heads,
                                          dp->secs_per_track, dp->cylinders);
