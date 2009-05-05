@@ -188,6 +188,12 @@ do
 	cd ${BUILDDIR}/targets/FreeBSD/share/
 	tar -cf - nsrc | tar -xf - -C ${DESTDIR}/usr/src/
 
+	cd ${DESTDIR}/usr/src/nsrc
+	FILELIST="$(find . -not -path \*.svn\* -not -type d)"
+
+	sed -i .bak 's@%%ABI%%@FreeBSD-${RELEASE}@g' ${FILELIST}
+	sed -i .bak 's@%%ARCH%%@${TARGET}@g' ${FILELIST}
+
 	# Allow us to build both statically and dynamically. Note, it needs to be automated more.
 
 	case "${1}" in
