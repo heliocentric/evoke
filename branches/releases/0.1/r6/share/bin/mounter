@@ -57,6 +57,20 @@ MASKFS="nfs4 nfs smbfs zfs portalfs unionfs"
 
 mexit () {
 	echo_config
+	# XXX helio an ISTRANSPORT check is needed here, and mdconfig/ggatec destruction should be implemented.
+	if [ "${1}" != "0" ] ; then
+		if [ "${ISTRANSPORT}" = "yes" ] ; then
+			case "${TRANSPORT_PROTOCOL}" in
+				MD)
+					UNIT="$(echo "${M_FILE}" | cut -b 3-100)"
+					mdconfig -d -u "${UNIT}"
+				;;
+				GGATE)
+					ggatec destroy -u "${M_FILE}"
+				;;
+			esac
+		fi
+	fi
 	case "${1}" in
 		1)
 			# Use if ${M_HOST} is empty or unusable.
@@ -116,7 +130,6 @@ mexit () {
 			exit 255
 		;;
 	esac
-	# XXX helio an ISTRANSPORT check is needed here, and mdconfig/ggatec destruction should be implemented.
 }
 
 
@@ -550,6 +563,7 @@ mdconfig_handler () {
 	fi
 	local ERROR=$?
 	ISTRANSPORT="yes"
+	TRANSPORT_PROTOCOL="MD"
 	# XXX helio someone needs to fill out the error codes mdconfig can return.
 	case "${ERROR}" in
 		0)
@@ -577,6 +591,7 @@ ggate_handler () {
 	local GATEDEV=$(ggatec create ${GOPTS} ${M_HOST} ${M_FILE})
 	local ERROR=$?
 	ISTRANSPORT="yes"
+	TRANSPORT_PROTOCOL="GGATE"
 	# XXX helio someone needs to fill out the error codes ggatec can return.
 	case "${ERROR}" in
 		0)
@@ -697,7 +712,7 @@ remount_mount () {
 	fi
 }
 
-# remounter wrapper.
+# fs wrapper.
 
 fs_mount () {
 	echo_config
@@ -1197,6 +1212,29 @@ mounter_command () {
 			esac
 		;;
 		*)
+			if [ -d "${2}" ] ; then
+				if [ -d "${1}" ] ; then
+					mounter "remount:${1}" "${2}"
+					mexit 0
+				else
+					if [ -f "${1}" ] ; then
+						case "${1}" in
+							/*)
+								mounter "fs:${1}" "${2}"
+							;;
+							*)
+								mounter "fs:$(pwd)/${1}" "${2}"
+							;;
+						esac
+						mexit 0
+					else
+						if [ -c "${DEVICES}/${1}" ] ; then
+							mounter "fs:${1}" "${2}"
+							mexit 0
+						fi
+					fi
+				fi
+			fi
 			echo "usage:"
 		;;
 	esac
