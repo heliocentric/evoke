@@ -8,12 +8,22 @@
 #include <stdarg.h>
 #include <sys/mount.h>
 #include <sys/uio.h>
+#include <signal.h>
 
 int setctty(const char *);
 
+#define SYSTART "/system/share/bin/systart"
+#define SYSTOP "/system/share/bin/systop"
+
+#define BINPATH "/system/%%ABI%%/%%ARCH%%/bin"
+#define SHELLPATH "/system/%%ABI%%/%%ARCH%%/bin/sh"
+#define LIBPATH "/system/%%ABI%%/%%ARCH%%/lib"
+#define LIBEXECPATH "/system/%%ABI%%/%%ARCH%%/libexec"
+#define BOOTPATH "/system/%%ABI%%/%%ARCH%%/boot"
+
 int main() {
 	if (getpid() == 1) {
-
+		printf("blah\n");
 	}
 	/* How the hell did we get here? */
 	return 1;
