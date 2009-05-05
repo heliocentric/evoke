@@ -38,12 +38,18 @@ int main() {
 	int ret;
 	ret = realmain();
 	/* How the hell did we get here? */
-	return 1;
+	return (ret);
 }
 
 int realmain() {
 	int ret;
 	if (getpid() == 1) {
+		close(0);
+		close(1);
+		close(2);
+
+		setctty("/dev/console");		
+
 		ret = checkhash();
 		if (ret != 0) {
 			return (ret);
@@ -58,9 +64,6 @@ int realmain() {
 			return 2;
 		}
 
-		close(0);
-		close(1);
-		close(2);
 
 
 		remount(BINPATH, "/bin", MNT_NOATIME|MNT_RDONLY|MNT_UNION);
