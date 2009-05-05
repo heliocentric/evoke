@@ -1,5 +1,5 @@
 # $Id$
 
-SUBDIR= runterm
+SUBDIR= nexusd
 
 .include <bsd.subdir.mk>
