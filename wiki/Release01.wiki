@@ -103,6 +103,7 @@ Released: N/A
  * Modify the file patches so that file -i won't add setuid/setgid to the beginning of the type.
  * Modify the dmesg output to report the proper sizes of disks.
  * Use major and minor version numbers for the ABI, that way there are no syncing issues.
+ * Add 'tasting' support to mounter, so it no longer requires a protocol for files/directories/device nodes.
 
 ==== Security Updates ====
 
