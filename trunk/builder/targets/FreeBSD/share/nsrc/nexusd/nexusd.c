@@ -10,6 +10,8 @@
 #include <sys/mount.h>
 #include <sys/uio.h>
 #include <signal.h>
+#include <sha256.h>
+
 
 int setctty(const char *);
 int remount(const char *sourcepath, const char *destpath, int flags);
@@ -39,6 +41,7 @@ int main() {
 		close(0);
 		close(1);
 		close(2);
+
 		remount(BINPATH, "/bin", MNT_NOATIME|MNT_RDONLY|MNT_UNION);
 		remount(LIBPATH, "/lib", MNT_NOATIME|MNT_RDONLY|MNT_UNION);
 		remount(LIBEXECPATH, "/libexec", MNT_NOATIME|MNT_RDONLY|MNT_UNION);
