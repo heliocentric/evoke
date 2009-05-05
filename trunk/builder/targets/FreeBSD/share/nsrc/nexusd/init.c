@@ -122,7 +122,6 @@ state_func_t clean_ttys(void);
 state_func_t catatonia(void);
 state_func_t death(void);
 
-state_func_t run_script(const char *);
 
 enum { AUTOBOOT, FASTBOOT } runcom_mode = AUTOBOOT;
 #define FALSE	0
@@ -190,198 +189,116 @@ DB *session_db;
  * The mother of all processes.
  */
 int
-main(int argc, char *argv[])
+main()
 {
-	state_t initial_transition = runcom;
-	char kenv_value[PATH_MAX];
-	int c;
 	struct sigaction sa;
 	sigset_t mask;
 
-	/* Dispose of random users. */
-	if (getuid() != 0)
-		errx(1, "%s", strerror(EPERM));
-
 	/* System V users like to reexec init. */
 	if (getpid() != 1) {
-#ifdef COMPAT_SYSV_INIT
-		/* So give them what they want */
-		if (argc > 1) {
-			if (strlen(argv[1]) == 1) {
-				char runlevel = *argv[1];
-				int sig;
+		openlog("init", LOG_CONS|LOG_ODELAY, LOG_AUTH);
 
-				switch (runlevel) {
-				case '0': /* halt + poweroff */
-					sig = SIGUSR2;
-					break;
-				case '1': /* single-user */
-					sig = SIGTERM;
-					break;
-				case '6': /* reboot */
-					sig = SIGINT;
-					break;
-				case 'c': /* block further logins */
-					sig = SIGTSTP;
-					break;
-				case 'q': /* rescan /etc/ttys */
-					sig = SIGHUP;
-					break;
-				default:
-					goto invalid;
+		if (setsid() < 0) {
+			warning("initial setsid() failed: %m");
+		}
+
+		if (setlogin("root") < 0) {
+			warning("setlogin() failed: %m");
+		}
+
+		handle(badsys, SIGSYS, 0);
+		handle(disaster, SIGABRT, SIGFPE, SIGILL, SIGSEGV, SIGBUS, SIGXCPU, SIGXFSZ, 0);
+		handle(transition_handler, SIGHUP, SIGINT, SIGTERM, SIGTSTP, SIGUSR1, SIGUSR2, 0);
+		handle(alrm_handler, SIGALRM, 0);
+		sigfillset(&mask);
+		delset(&mask, SIGABRT, SIGFPE, SIGILL, SIGSEGV, SIGBUS, SIGSYS, SIGXCPU, SIGXFSZ, SIGHUP, SIGINT, SIGTERM, SIGTSTP, SIGALRM, SIGUSR1, SIGUSR2, 0);
+		sigprocmask(SIG_SETMASK, &mask, (sigset_t *) 0);
+		sigemptyset(&sa.sa_mask);
+		sa.sa_flags = 0;
+		sa.sa_handler = SIG_IGN;
+		sigaction(SIGTTIN, &sa, (struct sigaction *)0);
+		sigaction(SIGTTOU, &sa, (struct sigaction *)0);
+
+		close(0);
+		close(1);
+		close(2);
+
+		if (devfs) {
+			struct iovec iov[4];
+			char *s;
+			int i;
+
+			char _fstype[]	= "fstype";
+			char _devfs[]	= "devfs";
+			char _fspath[]	= "fspath";
+			char _path_dev[]= _PATH_DEV;
+
+			iov[0].iov_base = _fstype;
+			iov[0].iov_len = sizeof(_fstype);
+			iov[1].iov_base = _devfs;
+			iov[1].iov_len = sizeof(_devfs);
+			iov[2].iov_base = _fspath;
+			iov[2].iov_len = sizeof(_fspath);
+			/*
+			 * Try to avoid the trailing slash in _PATH_DEV.
+			 * Be *very* defensive.
+			 */
+			s = strdup(_PATH_DEV);
+			if (s != NULL) {
+				i = strlen(s);
+				if (i > 0 && s[i - 1] == '/') {
+					s[i - 1] = '\0';
 				}
-				kill(1, sig);
-				_exit(0);
-			} else
-invalid:
-				errx(1, "invalid run-level ``%s''", argv[1]);
-		} else
-#endif
-			errx(1, "already running");
-	}
-	/*
-	 * Note that this does NOT open a file...
-	 * Does 'init' deserve its own facility number?
-	 */
-	openlog("init", LOG_CONS|LOG_ODELAY, LOG_AUTH);
-
-	/*
-	 * Create an initial session.
-	 */
-	if (setsid() < 0)
-		warning("initial setsid() failed: %m");
-
-	/*
-	 * Establish an initial user so that programs running
-	 * single user do not freak out and die (like passwd).
-	 */
-	if (setlogin("root") < 0)
-		warning("setlogin() failed: %m");
-
-	/*
-	 * This code assumes that we always get arguments through flags,
-	 * never through bits set in some random machine register.
-	 */
-	while ((c = getopt(argc, argv, "dsf")) != -1)
-		switch (c) {
-		case 'd':
-			devfs = 1;
-			break;
-		case 's':
-			initial_transition = single_user;
-			break;
-		case 'f':
-			runcom_mode = FASTBOOT;
-			break;
-		default:
-			warning("unrecognized flag '-%c'", c);
-			break;
+				iov[3].iov_base = s;
+				iov[3].iov_len = strlen(s) + 1;
+			} else {
+				iov[3].iov_base = _path_dev;
+				iov[3].iov_len = sizeof(_path_dev);
+			}
+			nmount(iov, 4, 0);
+			if (s != NULL) {
+				free(s);
+			}
 		}
 
-	if (optind != argc)
-		warning("ignoring excess arguments");
 
-	/*
-	 * We catch or block signals rather than ignore them,
-	 * so that they get reset on exec.
-	 */
-	handle(badsys, SIGSYS, 0);
-	handle(disaster, SIGABRT, SIGFPE, SIGILL, SIGSEGV, SIGBUS, SIGXCPU,
-	    SIGXFSZ, 0);
-	handle(transition_handler, SIGHUP, SIGINT, SIGTERM, SIGTSTP, SIGUSR1,
-	    SIGUSR2, 0);
-	handle(alrm_handler, SIGALRM, 0);
-	sigfillset(&mask);
-	delset(&mask, SIGABRT, SIGFPE, SIGILL, SIGSEGV, SIGBUS, SIGSYS,
-	    SIGXCPU, SIGXFSZ, SIGHUP, SIGINT, SIGTERM, SIGTSTP, SIGALRM,
-	    SIGUSR1, SIGUSR2, 0);
-	sigprocmask(SIG_SETMASK, &mask, (sigset_t *) 0);
-	sigemptyset(&sa.sa_mask);
-	sa.sa_flags = 0;
-	sa.sa_handler = SIG_IGN;
-	sigaction(SIGTTIN, &sa, (struct sigaction *)0);
-	sigaction(SIGTTOU, &sa, (struct sigaction *)0);
 
-	/*
-	 * Paranoia.
-	 */
-	close(0);
-	close(1);
-	close(2);
+		pid_t pid;
+		char *nargv[4];
+		const char *shell;
+		struct sigaction nsa;
 
-	if (kenv(KENV_GET, "init_script", kenv_value, sizeof(kenv_value)) > 0) {
-		state_func_t next_transition;
+		shell = get_shell();
 
-		if ((next_transition = run_script(kenv_value)) != 0)
-			initial_transition = (state_t) next_transition;
-	}
+		if ((pid = fork()) == 0) {
+			sigemptyset(&nsa.sa_mask);
+			nsa.sa_flags = 0;
+			nsa.sa_handler = SIG_IGN;
+			sigaction(SIGTSTP, &nsa, (struct sigaction *)0);
+			sigaction(SIGHUP, &nsa, (struct sigaction *)0);
 
-	if (kenv(KENV_GET, "init_chroot", kenv_value, sizeof(kenv_value)) > 0) {
-		if (chdir(kenv_value) != 0 || chroot(".") != 0)
-			warning("Can't chroot to %s: %m", kenv_value);
-	}
+			setctty(_PATH_CONSOLE);
 
-	/*
-	 * Additional check if devfs needs to be mounted:
-	 * If "/" and "/dev" have the same device number,
-	 * then it hasn't been mounted yet.
-	 */
-	if (!devfs) {
-		struct stat stst;
-		dev_t root_devno;
 
-		stat("/", &stst);
-		root_devno = stst.st_dev;
-		if (stat("/dev", &stst) != 0)
-			warning("Can't stat /dev: %m");
-		else if (stst.st_dev == root_devno)
-			devfs++;
-	}
-
-	if (devfs) {
-		struct iovec iov[4];
-		char *s;
-		int i;
-
-		char _fstype[]	= "fstype";
-		char _devfs[]	= "devfs";
-		char _fspath[]	= "fspath";
-		char _path_dev[]= _PATH_DEV;
-
-		iov[0].iov_base = _fstype;
-		iov[0].iov_len = sizeof(_fstype);
-		iov[1].iov_base = _devfs;
-		iov[1].iov_len = sizeof(_devfs);
-		iov[2].iov_base = _fspath;
-		iov[2].iov_len = sizeof(_fspath);
-		/*
-		 * Try to avoid the trailing slash in _PATH_DEV.
-		 * Be *very* defensive.
-		 */
-		s = strdup(_PATH_DEV);
-		if (s != NULL) {
-			i = strlen(s);
-			if (i > 0 && s[i - 1] == '/')
-				s[i - 1] = '\0';
-			iov[3].iov_base = s;
-			iov[3].iov_len = strlen(s) + 1;
-		} else {
-			iov[3].iov_base = _path_dev;
-			iov[3].iov_len = sizeof(_path_dev);
+			nargv[0] = "sh";
+			nargv[1] = "/system/share/bin/systart";
+			nargv[2] = "autoboot";
+			nargv[3] = 0;
+	
+			sigprocmask(SIG_SETMASK, &nsa.sa_mask, (sigset_t *) 0);
+	
+			execv("/system/%%ABI%%/%%ARCH%%/bin/sh", nargv);
+			stall("can't exec systart");
+			_exit(1);	/* force single user mode */
 		}
-		nmount(iov, 4, 0);
-		if (s != NULL)
-			free(s);
+
+		if (pid == -1) {
+			emergency("can't fork for systart");
+			while (waitpid(-1, (int *) 0, WNOHANG) > 0)
+				continue;
+			sleep(STALL_TIMEOUT);
+		}
 	}
-
-	/*
-	 * Start the state machine.
-	 */
-	transition(initial_transition);
-
-	/*
-	 * Should never reach here.
-	 */
 	return 1;
 }
 
@@ -786,104 +703,6 @@ runcom(void)
 	return (state_func_t) read_ttys;
 }
 
-/*
- * Run a shell script.
- * Returns 0 on success, otherwise the next transition to enter:
- *  - single_user if fork/execv/waitpid failed, or if the script
- *    terminated with a signal or exit code != 0.
- *  - death if a SIGTERM was delivered to init(8).
- */
-state_func_t
-run_script(const char *script)
-{
-	pid_t pid, wpid;
-	int status;
-	char *argv[4];
-	const char *shell;
-	struct sigaction sa;
-
-	shell = get_shell();
-
-	if ((pid = fork()) == 0) {
-		sigemptyset(&sa.sa_mask);
-		sa.sa_flags = 0;
-		sa.sa_handler = SIG_IGN;
-		sigaction(SIGTSTP, &sa, (struct sigaction *)0);
-		sigaction(SIGHUP, &sa, (struct sigaction *)0);
-
-		setctty(_PATH_CONSOLE);
-
-		char _sh[]	 	= "sh";
-		char _autoboot[]	= "autoboot";
-
-		argv[0] = _sh;
-		argv[1] = __DECONST(char *, script);
-		argv[2] = runcom_mode == AUTOBOOT ? _autoboot : 0;
-		argv[3] = 0;
-
-		sigprocmask(SIG_SETMASK, &sa.sa_mask, (sigset_t *) 0);
-
-#ifdef LOGIN_CAP
-		setprocresources(RESOURCE_RC);
-#endif
-		execv(shell, argv);
-		stall("can't exec %s for %s: %m", shell, script);
-		_exit(1);	/* force single user mode */
-	}
-
-	if (pid == -1) {
-		emergency("can't fork for %s on %s: %m", shell, script);
-		while (waitpid(-1, (int *) 0, WNOHANG) > 0)
-			continue;
-		sleep(STALL_TIMEOUT);
-		return (state_func_t) single_user;
-	}
-
-	/*
-	 * Copied from single_user().  This is a bit paranoid.
-	 */
-	requested_transition = 0;
-	do {
-		if ((wpid = waitpid(-1, &status, WUNTRACED)) != -1)
-			collect_child(wpid);
-		if (wpid == -1) {
-			if (requested_transition == death)
-				return (state_func_t) death;
-			if (errno == EINTR)
-				continue;
-			warning("wait for %s on %s failed: %m; going to "
-			    "single user mode", shell, script);
-			return (state_func_t) single_user;
-		}
-		if (wpid == pid && WIFSTOPPED(status)) {
-			warning("init: %s on %s stopped, restarting\n",
-			    shell, script);
-			kill(pid, SIGCONT);
-			wpid = -1;
-		}
-	} while (wpid != pid);
-
-	if (WIFSIGNALED(status) && WTERMSIG(status) == SIGTERM &&
-	    requested_transition == catatonia) {
-		/* /etc/rc executed /sbin/reboot; wait for the end quietly */
-		sigset_t s;
-
-		sigfillset(&s);
-		for (;;)
-			sigsuspend(&s);
-	}
-
-	if (!WIFEXITED(status)) {
-		warning("%s on %s terminated abnormally, going to single "
-		    "user mode", shell, script);
-		return (state_func_t) single_user;
-	}
-
-	if (WEXITSTATUS(status))
-		return (state_func_t) single_user;
-
-	return (state_func_t) 0;
-}
 
 /*
  * Open the session database.
