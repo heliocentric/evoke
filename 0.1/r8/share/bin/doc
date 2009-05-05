@@ -1,0 +1,303 @@
+#!/bin/sh
+# Copyright 2007-2009 Dylan Cochran
+# All rights reserved
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted providing that the following conditions
+# are met:
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+# IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
+# DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+# STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
+# IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
+
+# $Id$
+
+if [ "${EVOKE_DOCDIR}" = "" ] ; then
+	export EVOKE_DOCDIR="/system/share/doc"
+fi
+
+# the for field specifier, so call for like so: local IFS="${FORFS}" \n for blah in blah
+
+FORFS="
+"
+
+display_vars () {
+	if [ "${DEBUG}" = "yes" ] ; then
+		local IFS="${FORFS}"
+		for i in ${DOC_NAME}
+		do
+			echo -n "name="
+			echo ${i}
+		done
+		for i in ${DOC_TYPE}
+		do
+			echo -n "type="
+			echo ${i}
+		done
+		for i in ${DOC_DOCTYPE}
+		do
+			echo -n "doctype="
+			echo ${i}
+		done
+		echo output=${DOC_OUTPUT}
+	fi
+}
+
+getlist() {
+	while [ "${1}" != "" ]
+	do
+		case "${1}" in
+			wiki)
+				if [ "${EVOKE_NEWSEARCH}" = "no" ] ; then
+					find_matching_wiki
+				else
+					find_matching_wiki2
+				fi
+			;;
+		esac
+		shift
+	done
+}
+
+find_matching_wiki2() {
+	local IFS="${FORFS}"
+	for filename in $(list_docs)
+	do
+		shortname="$(echo "${filename}" | cut -d . -f 1)"
+		contents="$( (cat ${EVOKE_DOCDIR}/${filename} | grep ^#summary );(cat ${EVOKE_DOCDIR}/${filename} | grep ^#labels ); ( cat ${EVOKE_DOCDIR}/${filename} | awk '/<wiki:comment>/, /<\/wiki:comment>/' | sed 's_<wiki:comment>__g' | sed 's_</wiki:comment>__g' | grep -v ^$) )"
+		eval HEADER_${shortname}=\"\$\{contents\}\"
+	done
+	if [ "${DOC_NAME}" != "" ] ; then
+		for name in ${DOC_NAME}
+		do
+			for var in $(list_headers)
+			do
+				if [ "$(eval echo \"\$\{${var}\}\" | egrep "^[[:blank:]]+name:" | cut -d : -f 2-100 | grep ${name})" = "" ] ; then
+					unset ${var}
+				fi
+			done
+		done
+	fi
+	if [ "${DOC_PROGLANG}" != "" ] ; then
+		for proglang in ${DOC_PROGLANG}
+		do
+			for var in $(list_headers)
+			do
+				if [ "$(eval echo \"\$\{${var}\}\" | egrep "^[[:blank:]]+programming-language:" | cut -d : -f 2-100 | grep ${proglang})" = "" ] ; then
+					unset ${var}
+				fi
+			done
+		done
+	fi
+	if [ "${DOC_AUTHOR}" != "" ] ; then
+		for author in ${DOC_AUTHOR}
+		do
+			for var in $(list_headers)
+			do
+				if [ "$(eval echo \"\$\{${var}\}\" | egrep "^[[:blank:]]+svnauthor:" | cut -d : -f 2-100 | grep ${author})" = "" ] ; then
+					unset ${var}
+				fi
+			done
+		done
+	fi
+	if [ "${DOC_TYPE}" != "" ] ; then
+		for type in ${DOC_TYPE}
+		do
+			for var in $(list_headers)
+			do
+				COMMENT_TYPE="$(eval echo \"\$\{${var}\}\" | egrep "^[[:blank:]]+type:" | cut -d : -f 2-100 | grep ${type})"
+				LABEL_TYPE="$(eval echo \"\$\{${var}\}\" | grep ${type})"
+				if [ "${COMMENT_TYPE}" = "" -a "${LABEL_TYPE}" = "" ] ; then
+					unset ${var}
+				fi
+			done
+		done
+	fi
+	for var in $(list_headers)
+	do
+		echo "$(echo "${var}" | cut -d _ -f 2-100)" "(wiki) -" "$(eval echo \"\$\{${var}\}\" | grep ^#summary | awk '{ print $2 " " $3 " " $4 " " $5 " " $6 " " $7 " " $8 " " $9 " " $10 " " $11; }' )" 
+	done
+}
+
+list_headers() {
+	set | grep ^HEADER_ | cut -d = -f 1
+}
+
+find_matching_wiki() {
+	# first pass, lets get ones that match the name.
+
+	if [ "${DOC_NAME}" != "" ] ; then
+		local IFS="${FORFS}"
+		for name in ${DOC_NAME}
+		do
+			PAGELIST_NAME=$(printf "${PAGELIST_NAME}\n$(list_docs | grep -i ${name})")
+		done
+	else
+		PAGELIST_NAME="$(list_docs)"
+	fi
+
+	# second pass, check type
+	if [ "${DOC_TYPE}" != "" ] ; then
+		PAGELIST_TEMP="${PAGELIST_NAME}"
+		for type in ${DOC_TYPE}
+		do
+			PAGELIST_TEMP="$(for file in ${PAGELIST_TEMP}
+			do
+				RESULT=$(grep ^#labels ${EVOKE_DOCDIR}/${file} | grep -i ${type})
+				if [ "${RESULT}" != "" ] ; then
+					echo ${file}
+				fi
+			done)"
+		done
+		PAGELIST="${PAGELIST_TEMP}"
+	else
+		PAGELIST="${PAGELIST_NAME}"
+	fi
+	for page in ${PAGELIST}
+	do
+		printf "$(echo ${page} | cut -d . -f 1) (wiki) - "
+		grep ^#summary ${EVOKE_DOCDIR}/${page} | awk '{ print $2 " " $3 " " $4 " " $5 " " $6 " " $7 " " $8 " " $9 " " $10 " " $11; }' 
+	done
+}
+
+list_docs() {
+	cd ${EVOKE_DOCDIR}
+	local IFS="${FORFS}"
+	for name in $(ls | grep .wiki)
+	do
+		ISDOC=$(grep ^#labels ${name} | grep Doc)
+		if [ "${ISDOC}" != "" ] ; then
+			echo ${name}
+		fi
+	done
+}
+
+wiki_display () {
+	case "${DOC_OUTPUT}" in
+		[tT][tT][yY])
+			strip_wiki "${1}" | less
+		;;
+		[bB][aA][tT][cC][hH])
+			strip_wiki "${1}"
+		;;
+		[fF][iI][lL][eE][lL][iI][sS][Tt])
+			echo "${1}"
+		;;
+		[nN][aA][mM][eE][lL][iI][sS][Tt])
+			echo "${2}"
+		;;
+	esac
+}
+
+strip_wiki () {
+	grep -v ^#summary "${1}" | grep -v ^#labels | grep -v ^#sidebar | awk '/<wiki:comment>/, /<\/wiki:comment>/ { next; } { print }' | awk '/<wiki:/, /\/>/ { next; } { print }'
+}
+
+display_page() {
+	SPEC="$(echo ${1} | cut -d - -f 1)"
+	NAME="$(echo ${SPEC} | cut -d "(" -f 1 | awk '{ print $1 }')"
+	TYPE="$(echo ${SPEC} | cut -d "(" -f 2 | cut -d ")" -f 1)"
+	case "${TYPE}" in
+		wiki)
+			wiki_display "${EVOKE_DOCDIR}/${NAME}.wiki" "${NAME}"
+		;;
+	esac
+}
+
+doc() {
+	while [ "${1}" != "" ]
+	do
+		case "${1}" in
+			*=*)
+				DOC_KEY=$(echo ${1} | cut -d "=" -f 1)
+				DOC_VALUE=$(echo ${1} | cut -d "=" -f 2)
+			;;
+			*)
+				DOC_KEY=name
+				DOC_VALUE=${1}
+			;;
+		esac
+
+		case "${DOC_KEY}" in
+			[nN][aA][mM][eE])
+				DOC_VALUE=$(echo "${DOC_VALUE}" | tr "[:upper:]" "[:lower:]")
+				DOC_NAME=$(printf "${DOC_NAME}\n${DOC_VALUE}")
+			;;
+			[tT][yY][pP][eE])
+				DOC_VALUE=$(echo "${DOC_VALUE}" | tr "[:upper:]" "[:lower:]")
+				DOC_TYPE=$(printf "${DOC_TYPE}\n${DOC_VALUE}")
+			;;
+			[pP][rR][oO][gG][lL][aA][nN][gG])
+				DOC_VALUE=$(echo "${DOC_VALUE}" | tr "[:upper:]" "[:lower:]")
+				DOC_PROGLANG=$(printf "${DOC_PROGLANG}\n${DOC_VALUE}")
+			;;
+			[aA][uU][tT][hH][oO][rR])
+				DOC_VALUE=$(echo "${DOC_VALUE}" | tr "[:upper:]" "[:lower:]")
+				DOC_AUTHOR=$(printf "${DOC_AUTHOR}\n${DOC_VALUE}")
+			;;
+			[dD][oO][cC][tT][yY][pP][eE])
+				DOC_VALUE=$(echo "${DOC_VALUE}" | tr "[:upper:]" "[:lower:]")
+				DOC_DOCTYPE=$(printf "${DOC_DOCTYPE}\n${DOC_VALUE}")
+			;;
+			[Oo][uU][tT][pP][uU][tT])
+				DOC_VALUE=$(echo "${DOC_VALUE}" | tr "[:upper:]" "[:lower:]")
+				DOC_OUTPUT=${DOC_VALUE}
+			;;
+		esac
+
+		shift
+	done
+	unset DOC_KEY
+	unset DOC_VALUE
+	if [ "${DOC_DOCTYPE}" = "" ] ; then
+		DOC_DOCTYPE="wiki"
+	fi
+	if [ "${DOC_OUTPUT}" = "" ] ; then
+		DOC_OUTPUT="tty"
+	fi
+	display_vars
+	case "${DOC_OUTPUT}" in
+		[tT][tT][yY])
+			while [ "${BREAK}" != "yes" ]
+			do
+				clear
+				CHOICE=$(menu "Results" "$(getlist ${DOC_DOCTYPE} ; echo Quit)")
+				case "${CHOICE}" in
+					[qQ][uU][iI][tT])
+						BREAK="yes"
+					;;
+					*)
+						clear
+						display_page "${CHOICE}" && exit
+					;;
+				esac
+			done
+		;;
+		*)
+			local IFS="${FORFS}"
+			for name in $(getlist ${DOC_DOCTYPE})
+			do
+				display_page "${name}"
+			done
+		;;
+	esac
+}
+if [ "$(command -v menu)" != "" ] ; then
+	. "$(command -v menu)"
+fi
+
+doc $@
