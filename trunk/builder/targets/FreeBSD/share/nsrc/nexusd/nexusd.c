@@ -16,6 +16,8 @@
 
 #define HEX_DIGEST_LENGTH 65	
 
+int main(int argc, char *argv[], char *envp[]);
+
 int setctty(const char *);
 
 int fmount(const char *fstype, const char *sourcepath, const char *destpath, int flags);
@@ -23,6 +25,11 @@ int fmount(const char *fstype, const char *sourcepath, const char *destpath, int
 int realmain(void);
 
 int checkhash(void);
+
+int startpowerd(void);
+int startwatchdogd(void);
+int startdevd(void);
+int startservices(void);
 
 #define SYSTART "/system/share/bin/systart"
 #define SYSTOP "/system/share/bin/systop"
@@ -37,7 +44,6 @@ int checkhash(void);
 #define LIBEXECPATH "/system/%%ABI%%/%%ARCH%%/libexec"
 #define BOOTPATH "/system/%%ABI%%/%%ARCH%%/boot"
 
-int main(int argc, char *argv[], char *envp[]);
 
 int main(int argc, char *argv[], char *envp[]) {
 	int mode = MULTIUSER;
@@ -98,6 +104,10 @@ int realmain() {
 		fmount("nullfs", BOOTPATH, "/boot", MNT_NOATIME|MNT_RDONLY|MNT_UNION);
 		fmount("nullfs", "/system/share/bin", "/bin", MNT_NOATIME|MNT_RDONLY|MNT_UNION);
 
+		startpowerd();
+		startwatchdogd();
+		startdevd();
+		startservices();
 		printf("system initialized");
 	} 
 	return 0;
@@ -179,4 +189,20 @@ int fmount(const char *fstype, const char *sourcepath, const char *destpath, int
 	iov[5].iov_len = strlen(sourcepath) + 1;
 
 	return nmount(iov, 6, flags);
+}
+
+int startpowerd(void) {
+	return 0;
+}
+
+int startwatchdogd(void) {
+	return 0;
+}
+
+int startdevd(void) {
+	return 0;
+}
+
+int startservices(void) {
+	return 0;
 }
