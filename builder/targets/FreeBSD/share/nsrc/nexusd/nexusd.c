@@ -150,13 +150,13 @@ int realmain() {
 int checkhash() {
 	char buffer[HEX_DIGEST_LENGTH];
 	char *realhash;
-	realhash = SHA256_File("/dev/md0", buffer);
+	char storedhash[HEX_DIGEST_LENGTH];
+	int ret;
 
+	realhash = SHA256_File("/dev/md0", buffer);
 	if (!realhash) {
 		return 3;
 	} else {
-		char storedhash[HEX_DIGEST_LENGTH];
-		int ret;
 	        ret = kenv(KENV_GET, "evoke.fingerprint", storedhash, sizeof(storedhash));
 		if (ret == -1) {
 			return (ret);
