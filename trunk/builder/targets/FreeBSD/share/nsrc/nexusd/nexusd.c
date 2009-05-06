@@ -12,6 +12,7 @@
 #include <signal.h>
 #include <sha256.h>
 #include <kenv.h>
+#include <stdlib.h>
 
 #define HEX_DIGEST_LENGTH 65	
 
@@ -48,7 +49,16 @@ int realmain() {
 		close(1);
 		close(2);
 
-		setctty("/dev/console");		
+		setctty("/dev/console");
+
+		/* Set some important environment variables */
+		setenv("EVOKE_SYSTEM_OS", "FreeBSD", 1);
+		setenv("EVOKE_SYSTEM_ABI", "%%ABI%%", 1);
+		setenv("EVOKE_SYSTEM_ARCH", "%%ARCH%%", 1);
+		setenv("TERM", "cons25", 1);
+		setenv("DEVICES", "/dev", 1);
+		setenv("DISPLAY", ":-0", 1);
+
 
 		ret = checkhash();
 		if (ret != 0) {
