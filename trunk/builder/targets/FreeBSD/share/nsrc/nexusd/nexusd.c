@@ -27,16 +27,30 @@ int checkhash(void);
 #define SYSTART "/system/share/bin/systart"
 #define SYSTOP "/system/share/bin/systop"
 
+#define SINGLEUSER 1
+#define MULTIUSER 5
+
+
 #define BINPATH "/system/%%ABI%%/%%ARCH%%/bin"
 #define SHELLPATH "/system/%%ABI%%/%%ARCH%%/bin/sh"
 #define LIBPATH "/system/%%ABI%%/%%ARCH%%/lib"
 #define LIBEXECPATH "/system/%%ABI%%/%%ARCH%%/libexec"
 #define BOOTPATH "/system/%%ABI%%/%%ARCH%%/boot"
 
-int main(void);
+int main(int argc, char *argv[], char *envp[]);
 
-int main() {
+int main(int argc, char *argv[], char *envp[]) {
+	int mode = MULTIUSER;
 	int ret;
+	char c;
+	while ((c = getopt(argc, argv, "s")) != -1) {
+		switch (c) {
+			case 's':
+				mode = SINGLEUSER;
+			break;
+		}
+	}
+	printf("%d\n", mode);
 	ret = realmain();
 	/* How the hell did we get here? */
 	return (ret);
@@ -50,6 +64,7 @@ int realmain() {
 		close(2);
 
 		setctty("/dev/console");
+
 
 		/* Set some important environment variables */
 		setenv("EVOKE_SYSTEM_OS", "FreeBSD", 1);
