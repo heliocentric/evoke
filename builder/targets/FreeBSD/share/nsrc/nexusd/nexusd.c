@@ -75,6 +75,9 @@ int startservices(void);
 
 int main(int argc, char *argv[], char *envp[]) {
 
+	struct sigaction init_handler;
+	sigset_t signalmask;
+
 	int mode = MULTIUSER;
 	int ret;
 	char c;
