@@ -18,7 +18,7 @@
 
 int setctty(const char *);
 
-int remount(const char *sourcepath, const char *destpath, int flags);
+int fmount(const char *fstype, const char *sourcepath, const char *destpath, int flags);
 
 int realmain(void);
 
@@ -64,6 +64,7 @@ int realmain() {
 		if (ret != 0) {
 			return (ret);
 		}
+
                 openlog("init", LOG_CONS|LOG_ODELAY, LOG_AUTH);
 
 		if (setsid() < 0) {
@@ -76,11 +77,11 @@ int realmain() {
 
 
 
-		remount(BINPATH, "/bin", MNT_NOATIME|MNT_RDONLY|MNT_UNION);
-		remount(LIBPATH, "/lib", MNT_NOATIME|MNT_RDONLY|MNT_UNION);
-		remount(LIBEXECPATH, "/libexec", MNT_NOATIME|MNT_RDONLY|MNT_UNION);
-		remount(BOOTPATH, "/boot", MNT_NOATIME|MNT_RDONLY|MNT_UNION);
-		remount("/system/share/bin", "/bin", MNT_NOATIME|MNT_RDONLY|MNT_UNION);
+		fmount("nullfs", BINPATH, "/bin", MNT_NOATIME|MNT_RDONLY|MNT_UNION);
+		fmount("nullfs", LIBPATH, "/lib", MNT_NOATIME|MNT_RDONLY|MNT_UNION);
+		fmount("nullfs", LIBEXECPATH, "/libexec", MNT_NOATIME|MNT_RDONLY|MNT_UNION);
+		fmount("nullfs", BOOTPATH, "/boot", MNT_NOATIME|MNT_RDONLY|MNT_UNION);
+		fmount("nullfs", "/system/share/bin", "/bin", MNT_NOATIME|MNT_RDONLY|MNT_UNION);
 
 		printf("system initialized");
 	} 
@@ -118,9 +119,11 @@ int setctty(const char *name) {
         int fd;
 
         revoke(name);
+
         if ((fd = open(name, O_RDWR)) == -1) {
                 return 1;
         }
+
         if (login_tty(fd) == -1) {
                 return 1;
         } else {
@@ -128,13 +131,11 @@ int setctty(const char *name) {
 	}
 }
 
-int remount(const char *sourcepath, const char *destpath, int flags) {
+int fmount(const char *fstype, const char *sourcepath, const char *destpath, int flags) {
 	struct iovec iov[4];
 
 	char _fstype[] = "fstype";
-	char fstype[] = "nullfs";
 	char _fspath[] = "fspath";
-	char _target[] = "target";
 
 	iov[0].iov_base = strdup(_fstype);
 	iov[0].iov_len = strlen(_fstype) + 1;
@@ -148,9 +149,17 @@ int remount(const char *sourcepath, const char *destpath, int flags) {
 	iov[3].iov_base = strdup(destpath);
 	iov[3].iov_len = strlen(destpath) + 1;
 
-	iov[4].iov_base = strdup(_target);
-	iov[4].iov_len = strlen(_target) + 1;
+	if (strncmp("nullfs", fstype, 7) == 0) {
+		char _target[] = "target";
 
+		iov[4].iov_base = strdup(_target);
+		iov[4].iov_len = strlen(_target) + 1;
+	} else {
+		char _target[] = "from";
+
+		iov[4].iov_base = strdup(_target);
+		iov[4].iov_len = strlen(_target) + 1;		
+	}
 	iov[5].iov_base = strdup(sourcepath);
 	iov[5].iov_len = strlen(sourcepath) + 1;
 
