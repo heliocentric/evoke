@@ -61,7 +61,7 @@ mkdir -p ${DESTDIR}/rescue 1>&2
 
 mkdir -p ${DESTDIR}${BOOTPATH}/defaults
 priv make distribution 1>&2
-priv make LOCAL_DIRS="nsrc" MAGICPATH="/config" installworld 1>&2
+priv make LOCAL_DIRS="nsrc" installworld 1>&2
 mkdir -p ${DESTDIR}/boot
 cp ${DESTDIR}/usr/src/sys/${TARGET_ARCH}/conf/GENERIC.hints ${DESTDIR}${BOOTPATH}/device.hints
 priv make INSTKERNNAME=${KERNCONF} installkernel 1>&2
