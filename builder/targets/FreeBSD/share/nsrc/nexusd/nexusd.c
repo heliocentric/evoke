@@ -139,6 +139,7 @@ int realmain() {
 		fmount("nullfs", BOOTPATH, "/boot", MNT_NOATIME|MNT_RDONLY|MNT_UNION);
 		fmount("nullfs", "/system/share/bin", "/bin", MNT_NOATIME|MNT_RDONLY|MNT_UNION);
 
+		printf("Starting system daemons\n");
 		startpowerd();
 		startwatchdogd();
 		startdevd();
