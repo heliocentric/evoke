@@ -44,6 +44,8 @@
 
 #define HEX_DIGEST_LENGTH 65	
 
+typedef int handle;
+
 int main(int argc, char *argv[], char *envp[]);
 
 int setctty(const char *);
@@ -59,6 +61,9 @@ int startwatchdogd(void);
 int startdevd(void);
 int startservices(void);
 
+handle acquire(const char * domain, const char * path, int type);
+int release(handle lockid);
+
 #define SYSTART "/system/share/bin/systart"
 #define SYSTOP "/system/share/bin/systop"
 
@@ -72,6 +77,14 @@ int startservices(void);
 #define LIBEXECPATH "/system/%%ABI%%/%%ARCH%%/libexec"
 #define BOOTPATH "/system/%%ABI%%/%%ARCH%%/boot"
 
+
+#define LOCK_NULL 0
+#define LOCK_CONCURRENT_READ 1
+#define LOCK_PROTECTED_READ 2
+#define LOCK_CONCURRENT_WRITE 3
+#define LOCK_PROTECTED_WRITE 4
+#define LOCK_EXCLUSIVE 5
+ 
 
 int main(int argc, char *argv[], char *envp[]) {
 
@@ -140,6 +153,7 @@ int realmain() {
 		fmount("nullfs", "/system/share/bin", "/bin", MNT_NOATIME|MNT_RDONLY|MNT_UNION);
 
 		printf("Starting system daemons\n");
+
 		startpowerd();
 		startwatchdogd();
 		startdevd();
@@ -153,41 +167,57 @@ int checkhash() {
 	char *realhash;
 	char storedhash[HEX_DIGEST_LENGTH];
 	int ret;
+	handle devicelock;
 
-	realhash = SHA256_File("/dev/md0", buffer);
-	if (!realhash) {
-		return 3;
-	} else {
-	        ret = kenv(KENV_GET, "evoke.fingerprint", storedhash, sizeof(storedhash));
-		if (ret == -1) {
-			return (ret);
+	devicelock = acquire("hostfs", "/dev/md0", LOCK_PROTECTED_READ);
+	if (devicelock != -1) {
+		realhash = SHA256_File("/dev/md0", buffer);
+		release(devicelock);
+
+		if (!realhash) {
+			return 3;
 		} else {
-			if (storedhash[64] != '\0') {
-				return 4;
+		        ret = kenv(KENV_GET, "evoke.fingerprint", storedhash, sizeof(storedhash));
+			if (ret == -1) {
+				return (ret);
 			} else {
-				if (strncmp(realhash, storedhash, 64) == 0) {
-					return 0;
+				if (storedhash[64] != '\0') {
+					return 4;
 				} else {
-					return 5;
+					if (strncmp(realhash, storedhash, 64) == 0) {
+						return 0;
+					} else {
+						return 5;
+					}
 				}
 			}
 		}
+	} else {
+		return 6;
 	}
 }
 
 int setctty(const char *name) {
         int fd;
+	handle devicelock;
 
-        revoke(name);
+	devicelock = acquire("hostfs", name, LOCK_CONCURRENT_WRITE);
 
-        if ((fd = open(name, O_RDWR)) == -1) {
-                return 1;
-        }
+	if (devicelock != -1) {
 
-        if (login_tty(fd) == -1) {
-                return 1;
-        } else {
-		return 0;
+	        revoke(name);
+
+	        if ((fd = open(name, O_RDWR)) == -1) {
+	                return 1;
+	        }
+
+	        if (login_tty(fd) == -1) {
+	                return 1;
+	        } else {
+			return 0;
+		}
+	} else {
+ 		return 2;
 	}
 }
 
@@ -239,5 +269,25 @@ int startdevd(void) {
 }
 
 int startservices(void) {
+	return 0;
+}
+
+
+/*
+	This is stub code to support a lock manager we don't have, but will eventually have to.
+
+	Notes: domain is per-cluster, and refers to the namespace the path is relative to. 
+	Right now we only use domain = "hostfs", which is typically mapped differently on each node,
+	to the 'local' filesystem.
+
+	'type' is defined previously.
+
+*/
+
+handle acquire(const char * domain, const char * path, int type) {
+	return 0;
+}
+
+int release(handle lockid) {
 	return 0;
 }
