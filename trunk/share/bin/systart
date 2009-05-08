@@ -53,13 +53,10 @@ list_if () {
 case "${1}" in
 	autoboot)
 		MODE="init"		
-		export TERM=cons25
-		export DISPLAY=:-0
 	;;
 esac
 
 umask 077
-export DEVICES=/dev
 export EDITOR=nano
 export USE_PV=yes
 
@@ -125,28 +122,6 @@ if [ "${MODE}" = "init" ] ; then
 fi
 
 
-echo "Merging directories"
-
-sh /system/share/bin/merger /system/ /
-
-# This is the cutoff point, everything after this can be dynamically linked, 
-# and everything before it, HAS to be statically linked. No exceptions.
-#
-# merger is what mounts /libexec and /lib so we have a proper dynamic 
-# linker and basic libraries.
-
-mount_nullfs -o union,ro /system/share/bin/ /bin/
-export PATH=/bin
-
-# The fastest root filesystem consistancy check in history.
-# Since the probability that random corruption will cause changes to
-# both the disk, and the fingerprint on that sector to match it exactly
-# is so high, we can assume that if the fingerprint matches the
-# output of sha256 of the device node, that the root filesystem is sane.
-#
-# If not, we reboot forever, as there is nothing else we can really do
-# at this point.
-
 if [ "${MODE}" = "init" ] ; then
 
 	export EVOKE_FINGERPRINT="$(kenv -q evoke.fingerprint)"
@@ -163,16 +138,6 @@ if [ "${MODE}" = "init" ] ; then
 	export EVOKE_MONITOR="$(kenv -q evoke.monitor)"
 	export EVOKE_TIMEZONE_PCODE="$(kenv -q dhcp.tz-pcode)"
 	export EVOKE_TIMEZONE_TCODE="$(kenv -q dhcp.tz-tcode)"
-
-	echo "Verifying root filesystem"
-	ROOTDEV=${DEVICES}/$(mount | awk '{ if ($3 == "/") { print $1 } }')
-	if [ "${EVOKE_FINGERPRINT}" != "" ] ; then
-		if [ "${EVOKE_FINGERPRINT}" != "$(sha256 -q ${ROOTDEV})" ] ; then
-			reboot
-		fi
-	fi
-	# Don't need a writable /
-	# mount -o update,async ${ROOTDEV} /
 
 fi
 
