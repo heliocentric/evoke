@@ -286,11 +286,11 @@ int startservices(int mode) {
 			execv("/system/%%ABI%%/%%ARCH%%/bin/sh", nargv);
 			return 5;
 		}
-	}
-	if (systartpid == -1) {
+	} else if (systartpid == -1) {
 		return 4;
+	} else {
+		wait();
 	}
-	wait();
 	return 0;
 }
 
