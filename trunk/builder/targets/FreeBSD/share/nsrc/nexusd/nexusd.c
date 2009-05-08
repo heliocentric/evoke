@@ -41,6 +41,7 @@
 #include <sha256.h>
 #include <kenv.h>
 #include <stdlib.h>
+#include <sys/reboot.h>
 
 #define HEX_DIGEST_LENGTH 65	
 
@@ -135,10 +136,6 @@ int realmain() {
 
                 openlog("init", LOG_CONS|LOG_ODELAY, LOG_AUTH);
 
-		if (setsid() < 0) {
-			return 2;
-		}
-
 		if (setlogin("root") < 0) {
 			return 2;
 		}
@@ -158,6 +155,7 @@ int realmain() {
 		startwatchdogd();
 		startdevd();
 		startservices();
+		reboot(RB_AUTOBOOT);
 	} 
 	return 0;
 }
@@ -269,9 +267,9 @@ int startdevd(void) {
 }
 
 int startservices(void) {
+	
 	return 0;
 }
-
 
 /*
 	This is stub code to support a lock manager we don't have, but will eventually have to.
@@ -291,3 +289,4 @@ handle acquire(const char * domain, const char * path, int type) {
 int release(handle lockid) {
 	return 0;
 }
+
