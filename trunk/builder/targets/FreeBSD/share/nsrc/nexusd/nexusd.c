@@ -53,14 +53,14 @@ int setctty(const char *);
 
 int fmount(const char *fstype, const char *sourcepath, const char *destpath, int flags);
 
-int realmain(void);
+int realmain(int mode);
 
 int checkhash(void);
 
 int startpowerd(void);
 int startwatchdogd(void);
 int startdevd(void);
-int startservices(void);
+int startservices(int mode);
 
 handle acquire(const char * domain, const char * path, int type);
 int release(handle lockid);
@@ -103,13 +103,12 @@ int main(int argc, char *argv[], char *envp[]) {
 			break;
 		}
 	}
-
-	ret = realmain();
+	ret = realmain(mode);
 	/* How the hell did we get here? */
 	return (ret);
 }
 
-int realmain() {
+int realmain(int mode) {
 	int ret;
 	if (getpid() == 1) {
 		close(0);
@@ -154,7 +153,7 @@ int realmain() {
 		startpowerd();
 		startwatchdogd();
 		startdevd();
-		startservices();
+		startservices(mode);
 		reboot(RB_AUTOBOOT);
 	} 
 	return 0;
@@ -266,8 +265,30 @@ int startdevd(void) {
 	return 0;
 }
 
-int startservices(void) {
-	
+int startservices(int mode) {
+	pid_t systartpid;
+	if ((systartpid = fork()) == 0) {
+		if (mode == MULTIUSER) {
+			char * nargv[4];
+			struct sigaction systart_sa;
+			sigemptyset(&systart_sa.sa_mask);
+			systart_sa.sa_flags = 0;
+			systart_sa.sa_handler = SIG_IGN;
+			sigaction(SIGTSTP, &systart_sa, (struct sigaction *)0);
+			sigaction(SIGHUP, &systart_sa, (struct sigaction *)0);
+			setctty("/dev/console");
+			nargv[0] = "sh";
+			nargv[1] = "/system/share/bin/systart";
+			nargv[2] = "autoboot";
+			nargv[3] = "0";
+			sigprocmask(SIG_SETMASK, &systart_sa.sa_mask, (sigset_t *) 0);
+			execv("/system/%%ABI%%/%%ARCH%%/bin/sh", nargv);
+			return 5;
+		}
+	}
+	if (systartpid == -1) {
+		return 4;
+	}
 	return 0;
 }
 
