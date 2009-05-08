@@ -290,6 +290,7 @@ int startservices(int mode) {
 	if (systartpid == -1) {
 		return 4;
 	}
+	wait();
 	return 0;
 }
 
