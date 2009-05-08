@@ -125,6 +125,7 @@ int realmain(int mode) {
 		setenv("TERM", "cons25", 1);
 		setenv("DEVICES", "/dev", 1);
 		setenv("DISPLAY", ":-0", 1);
+		setenv("PATH", "/bin", 1);
 
 
 		printf("Verifying root filesystem\n");
