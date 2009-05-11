@@ -28,6 +28,7 @@
 */
 #include <sys/param.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <fcntl.h>
 #include <libutil.h>
 #include <stdio.h>
@@ -42,6 +43,7 @@
 #include <kenv.h>
 #include <stdlib.h>
 #include <sys/reboot.h>
+#include <errno.h>
 
 #define HEX_DIGEST_LENGTH 65	
 
@@ -89,8 +91,6 @@ int release(handle lockid);
 
 int main(int argc, char *argv[], char *envp[]) {
 
-	struct sigaction init_handler;
-	sigset_t signalmask;
 
 	int mode = MULTIUSER;
 	int ret;
@@ -111,6 +111,27 @@ int main(int argc, char *argv[], char *envp[]) {
 int realmain(int mode) {
 	int ret;
 	if (getpid() == 1) {
+		struct sigaction init_handler;
+		sigset_t signalmask;
+		sigemptyset(&init_handler.sa_mask);
+		init_handler.sa_flags = 0;
+		init_handler.sa_handler = SIG_IGN;
+		sigaction(SIGTSTP, &init_handler, (struct sigaction *)0);
+		sigaction(SIGSYS, &init_handler, (struct sigaction *)0);
+		sigaction(SIGABRT, &init_handler, (struct sigaction *)0);
+		sigaction(SIGFPE, &init_handler, (struct sigaction *)0);
+		sigaction(SIGILL, &init_handler, (struct sigaction *)0);
+		sigaction(SIGSEGV, &init_handler, (struct sigaction *)0);
+		sigaction(SIGBUS, &init_handler, (struct sigaction *)0);
+		sigaction(SIGALRM, &init_handler, (struct sigaction *)0);
+		sigaction(SIGXCPU, &init_handler, (struct sigaction *)0);
+		sigaction(SIGXFSZ, &init_handler, (struct sigaction *)0);
+		sigaction(SIGHUP, &init_handler, (struct sigaction *)0);
+		sigaction(SIGINT, &init_handler, (struct sigaction *)0);
+		sigaction(SIGTERM, &init_handler, (struct sigaction *)0);
+		sigaction(SIGUSR1, &init_handler, (struct sigaction *)0);
+		sigaction(SIGUSR2, &init_handler, (struct sigaction *)0);
+
 		close(0);
 		close(1);
 		close(2);
@@ -268,30 +289,45 @@ int startdevd(void) {
 
 int startservices(int mode) {
 	pid_t systartpid;
-	if ((systartpid = fork()) == 0) {
-		if (mode == MULTIUSER) {
-			char * nargv[4];
-			struct sigaction systart_sa;
-			sigemptyset(&systart_sa.sa_mask);
-			systart_sa.sa_flags = 0;
-			systart_sa.sa_handler = SIG_IGN;
-			sigaction(SIGTSTP, &systart_sa, (struct sigaction *)0);
-			sigaction(SIGHUP, &systart_sa, (struct sigaction *)0);
-			setctty("/dev/console");
-			nargv[0] = "sh";
-			nargv[1] = "/system/share/bin/systart";
-			nargv[2] = "autoboot";
-			nargv[3] = "0";
-			sigprocmask(SIG_SETMASK, &systart_sa.sa_mask, (sigset_t *) 0);
-			execv("/system/%%ABI%%/%%ARCH%%/bin/sh", nargv);
-			return 5;
-		}
-	} else if (systartpid == -1) {
-		return 4;
-	} else {
-		wait();
+	int status;
+	int ret;
+	systartpid = fork();
+
+	switch (systartpid) {
+		case 0:
+			printf("Running systart\n");
+			if (mode == MULTIUSER) {
+				static char * shell = SHELLPATH;
+				static char * nargv[4];
+				struct sigaction systart_sa;
+				sigemptyset(&systart_sa.sa_mask);
+				systart_sa.sa_flags = 0;
+				systart_sa.sa_handler = SIG_IGN;
+				sigaction(SIGTSTP, &systart_sa, (struct sigaction *)0);
+				sigaction(SIGHUP, &systart_sa, (struct sigaction *)0);
+				setctty("/dev/console");
+				nargv[0] = "sh";
+				nargv[1] = "/system/share/bin/systart";
+				nargv[2] = "autoboot";
+				nargv[3] = "0";
+				sigprocmask(SIG_SETMASK, &systart_sa.sa_mask, (sigset_t *) 0);
+				ret = execv(shell, nargv);
+				perror(shell);
+				exit(5);
+			}
+
+		break;
+		case -1:
+			printf("Fork error, bailing out before we do any damage\n");
+			return 4;
+		break;
+		default:
+			wait(&status);
+			printf("systart returned: %d\n", status);
+			return status;
+		break;
 	}
-	return 0;
+	return 1;
 }
 
 /*
