@@ -312,11 +312,13 @@ int startwatchdogd(pid_t * watchdogdpid) {
 	}
 	return 0;
 }
+
 int watchdoginit(int * fd) {
 	handle devicelock = acquire("hostfs", "/dev/" _PATH_WATCHDOG, LOCK_EXCLUSIVE);
         *fd = open("/dev/" _PATH_WATCHDOG, O_RDWR);
-        if (*fd >= 0)
+        if (*fd >= 0) {
                 return (0);
+	}
         printf("Could not open watchdog device");
         return (-1);
 }

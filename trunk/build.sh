@@ -43,11 +43,11 @@ export PROGS="
 atacontrol awk bsdlabel bunzip2 bzcat bzip2 camcontrol cap_mkdb 
 cat chmod cp csh date dconschat dd devfs df dhclient disklabel dmesg echo 
 ee expr fdisk fsck_ffs fsck_msdosfs ftp ftpd fwcontrol geli getty grep 
-groups gunzip gzcat gzip halt head id ifconfig jail jexec jls kenv kill 
+groups gunzip gzcat gzip halt head id ifconfig jail jexec jls kenv kill init kenv
 kldconfig kldload kldstat kldunload less link ln login ls md5 mdconfig 
-mdmfs mkdir more mount moused mv nc newfs pciconf ping powerd ps pwd 
+mdmfs mkdir more mount moused mv nc newfs pciconf ping powerd ps pwd cut uname mount_nullfs
 printf pwd_mkdb reboot rm route sed sh sha1 sha256 ssh ssh-keygen sshd stty 
-swapon swapoff swapinfo syslogd tail tar tcsh tftp tftpd top umount 
+swapon swapoff swapinfo syslogd tail tar tcsh tftp tftpd top umount sysctl
 uniq unlink usbdevs vidcontrol whoami zcat sort pfctl du makefs 
 mount_msdosfs getextattr setextattr devinfo newfs_msdos stat dirname lsvfs
 rtsol egrep mount_cd9660 rmdir gpt watchdogd tr file bsdiff bspatch
