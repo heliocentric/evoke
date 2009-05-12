@@ -28,6 +28,7 @@
 */
 #include <sys/param.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <sys/wait.h>
 #include <sys/rtprio.h>
 #include <sys/watchdog.h>
@@ -66,6 +67,8 @@ int startpowerd(pid_t * powerdpid);
 int startwatchdogd(pid_t * watchdogdpid);
 int watchdoginit(int * fd);
 int watchdogpat(int fd, u_int timeout);
+int watchdogonoff(int fd, u_int timeout, int onoff);
+int watchdogloop(int fd, u_int timeout);
 
 int startdevd(pid_t * devdpid);
 
@@ -171,7 +174,6 @@ int realmain(int mode) {
 
 
 
-		printf("Merging directories\n");
 		fmount("nullfs", BINPATH, "/bin", MNT_NOATIME|MNT_RDONLY|MNT_UNION);
 		fmount("nullfs", LIBPATH, "/lib", MNT_NOATIME|MNT_RDONLY|MNT_UNION);
 		fmount("nullfs", LIBEXECPATH, "/libexec", MNT_NOATIME|MNT_RDONLY|MNT_UNION);
@@ -180,15 +182,13 @@ int realmain(int mode) {
 		fmount("nullfs", "/system/share/lib", "/config", MNT_NOATIME|MNT_RDONLY|MNT_UNION);
 
 
-		printf("Starting the watchdog timer daemon\n");
+		printf("Starting nexus daemon\n");
 		pid_t watchdogd_pid;
 		startwatchdogd(&watchdogd_pid);
 
-		printf("Starting the power manager daemon\n");
 		pid_t powerd_pid;
 		startpowerd(&powerd_pid);
 
-		printf("Starting the device manager daemon\n");
 		pid_t devd_pid;
 		startdevd(&devd_pid);
 
@@ -299,13 +299,17 @@ int startpowerd(pid_t * powerdpid) {
 	return 0;
 }
 
+
 int startwatchdogd(pid_t * watchdogdpid) {
 	struct rtprio rtp;
 	int watchdog_fd;
+	u_int timeout = WD_TO_16SEC;
 
 	*watchdogdpid = fork();
+
 	switch (*watchdogdpid) {
 		case 0:
+			setproctitle("watchdog timer thread");
 			rtp.type = RTP_PRIO_REALTIME;
 			rtp.prio = 0;
 			if (rtprio(RTP_SET, 0, &rtp) == -1) {
@@ -313,10 +317,16 @@ int startwatchdogd(pid_t * watchdogdpid) {
 				exit(3);
 			}
 			if (watchdoginit(&watchdog_fd) == -1) {
-				printf("watchdogd: Mommy, where's Fluffy?.\n");
+				printf("watchdogd: empty doghouse\n");
 				exit(4);
+			} else {
+				if (watchdogonoff(watchdog_fd, timeout, 1) == -1) {
+					printf("watchdogd: empty doghouse\n");
+					exit(4);
+				} else {
+					watchdogloop(watchdog_fd, timeout);
+				}
 			}
-			
 			exit(2);
 		break;
 		case -1:
@@ -332,12 +342,33 @@ int watchdoginit(int * fd) {
         if (*fd >= 0) {
                 return (0);
 	}
-        printf("Could not open watchdog device");
         return (-1);
 }
 
 int watchdogpat(int fd, u_int timeout) {
 	return ioctl(fd, WDIOCPATPAT, &timeout);
+}
+
+int watchdogonoff(int fd, u_int timeout, int onoff) {
+	if (onoff) {
+		return watchdogpat(fd, (timeout|WD_ACTIVE));
+	} else {
+		return watchdogpat(fd, 0);
+	}
+}
+
+int watchdogloop(int fd, u_int timeout) {
+	struct stat throwaway;
+	int failed;
+	while (1) {
+		failed = 0;
+
+		failed = stat("/config/magic.mime", &throwaway);
+		if (failed == 0) {
+			watchdogpat(fd, (timeout|WD_ACTIVE));
+		}
+		sleep(1);
+	}
 }
 
 int startdevd(pid_t * devdpid) {
