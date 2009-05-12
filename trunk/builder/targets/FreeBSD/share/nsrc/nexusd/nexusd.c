@@ -65,6 +65,7 @@ int startpowerd(pid_t * powerdpid);
 
 int startwatchdogd(pid_t * watchdogdpid);
 int watchdoginit(int * fd);
+int watchdogpat(int fd, u_int timeout);
 
 int startdevd(pid_t * devdpid);
 
@@ -178,14 +179,16 @@ int realmain(int mode) {
 		fmount("nullfs", "/system/share/bin", "/bin", MNT_NOATIME|MNT_RDONLY|MNT_UNION);
 		fmount("nullfs", "/system/share/lib", "/config", MNT_NOATIME|MNT_RDONLY|MNT_UNION);
 
-		printf("Starting system daemons\n");
 
+		printf("Starting the watchdog timer daemon\n");
 		pid_t watchdogd_pid;
 		startwatchdogd(&watchdogd_pid);
 
+		printf("Starting the power manager daemon\n");
 		pid_t powerd_pid;
 		startpowerd(&powerd_pid);
 
+		printf("Starting the device manager daemon\n");
 		pid_t devd_pid;
 		startdevd(&devd_pid);
 
@@ -297,13 +300,23 @@ int startpowerd(pid_t * powerdpid) {
 }
 
 int startwatchdogd(pid_t * watchdogdpid) {
-
+	struct rtprio rtp;
 	int watchdog_fd;
 
 	*watchdogdpid = fork();
 	switch (*watchdogdpid) {
 		case 0:
-			watchdoginit(&watchdog_fd);
+			rtp.type = RTP_PRIO_REALTIME;
+			rtp.prio = 0;
+			if (rtprio(RTP_SET, 0, &rtp) == -1) {
+				printf("watchdogd: Unable to set realtime mode\n");
+				exit(3);
+			}
+			if (watchdoginit(&watchdog_fd) == -1) {
+				printf("watchdogd: Mommy, where's Fluffy?.\n");
+				exit(4);
+			}
+			
 			exit(2);
 		break;
 		case -1:
@@ -321,6 +334,10 @@ int watchdoginit(int * fd) {
 	}
         printf("Could not open watchdog device");
         return (-1);
+}
+
+int watchdogpat(int fd, u_int timeout) {
+	return ioctl(fd, WDIOCPATPAT, &timeout);
 }
 
 int startdevd(pid_t * devdpid) {
