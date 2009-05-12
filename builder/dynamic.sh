@@ -30,7 +30,7 @@
 CROSSTOOLSPATH=${MAKEOBJDIRPREFIX}/${TARGET}${WORKDIR}/usr/src/tmp/usr/bin
 
 # Overwrite rescue with Lazybox
-cp ${BUILDDIR}/lazybox.dynamic ${WORKDIR}/usr/src/rescue/rescue/Makefile
+#cp ${BUILDDIR}/lazybox.dynamic ${WORKDIR}/usr/src/rescue/rescue/Makefile
 
 # Copy kernel config to the source.
 cp ${BUILDDIR}/targets/FreeBSD/${RELEASE}/${TARGET}/kernconf ${WORKDIR}/usr/src/sys/${TARGET}/conf/${KERNCONF}
@@ -259,8 +259,8 @@ done
 cp -r ${DESTDIR}/lib/geom ${FSDIR}${N_LIB}
 
 # And then, lazybox
-cd ${WORKDIR}/rescue
-tar -cf - * | tar -xf - -C ${FSDIR}${N_BIN}/ 1>&2
+#cd ${WORKDIR}/rescue
+#tar -cf - * | tar -xf - -C ${FSDIR}${N_BIN}/ 1>&2
 
 # run through the geom list. We use geli because it is the only binary we explicitly need.
 
