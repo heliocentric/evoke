@@ -62,7 +62,7 @@ int checkhash(void);
 int startpowerd(void);
 int startwatchdogd(void);
 int startdevd(void);
-int startservices(int mode);
+int startsystem(int mode);
 
 handle acquire(const char * domain, const char * path, int type);
 int release(handle lockid);
@@ -75,7 +75,8 @@ int release(handle lockid);
 
 
 #define BINPATH "/system/%%ABI%%/%%ARCH%%/bin"
-#define SHELLPATH "/system/%%ABI%%/%%ARCH%%/bin/sh"
+#define SHPATH "/system/%%ABI%%/%%ARCH%%/bin/sh"
+#define TCSHPATH "/system/%%ABI%%/%%ARCH%%/bin/tcsh"
 #define LIBPATH "/system/%%ABI%%/%%ARCH%%/lib"
 #define LIBEXECPATH "/system/%%ABI%%/%%ARCH%%/libexec"
 #define BOOTPATH "/system/%%ABI%%/%%ARCH%%/boot"
@@ -112,7 +113,6 @@ int realmain(int mode) {
 	int ret;
 	if (getpid() == 1) {
 		struct sigaction init_handler;
-		sigset_t signalmask;
 		sigemptyset(&init_handler.sa_mask);
 		init_handler.sa_flags = 0;
 		init_handler.sa_handler = SIG_IGN;
@@ -131,6 +131,7 @@ int realmain(int mode) {
 		sigaction(SIGTERM, &init_handler, (struct sigaction *)0);
 		sigaction(SIGUSR1, &init_handler, (struct sigaction *)0);
 		sigaction(SIGUSR2, &init_handler, (struct sigaction *)0);
+		sigprocmask(SIG_SETMASK, &init_handler.sa_mask, (sigset_t *) 0);
 
 		close(0);
 		close(1);
@@ -169,13 +170,15 @@ int realmain(int mode) {
 		fmount("nullfs", LIBEXECPATH, "/libexec", MNT_NOATIME|MNT_RDONLY|MNT_UNION);
 		fmount("nullfs", BOOTPATH, "/boot", MNT_NOATIME|MNT_RDONLY|MNT_UNION);
 		fmount("nullfs", "/system/share/bin", "/bin", MNT_NOATIME|MNT_RDONLY|MNT_UNION);
+		fmount("nullfs", "/system/share/lib", "/config", MNT_NOATIME|MNT_RDONLY|MNT_UNION);
 
 		printf("Starting system daemons\n");
 
 		startpowerd();
 		startwatchdogd();
 		startdevd();
-		startservices(mode);
+		startsystem(mode);
+		printf("process %d has left the building\n", getpid());
 		reboot(RB_AUTOBOOT);
 	} 
 	return 0;
@@ -287,7 +290,7 @@ int startdevd(void) {
 	return 0;
 }
 
-int startservices(int mode) {
+int startsystem(int mode) {
 	pid_t systartpid;
 	int status;
 	int ret;
@@ -295,22 +298,33 @@ int startservices(int mode) {
 
 	switch (systartpid) {
 		case 0:
-			printf("Running systart\n");
 			if (mode == MULTIUSER) {
-				static char * shell = SHELLPATH;
+				static char * shell = SHPATH;
 				static char * nargv[4];
 				struct sigaction systart_sa;
 				sigemptyset(&systart_sa.sa_mask);
 				systart_sa.sa_flags = 0;
 				systart_sa.sa_handler = SIG_IGN;
-				sigaction(SIGTSTP, &systart_sa, (struct sigaction *)0);
-				sigaction(SIGHUP, &systart_sa, (struct sigaction *)0);
-				setctty("/dev/console");
+				sigprocmask(SIG_SETMASK, &systart_sa.sa_mask, (sigset_t *) 0);
+				setctty("/dev/ttyv0");
 				nargv[0] = "sh";
 				nargv[1] = "/system/share/bin/systart";
 				nargv[2] = "autoboot";
 				nargv[3] = "0";
+				ret = execv(shell, nargv);
+				perror(shell);
+				exit(5);
+			}
+			if (mode == SINGLEUSER) {
+				static char * shell = TCSHPATH;
+				static char * nargv[1];
+				struct sigaction systart_sa;
+				sigfillset(&systart_sa.sa_mask);
+				systart_sa.sa_flags = 0;
+				systart_sa.sa_handler = SIG_IGN;
 				sigprocmask(SIG_SETMASK, &systart_sa.sa_mask, (sigset_t *) 0);
+				setctty("/dev/ttyv0");
+				nargv[0] = "tcsh";
 				ret = execv(shell, nargv);
 				perror(shell);
 				exit(5);
@@ -322,9 +336,14 @@ int startservices(int mode) {
 			return 4;
 		break;
 		default:
-			wait(&status);
-			printf("systart returned: %d\n", status);
-			return status;
+			while (1) {
+				pid_t returnpid = wait(&status);
+				if (returnpid == systartpid) {
+					if (WIFSIGNALED(status)) {
+						return status;
+					}
+				}
+			}
 		break;
 	}
 	return 1;
