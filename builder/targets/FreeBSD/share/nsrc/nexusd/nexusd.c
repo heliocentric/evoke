@@ -29,6 +29,8 @@
 #include <sys/param.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/rtprio.h>
+#include <sys/watchdog.h>
 #include <fcntl.h>
 #include <libutil.h>
 #include <stdio.h>
@@ -59,10 +61,14 @@ int realmain(int mode);
 
 int checkhash(void);
 
-int startpowerd(void);
-int startwatchdogd(void);
-int startdevd(void);
-int startsystem(int mode);
+int startpowerd(pid_t * powerdpid);
+
+int startwatchdogd(pid_t * watchdogdpid);
+int watchdoginit(int * fd);
+
+int startdevd(pid_t * devdpid);
+
+int startsystem(pid_t * systartpid, int mode);
 
 handle acquire(const char * domain, const char * path, int type);
 int release(handle lockid);
@@ -174,10 +180,18 @@ int realmain(int mode) {
 
 		printf("Starting system daemons\n");
 
-		startpowerd();
-		startwatchdogd();
-		startdevd();
-		startsystem(mode);
+		pid_t watchdogd_pid;
+		startwatchdogd(&watchdogd_pid);
+
+		pid_t powerd_pid;
+		startpowerd(&powerd_pid);
+
+		pid_t devd_pid;
+		startdevd(&devd_pid);
+
+		pid_t systart_pid;
+		startsystem(&systart_pid, mode);
+
 		printf("process %d has left the building\n", getpid());
 		reboot(RB_AUTOBOOT);
 	} 
@@ -278,25 +292,45 @@ int fmount(const char *fstype, const char *sourcepath, const char *destpath, int
 	return nmount(iov, 6, flags);
 }
 
-int startpowerd(void) {
+int startpowerd(pid_t * powerdpid) {
 	return 0;
 }
 
-int startwatchdogd(void) {
+int startwatchdogd(pid_t * watchdogdpid) {
+
+	int watchdog_fd;
+
+	*watchdogdpid = fork();
+	switch (*watchdogdpid) {
+		case 0:
+			watchdoginit(&watchdog_fd);
+			exit(2);
+		break;
+		case -1:
+			return 2;
+		break;
+	}
+	return 0;
+}
+int watchdoginit(int * fd) {
+	handle devicelock = acquire("hostfs", "/dev/" _PATH_WATCHDOG, LOCK_EXCLUSIVE);
+        *fd = open("/dev/" _PATH_WATCHDOG, O_RDWR);
+        if (*fd >= 0)
+                return (0);
+        printf("Could not open watchdog device");
+        return (-1);
+}
+
+int startdevd(pid_t * devdpid) {
 	return 0;
 }
 
-int startdevd(void) {
-	return 0;
-}
-
-int startsystem(int mode) {
-	pid_t systartpid;
+int startsystem(pid_t * systartpid, int mode) {
 	int status;
 	int ret;
-	systartpid = fork();
+	*systartpid = fork();
 
-	switch (systartpid) {
+	switch (*systartpid) {
 		case 0:
 			if (mode == MULTIUSER) {
 				static char * shell = SHPATH;
