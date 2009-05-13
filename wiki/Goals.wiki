@@ -31,12 +31,13 @@
 Currently, single user mode on evoke is broken. This is because to get a full dynamic linking environment, systart has to do nullfs mounting. Since systart isn't run in single user mode, this does not get done, and single user mode is extremely limited. To fix this, we will replace the init binary with nexusd.
 
 || Component									||	Status		||
+|| Verify the root filesystem.							||	DONE		||
 || nullfs mount the architecture and abi specific directories.			||	DONE		||
-|| set up any variables for systart, including abi/architecture/etc.		||	DONE		||
-|| Integrate watchdogd								||	DONE		||
-|| Integrate powerd								||	Not Started	||
-|| Integrate devd-like functionality						||	Not Started	||
-|| Start a control thread to replace the old 'signal' based init control	||	Not Started	||
+|| Set up any variables for systart, including abi/architecture/etc.		||	DONE		||
+|| Integrate watchdogd.								||	DONE		||
+|| Integrate powerd.								||	Not Started	||
+|| Integrate devd-like functionality.						||	Not Started	||
+|| Start a control thread to replace the old 'signal' based init control.	||	Not Started	||
 
 === mountd ===
 
