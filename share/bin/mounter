@@ -527,7 +527,10 @@ prep_transport () {
 					mdconfig_handler
 				;;
 				GEOM)
-					DIRECTORY="$(mount | grep ${DEVICES}/${M_FILE} | cut -d " " -f 3)"
+					DIRECTORY="$(mount | grep ^${DEVICES}/${M_FILE} | cut -d " " -f 3)"
+					if [ "${DIRECTORY}" = "" ] ; then
+						DIRECTORY="$(mount | grep ^${M_FILE} | cut -d " " -f 3)"
+					fi
 					if [ "${DIRECTORY}" != "" ] ; then
 						mounter "remount:${DIRECTORY}" "${M_DESTINATION}"
 						mexit 0
