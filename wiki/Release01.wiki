@@ -101,6 +101,7 @@ Released: N/A
 
  * Add 'fs' to all existing filesystem protocols, so mounter list fs will have the proper output.
  * Fix a bug in mounter's 'protocol tasting' support, where device names could not be passed as file paths.
+ * Fix a bug in remount detection where the filesystems are refered only by GEOM's
 
 ==== Security Updates ====
 
