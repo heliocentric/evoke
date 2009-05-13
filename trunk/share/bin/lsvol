@@ -36,14 +36,17 @@ freebsd_disk_list() {
 	awk '{
 		if ($2 == "MD") {
 			print "disk:"$3;
+			print "fs:" $3;
 		}
 		if ($2 == "DISK") {
 			if ($3 ~ /cd/) {
 				print "cd9660:"$3;
+				print "fs:" $3;
 			}
 			else {
 				if ($3 ~ /fd/) {
 					print "floppy:"$3;
+					print "fs:" $3;
 				}
 				else {
 					print "real-disk:"$3;
@@ -55,18 +58,21 @@ freebsd_disk_list() {
 	
 			if ($11 == "freebsd-ufs") {
 				print "boot-ufs:"$3;
+				print "fs:" $3;
 			}
 			if ($11 == "freebsd-swap") {
 				print "swap:"$3;
 			}
 			if ($11 ~ /516e7cb4-6ecf-11d6-8ff8-00022d09712b/) {
 				print "ufs:"$3;
+				print "fs:" $3;
 			}
 			if ($11 ~ /516e7cb5-6ecf-11d6-8ff8-00022d09712b/) {
 				print "swap:"$3;
 			}
 			if ($11 ~ /516e7cb6-6ecf-11d6-8ff8-00022d09712b/) {
 				print "boot-ufs:"$3;
+				print "fs:" $3;
 			}
 			if ($11 ~ /516e7cba-6ecf-11d6-8ff8-00022d09712b/) {
 				print "zfs:"$3;
@@ -87,43 +93,54 @@ freebsd_disk_list() {
 			}
 			if ($11 ~ /72717d60-1a4b-43e2-bca3-4418bc0669ee/) {
 				print "object:"$3;
+				print "fs:" $3;
 			}
 			if ($11 ~ /0b79a13e-87f2-4238-a86d-d00bd1fce04e/) {
 				print "buildenv:"$3;
+				print "fs:" $3;
 			}
 			if ($11 ~ /83f90024-8f13-47cf-9b01-12f4af79138a/) {
 				print "dists:"$3;
+				print "fs:" $3;
 			}
 			if ($11 ~ /12f31621-10a0-4a3c-a0e8-9406c2e485f0/) {
 				print "ds:"$3;
+				print "fs:" $3;
 			}
 		}
 		if ($2 == "BSD") {
 			if ($11 == "7") {
 				if ($3 ~ /a$/) { 
 					print "boot-ufs:"$3;
+					print "fs:" $3;
 				} else {
 					print "ufs:"$3;
+					print "fs:" $3;
 				}
 	
 			}
 			if ($11 == "8") {
 				print "msdosfs:"$3;
+				print "fs:" $3;
 			}
 			if ($11 == "1") {
 				print "swap:"$3;
 			}
 			if ($11 == "12") {
 				print "cd9660:"$3;
+				print "fs:" $3;
 			}
 			if ($11 == "17") {
 				print "ext2fs:"$3;
+				print "fs:" $3;
 			}
 			if ($11 == "18") {
 				print "ntfs:"$3;
+				print "fs:" $3;
 			}
 			if ($11 == "24") {
 				print "udf:"$3;
+				print "fs:" $3;
 			}
 			if ($11 == "27") {
 				print "zfs:"$3;
@@ -135,9 +152,11 @@ freebsd_disk_list() {
 		else if ($2 == "MBR") {
 			if ($11 == "4") {
 				print "boot-msdosfs:"$3;
+				print "fs:" $3;
 			}
 			else if ($11 == "6") {
 				print "boot-msdosfs:"$3;
+				print "fs:" $3;
 			} 
 			else if ($11 == "130") {
 				print "swap:"$3;
@@ -147,12 +166,15 @@ freebsd_disk_list() {
 			} 
 			else if ($11 == "11") {
 				print "boot-msdosfs:"$3;
+				print "fs:" $3;
 			} 
 			else if ($11 == "14") {
 				print "boot-msdosfs:"$3;
+				print "fs:" $3;
 			} 
 			else if ($11 == "7") {
 				print "ntfs:"$3;
+				print "fs:" $3;
 			} 
 		}
 	}'
