@@ -119,6 +119,38 @@ if [ "${MODE}" = "init" ] ; then
 		;;
 	esac
 
+	echo "Adding swap, dump,  and entropy"
+
+	SWAPLIST="$(mounter list swap)"
+	DUMPDEV=$(mounter list dump)
+	ENTLIST="$(mounter list entropy)"
+
+	ddb script kdb.enter.panic="textdump set; capture on; show pcpu;trace;show locks;ps;alltrace;show alllocks;show lockedvnods; call doadump"
+
+	if [ "${DUMPDEV}" != "" ] ; then
+		mounter dump:${DUMPDEV}
+	else
+		if [ "${SWAPLIST}" != "" ] ; then
+			mounter dump:"$(echo "${SWAPLIST}" | head -n 1)"
+		fi
+		
+	fi
+
+	if [ "${SWAPLIST}" != "" ] ; then
+		for swap in ${SWAPLIST}
+		do
+			mounter swap:${swap} enc
+		done
+	fi
+
+	if [ "${ENTLIST}" != "" ] ; then
+		for entropy in ${ENTLIST}
+		do
+			mounter entropy:${entropy}
+		done
+	fi
+
+
 fi
 
 
@@ -206,29 +238,6 @@ if [ "${MODE}" = "init" ] ; then
 	echo "Set timezone"
 	if [ -f "/system/share/lib/zoneinfo/${EVOKE_TIMEZONE_TCODE}" ] ; then
 		ln -s /system/share/lib/zoneinfo/${EVOKE_TIMEZONE_TCODE} /config/localtime
-	fi
-
-	echo "Adding swap, dump,  and entropy"
-	SWAPLIST="$(mounter list swap)"
-
-	if [ "${SWAPLIST}" != "" ] ; then
-		for swap in ${SWAPLIST}
-		do
-			mounter swap:${swap} enc
-		done
-	fi
-
-	ENTLIST="$(mounter list entropy)"
-	if [ "${ENTLIST}" != "" ] ; then
-		for entropy in ${ENTLIST}
-		do
-			mounter entropy:${entropy}
-		done
-	fi
-
-	DUMPDEV=$(mounter list dump)
-	if [ "${DUMPDEV}" != "" ] ; then
-		mounter dump:${DUMPDEV}
 	fi
 
 	echo "Starting system daemons"

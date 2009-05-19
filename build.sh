@@ -50,8 +50,8 @@ printf pwd_mkdb reboot rm route sed sh sha1 sha256 ssh ssh-keygen sshd stty
 swapon swapoff swapinfo syslogd tail tar tcsh tftp tftpd top umount sysctl
 uniq unlink usbdevs vidcontrol whoami zcat sort pfctl du makefs 
 mount_msdosfs getextattr setextattr devinfo newfs_msdos stat dirname lsvfs
-rtsol egrep mount_cd9660 rmdir gpt tr file bsdiff bspatch
-openssl fetch basename dumpfs command wc sleep uptime adjkerntz ntpd iostat systat nexusd
+rtsol egrep mount_cd9660 rmdir gpt tr file bsdiff bspatch savecore
+openssl fetch basename dumpfs command wc sleep uptime adjkerntz ntpd iostat systat nexusd ddb
 "
 
 # List of kernel objects in base that will be on the image. Ports modules
