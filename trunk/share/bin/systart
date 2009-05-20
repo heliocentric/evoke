@@ -119,38 +119,6 @@ if [ "${MODE}" = "init" ] ; then
 		;;
 	esac
 
-	echo "Adding swap, dump,  and entropy"
-
-	SWAPLIST="$(mounter list swap)"
-	DUMPDEV=$(mounter list dump)
-	ENTLIST="$(mounter list entropy)"
-
-	ddb script kdb.enter.panic="textdump set; capture on; show pcpu;trace;show locks;ps;alltrace;show alllocks;show lockedvnods; call doadump"
-
-	if [ "${DUMPDEV}" != "" ] ; then
-		mounter dump:${DUMPDEV}
-	else
-		if [ "${SWAPLIST}" != "" ] ; then
-			mounter dump:"$(echo "${SWAPLIST}" | head -n 1)"
-		fi
-		
-	fi
-
-	if [ "${SWAPLIST}" != "" ] ; then
-		for swap in ${SWAPLIST}
-		do
-			mounter swap:${swap} enc
-		done
-	fi
-
-	if [ "${ENTLIST}" != "" ] ; then
-		for entropy in ${ENTLIST}
-		do
-			mounter entropy:${entropy}
-		done
-	fi
-
-
 fi
 
 
@@ -179,16 +147,6 @@ echo "Creating /mem"
 # Memory store
 export EVOKE_MEMDIR=/mem
 
-# If we are running 7 or higher releases, use tmpfs, everything else,
-# create a large ramdisk.
-
-if [ "${EVOKE_SYSTEM_OS}" = "FreeBSD" ] ; then
-	if [ "$(echo ${EVOKE_SYSTEM_ABI} | cut -d . -f 1)" -ge "7" ] ; then
-		mount -t tmpfs tmpfs ${EVOKE_MEMDIR}
-	else
-		mdmfs -s60m md ${EVOKE_MEMDIR}
-	fi
-fi
 
 # 'Running' files. mainly lockfiles
 export EVOKE_RUNDIR=${EVOKE_MEMDIR}/run
@@ -221,8 +179,7 @@ chmod +t ${TMPDIR}
 export EVOKE_LIBDIR=${EVOKE_MEMDIR}/lib
 mkdir -p ${EVOKE_LIBDIR}
 
-mount_nullfs -o union,ro /system/share/lib/ /config/
-mount_nullfs -o union /mem/lib/ /config/
+OPTIONS="union" mounter remount:/mem/lib /config
 export EVOKE_CFGDIR=/config
 export TRACKFILE_PUBLIC_KEY=/config/evoke_public.rsa
 
@@ -234,6 +191,37 @@ mkdir -p ${EVOKE_CURUSER}
 
 
 if [ "${MODE}" = "init" ] ; then
+	echo "Adding swap, dump,  and entropy"
+
+	SWAPLIST="$(mounter list swap)"
+	DUMPDEV=$(mounter list dump)
+	ENTLIST="$(mounter list entropy)"
+
+	ddb script kdb.enter.panic="textdump set; capture on; show pcpu;trace;show locks;ps;alltrace;show alllocks;show lockedvnods; call doadump"
+
+	if [ "${DUMPDEV}" != "" ] ; then
+		mounter dump:${DUMPDEV}
+	else
+		if [ "${SWAPLIST}" != "" ] ; then
+			mounter dump:"$(echo "${SWAPLIST}" | head -n 1)"
+		fi
+		
+	fi
+
+	if [ "${SWAPLIST}" != "" ] ; then
+		for swap in ${SWAPLIST}
+		do
+			mounter swap:${swap} enc
+		done
+	fi
+
+	if [ "${ENTLIST}" != "" ] ; then
+		for entropy in ${ENTLIST}
+		do
+			mounter entropy:${entropy}
+		done
+	fi
+
 
 	echo "Set timezone"
 	if [ -f "/system/share/lib/zoneinfo/${EVOKE_TIMEZONE_TCODE}" ] ; then
