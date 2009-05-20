@@ -183,6 +183,7 @@ int realmain(int mode) {
 		fmount("nullfs", BOOTPATH, "/boot", MNT_NOATIME|MNT_RDONLY|MNT_UNION);
 		fmount("nullfs", "/system/share/bin", "/bin", MNT_NOATIME|MNT_RDONLY|MNT_UNION);
 		fmount("nullfs", "/system/share/lib", "/config", MNT_NOATIME|MNT_RDONLY|MNT_UNION);
+		fmount("tmpfs", "tmpfs", "/mem", MNT_NOATIME);
 
 
 		printf("Starting nexus daemon\n");
@@ -295,7 +296,12 @@ int fmount(const char *fstype, const char *sourcepath, const char *destpath, int
 	iov[5].iov_base = strdup(sourcepath);
 	iov[5].iov_len = strlen(sourcepath) + 1;
 
-	return nmount(iov, 6, flags);
+	int retval = nmount(iov, 6, flags);
+	if (retval == -1) {
+		printf("%s: %s on %s returned:", fstype, sourcepath, destpath);
+		perror(fstype);
+	}
+	return retval;
 }
 
 int startpowerd(pid_t * powerdpid) {
