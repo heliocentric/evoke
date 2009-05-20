@@ -67,9 +67,9 @@ cp ${DESTDIR}/usr/src/sys/${TARGET_ARCH}/conf/GENERIC.hints ${DESTDIR}${BOOTPATH
 priv make INSTKERNNAME=${KERNCONF} installkernel 1>&2
 mkdir -p ${DESTDIR}/usr/src
 
-echo " * ${target} = Building Ports "
+if [ "${BUILD_PORTS}" != "" -o "${KERNEL_ONLY}" = "yes" ] ; then
+	echo " * ${target} = Building Ports "
 
-if [ "${BUILD_PORTS}" != "" ] ; then
 	# Since we chroot, we need these files in the target root.
 	cp ${BUILDDIR}/portbuild.sh ${DESTDIR}/
 	cp ${BUILDDIR}/varlist ${DESTDIR}/
@@ -109,169 +109,162 @@ EOF
 	umount ${DESTDIR}/usr/ports/distfiles
 	umount ${DESTDIR}/usr/ports
 	umount ${DESTDIR}/dev
-fi
+	echo " * ${target} = Installing Packages "
 
-echo " * ${target} = Installing Packages "
+	mkdir -p ${DESTDIR}/usr/local/bin
+	mkdir -p ${DESTDIR}/usr/local/sbin
+	mkdir -p ${DESTDIR}/usr/local/lib
+	mkdir -p ${DESTDIR}/usr/local/libexec
+	mkdir -p ${DESTDIR}/usr/local/plan9/bin
+	mkdir -p ${DESTDIR}/usr/local/plan9/bin/venti
 
-mkdir -p ${DESTDIR}/usr/local/bin
-mkdir -p ${DESTDIR}/usr/local/sbin
-mkdir -p ${DESTDIR}/usr/local/lib
-mkdir -p ${DESTDIR}/usr/local/libexec
-mkdir -p ${DESTDIR}/usr/local/plan9/bin
-mkdir -p ${DESTDIR}/usr/local/plan9/bin/venti
+	if [ -d "${NDISTDIR}/${TARGET_HASH}/packages" ] ; then
+		cd ${NDISTDIR}/${TARGET_HASH}/packages
+		for file in *
+		do
+			tar -xf ${file} --exclude '+*' -C ${DESTDIR}/usr/local/
+		done
+	fi
 
-if [ -d "${NDISTDIR}/${TARGET_HASH}/packages" ] ; then
-	cd ${NDISTDIR}/${TARGET_HASH}/packages
-	for file in *
+	echo " * ${target} = Populating FSDIR"
+	cp ${DESTDIR}/libexec/ld-elf.so.1 ${FSDIR}${N_LIBEXEC}
+	mkdir -p ${DESTDIR}/mnt/bin
+	mkdir -p ${DESTDIR}/mnt/lib
+
+	# Dear lord this is ugly. Still, it simplifies other things. That's my story, and I'm sticking to it.
+	mount_nullfs -o union ${DESTDIR}/usr/local/plan9/bin ${DESTDIR}/mnt/bin
+	mount_nullfs -o union ${DESTDIR}/bin ${DESTDIR}/mnt/bin
+	mount_nullfs -o union ${DESTDIR}/sbin ${DESTDIR}/mnt/bin
+	mount_nullfs -o union ${DESTDIR}/usr/bin ${DESTDIR}/mnt/bin
+	mount_nullfs -o union ${DESTDIR}/usr/sbin ${DESTDIR}/mnt/bin
+	mount_nullfs -o union ${DESTDIR}/usr/local/bin ${DESTDIR}/mnt/bin
+	mount_nullfs -o union ${DESTDIR}/usr/local/sbin ${DESTDIR}/mnt/bin
+	mount_nullfs -o union ${DESTDIR}/usr/local/libexec ${DESTDIR}/mnt/bin
+	mount_nullfs -o union ${DESTDIR}/usr/libexec ${DESTDIR}/mnt/bin
+	mount_nullfs -o union ${DESTDIR}/lib ${DESTDIR}/mnt/lib
+	mount_nullfs -o union ${DESTDIR}/usr/lib ${DESTDIR}/mnt/lib
+	mount_nullfs -o union ${DESTDIR}/usr/local/lib ${DESTDIR}/mnt/lib
+
+	# Clear flags and permissions.
+	cd ${DESTDIR}/mnt/bin
+	chflags -R noschg *
+	chmod a+w *
+	cd ${DESTDIR}/mnt/lib
+	chflags -R noschg *
+	chmod a+w *
+
+
+	PROGS="${PROGS} $(grep -v ^# ${BUILDDIR}/portlist | grep ^B: | cut -d : -f 2)"
+
+	# "Mommy Mommy! Can I see some ugly shell scripting?"
+	# "Yes dear, but only if you gouge one eye out first"
+	# "Awwww"
+	#
+	# Seriously though, as you can see, we create a for loop to generate a list of libraries by using readelf on a binary,
+	# then we consolidate all libs (so there are no duplicates). Then we feed that to another for loop, which copies the libs in question to FSDIR, while creating compatibility symlinks.
+	# See? Simple. Just, slightly confusing if you aren't used to dealing with loop constructs like this.
+
+	resolve_libs() {
+		for file in "$@"
+		do
+			echo "${file}" >&2
+			TYPE="$(OPTIONS="quiet" filetype ${file})"
+			case "${TYPE}" in
+				application/x-executable)
+					DEPENDENCIES=$(${CROSSTOOLSPATH}/readelf -d ${DESTDIR}/mnt/bin/${file} | grep '(NEEDED)' | cut -d [ -f 2 | cut -d ] -f 1)
+					echo "${DEPENDENCIES}"
+					resolve_libs ${DEPENDENCIES}
+				;;
+				application/x-sharedlib)
+					DEPENDENCIES=$(${CROSSTOOLSPATH}/readelf -d ${DESTDIR}/mnt/lib/${file} | grep '(NEEDED)' | cut -d [ -f 2 | cut -d ] -f 1)
+					echo "${file}"
+					echo "${DEPENDENCIES}"
+					resolve_libs ${DEPENDENCIES}
+				;;
+			esac
+		done | sort | uniq
+
+	}
+
+
+
+	cd ${DESTDIR}/mnt/bin/
+	for lib in $(resolve_libs ${PROGS} ganglia/modcpu.so ganglia/moddisk.so ganglia/modload.so ganglia/modmem.so ganglia/modmulticpu.so ganglia/modnet.so ganglia/modproc.so ganglia/modsys.so)
 	do
-		tar -xf ${file} --exclude '+*' -C ${DESTDIR}/usr/local/
-	done
-fi
+		DIRECTORY="$(dirname ${lib})"
+		FILE="$(basename ${lib})"
 
-echo " * ${target} = Populating FSDIR"
-cp ${DESTDIR}/libexec/ld-elf.so.1 ${FSDIR}${N_LIBEXEC}
-mkdir -p ${DESTDIR}/mnt/bin
-mkdir -p ${DESTDIR}/mnt/lib
+		echo "Working on ${lib}" 1>&2
+		if [ "${DIRECTORY}" = "." ] ; then
+			DEST="${FSDIR}/${N_LIB}/${FILE}"
+		else
+			mkdir -p ${FSDIR}/${N_LIB}/${DIRECTORY}
+			DEST="${FSDIR}/${N_LIB}/${DIRECTORY}/${FILE}"
+		fi
 
-# Dear lord this is ugly. Still, it simplifies other things. That's my story, and I'm sticking to it.
-mount_nullfs -o union ${DESTDIR}/usr/local/plan9/bin ${DESTDIR}/mnt/bin
-mount_nullfs -o union ${DESTDIR}/bin ${DESTDIR}/mnt/bin
-mount_nullfs -o union ${DESTDIR}/sbin ${DESTDIR}/mnt/bin
-mount_nullfs -o union ${DESTDIR}/usr/bin ${DESTDIR}/mnt/bin
-mount_nullfs -o union ${DESTDIR}/usr/sbin ${DESTDIR}/mnt/bin
-mount_nullfs -o union ${DESTDIR}/usr/local/bin ${DESTDIR}/mnt/bin
-mount_nullfs -o union ${DESTDIR}/usr/local/sbin ${DESTDIR}/mnt/bin
-mount_nullfs -o union ${DESTDIR}/usr/local/libexec ${DESTDIR}/mnt/bin
-mount_nullfs -o union ${DESTDIR}/usr/libexec ${DESTDIR}/mnt/bin
-mount_nullfs -o union ${DESTDIR}/lib ${DESTDIR}/mnt/lib
-mount_nullfs -o union ${DESTDIR}/usr/lib ${DESTDIR}/mnt/lib
-mount_nullfs -o union ${DESTDIR}/usr/local/lib ${DESTDIR}/mnt/lib
-
-# Clear flags and permissions.
-cd ${DESTDIR}/mnt/bin
-chflags -R noschg *
-chmod a+w *
-cd ${DESTDIR}/mnt/lib
-chflags -R noschg *
-chmod a+w *
-
-
-PROGS="${PROGS} $(grep -v ^# ${BUILDDIR}/portlist | grep ^B: | cut -d : -f 2)"
-
-# "Mommy Mommy! Can I see some ugly shell scripting?"
-# "Yes dear, but only if you gouge one eye out first"
-# "Awwww"
-#
-# Seriously though, as you can see, we create a for loop to generate a list of libraries by using readelf on a binary,
-# then we consolidate all libs (so there are no duplicates). Then we feed that to another for loop, which copies the libs in question to FSDIR, while creating compatibility symlinks.
-# See? Simple. Just, slightly confusing if you aren't used to dealing with loop constructs like this.
-
-resolve_libs() {
-	for file in "$@"
-	do
-		echo "${file}" >&2
-		TYPE="$(OPTIONS="quiet" filetype ${file})"
-		case "${TYPE}" in
-			application/x-executable)
-				DEPENDENCIES=$(${CROSSTOOLSPATH}/readelf -d ${DESTDIR}/mnt/bin/${file} | grep '(NEEDED)' | cut -d [ -f 2 | cut -d ] -f 1)
-				echo "${DEPENDENCIES}"
-				resolve_libs ${DEPENDENCIES}
-			;;
-			application/x-sharedlib)
-				DEPENDENCIES=$(${CROSSTOOLSPATH}/readelf -d ${DESTDIR}/mnt/lib/${file} | grep '(NEEDED)' | cut -d [ -f 2 | cut -d ] -f 1)
-				echo "${file}"
-				echo "${DEPENDENCIES}"
-				resolve_libs ${DEPENDENCIES}
+		cat ${DESTDIR}/mnt/lib/${lib} >${DEST}
+		echo "Copying to ${DEST}" 1>&2
+		case "${lib}" in
+			*.so.*)
+				ln -s ${FILE} $(echo $(echo ${DEST} | cut -d "." -f 1-2))
 			;;
 		esac
-	done | sort | uniq
+	done
 
-}
-
-
-
-cd ${DESTDIR}/mnt/bin/
-for lib in $(resolve_libs ${PROGS} ganglia/modcpu.so ganglia/moddisk.so ganglia/modload.so ganglia/modmem.so ganglia/modmulticpu.so ganglia/modnet.so ganglia/modproc.so ganglia/modsys.so)
-do
-	DIRECTORY="$(dirname ${lib})"
-	FILE="$(basename ${lib})"
-
-	echo "Working on ${lib}" 1>&2
-	if [ "${DIRECTORY}" = "." ] ; then
-		DEST="${FSDIR}/${N_LIB}/${FILE}"
-	else
-		mkdir -p ${FSDIR}/${N_LIB}/${DIRECTORY}
-		DEST="${FSDIR}/${N_LIB}/${DIRECTORY}/${FILE}"
-	fi
-
-	cat ${DESTDIR}/mnt/lib/${lib} >${DEST}
-	echo "Copying to ${DEST}" 1>&2
-	case "${lib}" in
-		*.so.*)
-			ln -s ${FILE} $(echo $(echo ${DEST} | cut -d "." -f 1-2))
-		;;
-	esac
-done
-
-# Strip and copy the binaries to the FSDIR
-${CROSSTOOLSPATH}/strip --remove-section=.note --remove-section=.comment --strip-unneeded ${PROGS}
-tar -cLf - ${PROGS} | tar -xpf - -C ${FSDIR}${N_BIN}/	
-cd ${FSDIR}${N_BIN}
-
-# We were going to use a packer, but it did absolutely nothing to size (it can't compress libs, and they are the literal bulk of the size)
-#upx ${PROGS}
-
-# Strip all the libs too for good measure
-cd ${OBJDIR}
-cd ${FSDIR}${N_LIB}
-${CROSSTOOLSPATH}/strip --remove-section=.note --remove-section=.comment --strip-unneeded *
-
-# Remove all the nullfs mounts... nasty nasty nasty....
-umount ${DESTDIR}/mnt/bin
-umount ${DESTDIR}/mnt/bin
-umount ${DESTDIR}/mnt/bin
-umount ${DESTDIR}/mnt/bin
-umount ${DESTDIR}/mnt/bin
-umount ${DESTDIR}/mnt/bin
-umount ${DESTDIR}/mnt/bin
-umount ${DESTDIR}/mnt/bin
-umount ${DESTDIR}/mnt/bin
-umount ${DESTDIR}/mnt/lib
-umount ${DESTDIR}/mnt/lib
-umount ${DESTDIR}/mnt/lib
+	# Strip and copy the binaries to the FSDIR
+	${CROSSTOOLSPATH}/strip --remove-section=.note --remove-section=.comment --strip-unneeded ${PROGS}
+	tar -cLf - ${PROGS} | tar -xpf - -C ${FSDIR}${N_BIN}/	
+	cd ${FSDIR}${N_BIN}
 
 
-echo " * ${target} = Copying Directories to ${N_BINSHARE}"
+	# Strip all the libs too for good measure
+	cd ${OBJDIR}
+	cd ${FSDIR}${N_LIB}
+	${CROSSTOOLSPATH}/strip --remove-section=.note --remove-section=.comment --strip-unneeded *
 
-for file in $(grep -v ^# ${BUILDDIR}/portlist | grep ^D: | awk -F : '{ if ($4 == "binshare") { print $2; } }')
-do
+	# Remove all the nullfs mounts... nasty nasty nasty....
+	umount ${DESTDIR}/mnt/bin
+	umount ${DESTDIR}/mnt/bin
+	umount ${DESTDIR}/mnt/bin
+	umount ${DESTDIR}/mnt/bin
+	umount ${DESTDIR}/mnt/bin
+	umount ${DESTDIR}/mnt/bin
+	umount ${DESTDIR}/mnt/bin
+	umount ${DESTDIR}/mnt/bin
+	umount ${DESTDIR}/mnt/bin
+	umount ${DESTDIR}/mnt/lib
+	umount ${DESTDIR}/mnt/lib
+	umount ${DESTDIR}/mnt/lib
 
-	DIRNAME="$(dirname ${file})"
-	DIRECTORY="$(basename ${file})"
-	if [ -d "${DESTDIR}/${DIRNAME}" ] ; then
-		cd ${DESTDIR}/${DIRNAME}
-		echo " * ${target} = Copying ${DESTDIR}/${DIRNAME}/${DIRECTORY} to ${N_BINSHARE}"
-		tar -cf - "${DIRECTORY}" | tar -xvpf - -C "${N_BINSHARE}/"
-	fi
-done
 
-# Copy geom libs to FSDIR too
-cp -r ${DESTDIR}/lib/geom ${FSDIR}${N_LIB}
+	echo " * ${target} = Copying Directories to ${N_BINSHARE}"
 
-# And then, lazybox
-#cd ${WORKDIR}/rescue
-#tar -cf - * | tar -xf - -C ${FSDIR}${N_BIN}/ 1>&2
+	for file in $(grep -v ^# ${BUILDDIR}/portlist | grep ^D: | awk -F : '{ if ($4 == "binshare") { print $2; } }')
+	do
 
-# run through the geom list. We use geli because it is the only binary we explicitly need.
+		DIRNAME="$(dirname ${file})"
+		DIRECTORY="$(basename ${file})"
+		if [ -d "${DESTDIR}/${DIRNAME}" ] ; then
+			cd ${DESTDIR}/${DIRNAME}
+			echo " * ${target} = Copying ${DESTDIR}/${DIRNAME}/${DIRECTORY} to ${N_BINSHARE}"
+			tar -cf - "${DIRECTORY}" | tar -xvpf - -C "${N_BINSHARE}/"
+		fi
+	done
 
-IFS="${FORFS}"
-for geom in $(grep -v ^# ${BUILDDIR}/targets/FreeBSD/${RELEASE}/share/geomlist | grep -v ^$)
-do
-	ln ${FSDIR}${N_BIN}/geli ${FSDIR}${N_BIN}/${geom}
-done
-IFS="${OLDFS}"
+	# Copy geom libs to FSDIR too
+	cp -r ${DESTDIR}/lib/geom ${FSDIR}${N_LIB}
 
-# Grab the bootloader files, and place them in ${FSDIR}${N_BOOT}/
 
-cd ${DESTDIR}/boot && tar -cf - boot mbr gptboot pmbr boot0 boot2 | tar -xvpf - -C ${FSDIR}${N_BOOT}/ 1>&2
+	# run through the geom list. We use geli because it is the only binary we explicitly need.
 
+	IFS="${FORFS}"
+	for geom in $(grep -v ^# ${BUILDDIR}/targets/FreeBSD/${RELEASE}/share/geomlist | grep -v ^$)
+	do
+		ln ${FSDIR}${N_BIN}/geli ${FSDIR}${N_BIN}/${geom}
+	done
+	IFS="${OLDFS}"
+
+	# Grab the bootloader files, and place them in ${FSDIR}${N_BOOT}/
+
+	cd ${DESTDIR}/boot && tar -cf - boot mbr gptboot pmbr boot0 boot2 | tar -xvpf - -C ${FSDIR}${N_BOOT}/ 1>&2
+fi
