@@ -51,6 +51,11 @@ do
 	# no need to use anything other then kernel
 	export KERNCONF="kernel"
 
+	if [ "$(echo ${target} | cut -d ":" -f 8)" = "y" ] ; then
+		KERNEL_ONLY="yes"
+	else
+		KERNEL_ONLY="no"
+	fi
 	# for installkernel/installworld and places in the script
 	# that need to know where installworld is putting things
 	export DESTDIR=${OBJDIR}/${TARGET_HASH}
