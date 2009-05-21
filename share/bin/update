@@ -533,7 +533,7 @@ getfile() {
 
 	filesize="$(stat -f '%z' ${filename} 2>/dev/null)"
 
-	if [ "${filesize}" = "0" ] ; then
+	if [ "${filesize}" != "${size}" ] ; then
 		rm "${filename}"
 	fi
 }
