@@ -70,7 +70,7 @@ cp ${DESTDIR}/usr/src/sys/${TARGET_ARCH}/conf/GENERIC.hints ${DESTDIR}${BOOTPATH
 priv make INSTKERNNAME=${KERNCONF} installkernel 1>&2
 mkdir -p ${DESTDIR}/usr/src
 
-if [ "${BUILD_PORTS}" != "" -o "${KERNEL_ONLY}" = "yes" ] ; then
+if [ "${BUILD_PORTS}" != "" -a "${KERNEL_ONLY}" = "no" ] ; then
 	echo " * ${target} = Building Ports "
 
 	# Since we chroot, we need these files in the target root.
