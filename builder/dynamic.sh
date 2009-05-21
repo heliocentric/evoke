@@ -91,10 +91,8 @@ if [ "${BUILD_PORTS}" != "" -o "${KERNEL_ONLY}" = "yes" ] ; then
 	mount_nullfs ${NDISTDIR}/ports ${DESTDIR}/usr/ports/distfiles
 
 	# Only for i386 on amd64 building, which doesn't currently work anyway. Still.
-	if [ "$(uname -p)" = "amd64" ] ; then
-		if [ ${TARGET_ARCH} = i386 ] ; then
-			cp ${DESTDIR}/libexec/ld-elf.so.1 ${DESTDIR}/libexec/ld-elf32.so.1
-		fi
+	if [ ${TARGET_ARCH} = i386 ] ; then
+		cp ${DESTDIR}/libexec/ld-elf.so.1 ${DESTDIR}/libexec/ld-elf32.so.1
 	fi
 	
 	# Work around the fact that 8-CURRENT no longer has kse, by forcing 6.x to use libthr
@@ -108,7 +106,6 @@ EOF
 	fi
 	# For ports, uname will return the correct values
 	UNAME_r=${RELEASE}-RELEASE UNAME_m=${TARGET_ARCH} UNAME_p=${TARGET_ARCH} chroot ${DESTDIR} /portbuild.sh 1>&2
-	rm ${DESTDIR}/libexec/ld-elf32.so.1
 	umount ${DESTDIR}/usr/ports/distfiles
 	umount ${DESTDIR}/usr/ports
 	umount ${DESTDIR}/dev
@@ -130,7 +127,7 @@ EOF
 	fi
 
 	echo " * ${target} = Populating FSDIR"
-	cp ${DESTDIR}/libexec/ld-elf.so.1 ${FSDIR}${N_LIBEXEC}
+	cd ${DESTDIR}/libexec && tar -cf - * | tar -xvpf - -C ${FSDIR}${N_LIBEXEC}
 	mkdir -p ${DESTDIR}/mnt/bin
 	mkdir -p ${DESTDIR}/mnt/lib
 
