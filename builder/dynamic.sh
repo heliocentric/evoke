@@ -46,14 +46,17 @@ if [ "${ABI}" = "7" ] ; then
 fi
 cd ${WORKDIR}/usr/src/
 if [ "${NO_BUILD_WORLD}" = "" ] ; then
-	echo " * ${target} = Building World "
-	make -DLOADER_TFTP_SUPPORT LOCAL_DIRS="nsrc" MAGICPATH="/config" buildworld 1>&2
-	echo ""
+	if [ "${KERNEL_ONLY}" = "yes" ] ; then
+		echo " * ${target} = Building Kernel Toolchain "
+		make -DLOADER_TFTP_SUPPORT LOCAL_DIRS="nsrc" MAGICPATH="/config" kernel-toolchain 1>&2
+	else
+		echo " * ${target} = Building World "
+		make -DLOADER_TFTP_SUPPORT LOCAL_DIRS="nsrc" MAGICPATH="/config" buildworld 1>&2
+	fi
 fi
 if [ "${NO_BUILD_KERNEL}" = "" ] ; then
 	echo " * ${target} = Building Kernel "
 	make buildkernel 1>&2
-	echo ""
 fi
 
 echo " * ${target} = Populating DESTDIR"
@@ -64,13 +67,13 @@ mkdir -p ${DESTDIR}/rescue 1>&2
 
 mkdir -p ${DESTDIR}${BOOTPATH}/defaults
 priv make distribution 1>&2
-priv make LOCAL_DIRS="nsrc" installworld 1>&2
 mkdir -p ${DESTDIR}/boot
 cp ${DESTDIR}/usr/src/sys/${TARGET_ARCH}/conf/GENERIC.hints ${DESTDIR}${BOOTPATH}/device.hints
 priv make INSTKERNNAME=${KERNCONF} installkernel 1>&2
 mkdir -p ${DESTDIR}/usr/src
 
 if [ "${BUILD_PORTS}" != "" -a "${KERNEL_ONLY}" = "no" ] ; then
+	priv make LOCAL_DIRS="nsrc" installworld 1>&2
 	echo " * ${target} = Building Ports "
 
 	# Since we chroot, we need these files in the target root.
