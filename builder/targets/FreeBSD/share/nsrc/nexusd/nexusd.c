@@ -31,6 +31,7 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <sys/rtprio.h>
+#include <sys/sysctl.h>
 #include <sys/watchdog.h>
 #include <fcntl.h>
 #include <libutil.h>
@@ -94,6 +95,7 @@ int release(handle lockid);
 #define LIBEXECPATH "/system/%%ABI%%/%%ARCH%%/libexec"
 #define BOOTPATH "/system/%%ABI%%/%%ARCH%%/boot"
 
+#define ARCH "%%ARCH%%"
 
 #define LOCK_NULL 0
 #define LOCK_CONCURRENT_READ 1
@@ -151,6 +153,21 @@ int realmain(int mode) {
 		close(2);
 
 		setctty("/dev/console");
+		int mib[2], realversion;
+		size_t length;
+
+		mib[0] = CTL_KERN;
+		mib[1] = KERN_OSRELDATE;
+		length = sizeof(realversion);
+		sysctl(mib, 2, &realversion, &length, NULL, 0);
+
+		char architecture[32];
+		mib[0] = CTL_HW;
+		mib[1] = HW_MACHINE_ARCH;
+		length = sizeof(architecture);
+		sysctl(mib, 2, &architecture, &length, NULL, 0);
+
+		printf("Initializing FreeBSD/%s: %d (FreeBSD/%%ARCH%%: %d)\n", architecture, realversion, __FreeBSD_version);
 
 
 		/* Set some important environment variables */
@@ -176,17 +193,20 @@ int realmain(int mode) {
 		}
 
 
-
-		fmount("nullfs", BINPATH, "/bin", MNT_NOATIME|MNT_RDONLY|MNT_UNION);
-		fmount("nullfs", LIBPATH, "/lib", MNT_NOATIME|MNT_RDONLY|MNT_UNION);
-		fmount("nullfs", LIBEXECPATH, "/libexec", MNT_NOATIME|MNT_RDONLY|MNT_UNION);
-		fmount("nullfs", BOOTPATH, "/boot", MNT_NOATIME|MNT_RDONLY|MNT_UNION);
+		if (realversion >= __FreeBSD_version) {
+			fmount("nullfs", BINPATH, "/bin", MNT_NOATIME|MNT_RDONLY|MNT_UNION);
+			fmount("nullfs", LIBPATH, "/lib", MNT_NOATIME|MNT_RDONLY|MNT_UNION);
+			fmount("nullfs", LIBEXECPATH, "/libexec", MNT_NOATIME|MNT_RDONLY|MNT_UNION);
+			fmount("nullfs", BOOTPATH, "/boot", MNT_NOATIME|MNT_RDONLY|MNT_UNION);
+		} else {
+			printf("Error, unsupported kernel! Naughty, naughty boy!");
+			exit(7);
+		}
 		fmount("nullfs", "/system/share/bin", "/bin", MNT_NOATIME|MNT_RDONLY|MNT_UNION);
 		fmount("nullfs", "/system/share/lib", "/config", MNT_NOATIME|MNT_RDONLY|MNT_UNION);
 		fmount("tmpfs", "tmpfs", "/mem", MNT_NOATIME);
 
 
-		printf("Starting nexus daemon\n");
 		pid_t watchdogd_pid;
 		startwatchdogd(&watchdogd_pid);
 

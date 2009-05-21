@@ -11,7 +11,7 @@ CFLAGS+=-DDEBUGSHELL -DSECURE -DLOGIN_CAP -DCOMPAT_SYSV_INIT
 DPADD=	${LIBUTIL} ${LIBCRYPT}
 LDADD=	-lutil -lcrypt
 DPADD+=  ${LIBMD}                                                                                                            
-LDADD+=  -lmd  
+LDADD+=  -lmd
 
 NO_SHARED?=	YES
 
