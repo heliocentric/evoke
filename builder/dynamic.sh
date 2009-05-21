@@ -36,8 +36,11 @@ CROSSTOOLSPATH=${MAKEOBJDIRPREFIX}/${TARGET}${WORKDIR}/usr/src/tmp/usr/bin
 cp ${BUILDDIR}/targets/FreeBSD/${RELEASE}/${TARGET}/kernconf ${WORKDIR}/usr/src/sys/${TARGET}/conf/${KERNCONF}
 
 # Patch in the binary path into the kernel directly, so that loader.conf doesn't need to.
-echo "options INIT_PATH=${N_BIN}/nexusd:${N_BIN}/init:/sbin/init:/stand/sysinstall" >> ${WORKDIR}/usr/src/sys/${TARGET}/conf/${KERNCONF}
-
+if [ "${TARGET_ARCH}" = "amd64" ] ; then
+	echo "options INIT_PATH=${N_BIN}/nexusd:${N_BIN}/init:/system/FreeBSD-${RELEASE}/i386/bin/nexusd:/system/FreeBSD-${RELEASE}/i386/bin/init:/sbin/init:/stand/sysinstall" >> ${WORKDIR}/usr/src/sys/${TARGET}/conf/${KERNCONF}
+else
+	echo "options INIT_PATH=${N_BIN}/nexusd:${N_BIN}/init:/sbin/init:/stand/sysinstall" >> ${WORKDIR}/usr/src/sys/${TARGET}/conf/${KERNCONF}
+fi
 if [ "${ABI}" = "7" ] ; then
 	svn co --force http://svn.freebsd.org/base/head/sys/contrib/dev/ath ${WORKDIR}/usr/src/sys/contrib/dev/ath
 fi
