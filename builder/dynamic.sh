@@ -47,7 +47,7 @@ fi
 cd ${WORKDIR}/usr/src/
 if [ "${NO_BUILD_WORLD}" = "" ] ; then
 	echo " * ${target} = Building World "
-	make -DLOADER_TFTP_SUPPORT LOCAL_DIRS="nsrc" MAGICPATH="/config" MK_LIB32="no" buildworld 1>&2
+	make -DLOADER_TFTP_SUPPORT LOCAL_DIRS="nsrc" MAGICPATH="/config" -DWITHOUT_LIB32 buildworld 1>&2
 fi
 if [ "${NO_BUILD_KERNEL}" = "" ] ; then
 	echo " * ${target} = Building Kernel "
@@ -62,7 +62,7 @@ mkdir -p ${DESTDIR}/rescue 1>&2
 
 mkdir -p ${DESTDIR}${BOOTPATH}/defaults
 priv make distribution 1>&2
-priv make LOCAL_DIRS="nsrc" MK_LIB32="no" installworld 1>&2
+priv make LOCAL_DIRS="nsrc" -DWITHOUT_LIB32 installworld 1>&2
 mkdir -p ${DESTDIR}/boot
 cp ${DESTDIR}/usr/src/sys/${TARGET_ARCH}/conf/GENERIC.hints ${DESTDIR}${BOOTPATH}/device.hints
 priv make INSTKERNNAME=${KERNCONF} installkernel 1>&2
