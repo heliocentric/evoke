@@ -64,6 +64,7 @@ int realmain(int mode);
 int checkhash(void);
 
 int startpowerd(pid_t * powerdpid);
+
 #define DEFAULT_ACTIVE_PERCENT  75
 #define DEFAULT_IDLE_PERCENT    50
 #define DEFAULT_POLL_INTERVAL   250     /* Poll interval in milliseconds */
