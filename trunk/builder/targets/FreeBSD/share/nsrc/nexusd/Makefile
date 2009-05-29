@@ -2,7 +2,7 @@
 # $FreeBSD$
 
 PROG=	nexusd
-MAN=    nexusd.8
+NO_MAN=
 
 PRECIOUSPROG=
 INSTALLFLAGS=-b -B.bak
