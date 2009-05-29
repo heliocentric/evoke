@@ -32,6 +32,16 @@ if [ -d "${DUMPDIR}" ] ; then
 	STATUS="$(grep "Dump Status" "${DUMPDIR}/info")"
 	case "${STATUS}" in
 		*[gG][oO][oO][dD]*)
+			tar -xpf "${DUMPDIR}/textdump.tar" -C "${DUMPDIR}/"
+			EVOKE_VERSION="$(cat ${DUMPDIR}/config.txt | grep ident | awk '{ print $2; }')"
+			PANIC_MESSAGE="$(cat ${DUMPDIR}/panic.txt 2>/dev/null)"
+			DMESG="$(cat ${DUMPDIR}/msgbuf.txt 2>/dev/null)"
+			DMESG="$(cat ${DUMPDIR}/ddb.txt 2>/dev/null)"
+			SYSID="$(kenv -q smbios.system.uuid 2>/dev/null)"
+			SMBIOS="$(kenv -q | grep ^smbios 2>/dev/null)"
+
+			curl -F "version=${EVOKE_VERSION}" -F "panic=${PANIC_MESSAGE}" -F "dmesg=${DMESG}" -F "systemid=${SYSID}" -F "trace=${TRACE}" -F "smbios=${SMBIOS}" http://www.damnsmallbsd.org/panic.php
+
 		;;
 	esac
 fi

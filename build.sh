@@ -51,7 +51,7 @@ swapon swapoff swapinfo syslogd tail tar tcsh tftp tftpd top umount sysctl
 uniq unlink usbdevs vidcontrol whoami zcat sort pfctl du makefs 
 mount_msdosfs getextattr setextattr devinfo newfs_msdos stat dirname lsvfs
 rtsol egrep mount_cd9660 rmdir gpt tr file bsdiff bspatch savecore dumpon
-openssl fetch basename dumpfs command wc sleep uptime adjkerntz ntpd iostat systat nexusd ddb
+openssl fetch basename dumpfs command wc sleep uptime adjkerntz ntpd iostat systat nexusd ddb curl
 "
 
 # List of kernel objects in base that will be on the image. Ports modules
