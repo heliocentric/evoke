@@ -179,6 +179,9 @@ chmod +t ${TMPDIR}
 export EVOKE_LIBDIR=${EVOKE_MEMDIR}/lib
 mkdir -p ${EVOKE_LIBDIR}
 
+export EVOKE_DEBUGDIR=${EVOKE_MEMDIR}/debug
+mkdir -p ${EVOKE_DEBUGDIR}
+
 OPTIONS="union" mounter remount:/mem/lib /config
 export EVOKE_CFGDIR=/config
 export TRACKFILE_PUBLIC_KEY=/config/evoke_public.rsa
@@ -197,17 +200,23 @@ if [ "${MODE}" = "init" ] ; then
 	DUMPDEV=$(mounter list dump)
 	ENTLIST="$(mounter list entropy)"
 
-	ddb script kdb.enter.panic="textdump set; capture on; show pcpu;trace;show locks;ps;alltrace;show alllocks;show lockedvnods; call doadump"
+	ddb script kdb.enter.default="textdump set; capture on; show pcpu;trace;show locks;ps;alltrace;show alllocks;show lockedvnods;call doadump;reboot"
 
 	if [ "${DUMPDEV}" != "" ] ; then
 		mounter dump:${DUMPDEV}
 	else
 		if [ "${SWAPLIST}" != "" ] ; then
-			mounter dump:"$(echo "${SWAPLIST}" | head -n 1)"
+			DUMPDEV="$(echo "${SWAPLIST}" | head -n 1)"
+			mounter "dump:${DUMPDEV}"
 		fi
 		
 	fi
-
+	if savecore -C "${EVOKE_DEBUGDIR}" "${DEVICES}/${DUMPDEV}" >${DEVICES}/null; then
+		savecore "${EVOKE_DEBUGDIR}" "${DEVICES}/${DUMPDEV}" >${DEVICES}/null 2>${DEVICES}/null
+		mv "${EVOKE_DEBUGDIR}/textdump.tar.0" "${EVOKE_DEBUGDIR}/textdump.tar"
+		mv "${EVOKE_DEBUGDIR}/info.0" "${EVOKE_DEBUGDIR}/info"
+		senddump "${EVOKE_DEBUGDIR}"
+	fi
 	if [ "${SWAPLIST}" != "" ] ; then
 		for swap in ${SWAPLIST}
 		do
@@ -439,10 +448,10 @@ esac
 
 case "${EVOKE_MISC_MESSAGE}" in
 	[yY][eE][sS])
-		cat /system/share/lib/message
+		runterm /dev/ttyv0 cat /system/share/lib/message
 	;;
 esac
 
 cd /
-tcsh
+runterm /dev/ttyv0 tcsh
 userconfig logout ${EVOKE_CURUSER}

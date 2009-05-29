@@ -419,7 +419,7 @@ int startsystem(pid_t * systartpid, int mode) {
 				systart_sa.sa_flags = 0;
 				systart_sa.sa_handler = SIG_IGN;
 				sigprocmask(SIG_SETMASK, &systart_sa.sa_mask, (sigset_t *) 0);
-				setctty("/dev/ttyv0");
+				setctty("/dev/console");
 				nargv[0] = "sh";
 				nargv[1] = "/system/share/bin/systart";
 				nargv[2] = "autoboot";
@@ -436,7 +436,7 @@ int startsystem(pid_t * systartpid, int mode) {
 				systart_sa.sa_flags = 0;
 				systart_sa.sa_handler = SIG_IGN;
 				sigprocmask(SIG_SETMASK, &systart_sa.sa_mask, (sigset_t *) 0);
-				setctty("/dev/ttyv0");
+				setctty("/dev/console");
 				nargv[0] = "tcsh";
 				ret = execv(shell, nargv);
 				perror(shell);
@@ -450,11 +450,13 @@ int startsystem(pid_t * systartpid, int mode) {
 		break;
 		default:
 			while (1) {
-				pid_t returnpid = wait(&status);
-				if (returnpid == systartpid) {
-					if (WIFSIGNALED(status)) {
-						return status;
-					}
+				waitpid(systartpid, &status, 0);
+				printf("wait returned %d\n", status);
+				if (status == 0) {
+					sleep(1);
+				} else {
+					perror("systart:");
+					return status;
 				}
 			}
 		break;
