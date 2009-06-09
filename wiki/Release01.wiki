@@ -103,7 +103,7 @@ Released: N/A
  * Fix a bug in mounter's 'protocol tasting' support, where device names could not be passed as file paths.
  * Fix a bug in remount detection where the filesystems are refered only by GEOM's
  * Add missing mount options to mounter.
-
+ * Fix a bug with update's ordering of revisions r1000 was coming 'after' r999, even though it should not have.
 ==== Security Updates ====
 
  * N/A
