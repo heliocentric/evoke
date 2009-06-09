@@ -557,13 +557,17 @@ unmount_mirror() {
 
 list_versions() {
 	cd "${1}"
-	for version in $(echo */*)
+	for version in $(echo *)
 	do
 		case "${version}" in 
 			misc*)
 			;;
 			*)
-				echo ${version}
+				cd "${1}/${version}"
+				for revision in $(echo *)
+				do
+					echo "${version}/${revision}"
+				done | sort -t r -k 2 -gnr
 			;;
 		esac
 	done | sort -r
@@ -1116,7 +1120,7 @@ revision_menu () {
 								unset REVISIONS
 								unset REVISION
 
-								REVISIONS="$(awk -F "/" -v branch="${BRANCH}" '{ if ($1 == branch) { print $2; }; }' ${TEMPDIR}/versionlist | sort -r | grep -v ^$ | head -n 18)"
+								REVISIONS="$(awk -F "/" -v branch="${BRANCH}" '{ if ($1 == branch) { print $2; }; }' ${TEMPDIR}/versionlist | sort -t r -k 2 -gnr | grep -v ^$ | head -n 18)"
 								clear
 								REVISION=$(menu "Revision" "${REVISIONS}" "$(printf "a:Activate\ns:Select Media\no:Options\nb:Back\nq:Quit")")
 								if [ "${REVISION}" != "" ] ; then
