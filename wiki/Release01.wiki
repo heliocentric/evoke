@@ -104,9 +104,10 @@ Released: N/A
  * Fix a bug in remount detection where the filesystems are refered only by GEOM's
  * Add missing mount options to mounter.
  * Fix a bug with update's ordering of revisions r1000 was coming 'after' r999, even though it should not have.
+
 ==== Security Updates ====
 
- * N/A
+ * Fix several security bug that are irrelevant with our single user setup.
 
 === [http://www.damnsmallbsd.org/pub/evoke/misc/ISO-IMAGES/0.1/r7/ r7] ===
 
