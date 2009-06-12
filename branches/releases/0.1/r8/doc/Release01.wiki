@@ -90,7 +90,7 @@ Jamie Ivanov of RadioactiveRussian.com for providing another test machine for th
 
 === [http://www.damnsmallbsd.org/pub/evoke/misc/ISO-IMAGES/0.1/r8/ r8] ===
 
-Released: N/A
+Released: 06/13/2009
 
 ==== Targets ====
 
