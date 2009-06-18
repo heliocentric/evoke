@@ -1,0 +1,281 @@
+#!/bin/sh
+# Copyright 2007-2009 Dylan Cochran
+# All rights reserved
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted providing that the following conditions
+# are met:
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+# IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
+# DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+# STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
+# IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
+
+# $Id$
+
+if [ ! -d "${EVOKE_CURUSER}" ] ; then
+        EVOKE_CURUSER="/tmp/currentuser"
+        mkdir -p "${EVOKE_CURUSER}"
+fi
+
+freebsd_disk_list() {
+	sysctl -b kern.geom.conftxt | \
+	awk '{
+		if ($2 == "MD") {
+			print "disk:"$3;
+			print "fs:" $3;
+		}
+		if ($2 == "DISK") {
+			if ($3 ~ /cd/) {
+				print "cd9660:"$3;
+				print "fs:" $3;
+			}
+			else {
+				if ($3 ~ /fd/) {
+					print "floppy:"$3;
+					print "fs:" $3;
+				}
+				else {
+					print "real-disk:"$3;
+				}
+			}
+		}
+		if ($2 == "PART" || $2 == "GPT") {
+			# FreeBSD defined values.
+	
+			if ($11 == "freebsd-ufs") {
+				print "boot-ufs:"$3;
+				print "fs:" $3;
+			}
+			if ($11 == "freebsd-swap") {
+				print "swap:"$3;
+			}
+			if ($11 ~ /516e7cb4-6ecf-11d6-8ff8-00022d09712b/) {
+				print "ufs:"$3;
+				print "fs:" $3;
+			}
+			if ($11 ~ /516e7cb5-6ecf-11d6-8ff8-00022d09712b/) {
+				print "swap:"$3;
+			}
+			if ($11 ~ /516e7cb6-6ecf-11d6-8ff8-00022d09712b/) {
+				print "boot-ufs:"$3;
+				print "fs:" $3;
+			}
+			if ($11 ~ /516e7cba-6ecf-11d6-8ff8-00022d09712b/) {
+				print "zfs:"$3;
+			}
+			if ($11 ~ /ebd0a0a2-b9e5-4433-87c0-68b6b72699c7/) {
+				print "fs:"$3;
+			}
+
+			# Our usage values.
+			if ($11 ~ /4b4cf826-e53e-4b56-86b6-0f9b728e0436/) {
+				print "sysconfig:"$3;
+			}
+			if ($11 ~ /fa8e2f44-6728-490a-89ae-a8e286be45af/) {
+				print "dump:"$3;
+			}
+			if ($11 ~ /ac4b7c4a-9c4c-4687-b55f-f51a731d36d2/) {
+				print "entropy:"$3;
+			}
+			if ($11 ~ /72717d60-1a4b-43e2-bca3-4418bc0669ee/) {
+				print "object:"$3;
+				print "fs:" $3;
+			}
+			if ($11 ~ /0b79a13e-87f2-4238-a86d-d00bd1fce04e/) {
+				print "buildenv:"$3;
+				print "fs:" $3;
+			}
+			if ($11 ~ /83f90024-8f13-47cf-9b01-12f4af79138a/) {
+				print "dists:"$3;
+				print "fs:" $3;
+			}
+			if ($11 ~ /12f31621-10a0-4a3c-a0e8-9406c2e485f0/) {
+				print "ds:"$3;
+				print "fs:" $3;
+			}
+		}
+		if ($2 == "BSD") {
+			if ($11 == "7") {
+				if ($3 ~ /a$/) { 
+					print "boot-ufs:"$3;
+					print "fs:" $3;
+				} else {
+					print "ufs:"$3;
+					print "fs:" $3;
+				}
+	
+			}
+			if ($11 == "8") {
+				print "msdosfs:"$3;
+				print "fs:" $3;
+			}
+			if ($11 == "1") {
+				print "swap:"$3;
+			}
+			if ($11 == "12") {
+				print "cd9660:"$3;
+				print "fs:" $3;
+			}
+			if ($11 == "17") {
+				print "ext2fs:"$3;
+				print "fs:" $3;
+			}
+			if ($11 == "18") {
+				print "ntfs:"$3;
+				print "fs:" $3;
+			}
+			if ($11 == "24") {
+				print "udf:"$3;
+				print "fs:" $3;
+			}
+			if ($11 == "27") {
+				print "zfs:"$3;
+			}
+			if ($11 == "28") {
+				print "sysconfig:"$3;
+			}
+		}
+		else if ($2 == "MBR") {
+			if ($11 == "4") {
+				print "boot-msdosfs:"$3;
+				print "fs:" $3;
+			}
+			else if ($11 == "6") {
+				print "boot-msdosfs:"$3;
+				print "fs:" $3;
+			} 
+			else if ($11 == "130") {
+				print "swap:"$3;
+			} 
+			else if ($11 == "131") {
+				print "fs:"$3;
+			} 
+			else if ($11 == "11") {
+				print "boot-msdosfs:"$3;
+				print "fs:" $3;
+			} 
+			else if ($11 == "14") {
+				print "boot-msdosfs:"$3;
+				print "fs:" $3;
+			} 
+			else if ($11 == "7") {
+				print "ntfs:"$3;
+				print "fs:" $3;
+			} 
+		}
+	}'
+}
+
+list_other_urls() {
+	if [ "${URLS}" != "" ] ; then
+		echo "${URLS}"
+	fi
+}
+
+list_all_disks() {
+	case "${EVOKE_SYSTEM_OS}" in
+		*)
+			freebsd_disk_list | awk -F ":" '{
+					PROTO=$1;
+					DEVICE=$2;
+					if (PROTO ~ /ufs/) {
+						FS=" "
+						"dumpfs -m " DEVICE " 2>/dev/null | grep -v ^#" | getline;
+						for (operator = 1; operator <= NF; operator++) {
+							if ($operator == "-L") {
+								operand = ++operator;
+								ufslabel = "ufs/" $operand;
+								break;
+							}
+						}	
+
+						FS=":";
+						close("dumpfs -m " DEVICE);
+
+						if (ufslabel ~ /^$/) {
+							print PROTO ":" DEVICE;
+						} else {
+							print PROTO ":" ufslabel;
+						}
+						ufslabel = "";
+					} else {
+						print $0;
+					} 
+				}' 
+
+		;;
+	esac
+}
+
+find_url() {
+	if [ "${1}" = "boot" ] ; then
+		list_all_disks | grep ^boot-		
+	else
+		for path in ${EVOKE_URLFILES}
+		do
+			if [ -d "${path}" ] ; then
+				if [ -f "${path}/${1}" ] ; then
+					grep -v "^#" "${path}/${1}" | grep -v ^$
+				fi
+			fi
+		done
+	fi
+}
+
+lsvol() {
+	if [ "${EVOKE_URLFILES}" = "" ] ; then
+		EVOKE_URLFILES="${EVOKE_CURUSER}/urls"
+	fi
+
+	while [ "${1}" != "" ]
+	do
+		case "${1}" in
+			*=*)
+				LSVOL_KEY=$(echo ${1} | cut -d "=" -f 1)
+				LSVOL_VALUE=$(echo ${1} | cut -d "=" -f 2)
+			;;
+			*)
+				LSVOL_KEY=tag
+				LSVOL_VALUE=${1}
+			;;
+		esac
+
+		case "${LSVOL_KEY}" in
+			[tT][aA][gG])
+				LSVOL_VALUE=$(echo "${LSVOL_VALUE}" | tr "[:upper:]" "[:lower:]")
+				LSVOL_TAG="${LSVOL_VALUE}"
+			;;
+		esac
+
+		shift
+	done
+
+	unset LSVOL_KEY
+	unset LSVOL_VALUE
+
+	if [ "${LSVOL_TAG}" = "" ] ; then
+		# Right now, disks cannot be searched.
+		# But they can be listed, cheaply.
+		list_all_disks
+		list_other_urls
+
+	else
+		find_url "${LSVOL_TAG}"
+	fi
+}
+
+lsvol $@
