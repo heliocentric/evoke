@@ -1,0 +1,491 @@
+#!/bin/sh
+# Copyright 2007-2009 Dylan Cochran
+# All rights reserved
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted providing that the following conditions
+# are met:
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+# IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
+# DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+# STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
+# IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
+# $Id$
+
+list_if () {
+   for i in `ifconfig -l`
+   do
+               case ${i} in
+                        lo*)
+                       ;;
+                        plip*)
+                       ;;
+                        slip*)
+                       ;;
+                        fw*)
+                       ;;
+                        ppp*)
+                       ;;
+			net*)
+		       ;;
+			pf*)
+			;;
+                       *)
+				echo ${i}
+                       ;;
+               esac
+   done
+}
+
+case "${1}" in
+	autoboot)
+		MODE="init"		
+		export TERM=cons25
+		export DISPLAY=:-0
+	;;
+esac
+
+umask 077
+export DEVICES=/dev
+export EDITOR=nano
+export USE_PV=yes
+
+# Set the OS and ABI environment variables, so we can handle multiple
+# abis/architectures in a neutral way
+
+if [ "${MODE}" = "init" ] ; then
+	export EVOKE_SYSTEM_OS=$(uname)
+	case "${EVOKE_SYSTEM_OS}" in
+		OpenBSD)
+			export EVOKE_SYSTEM_ABI="$(sysctl -n kern.osrelease)"
+			export EVOKE_SYSTEM_MACHINE="$(machine)"
+			export EVOKE_SYSTEM_ARCH="$(machine -a)"
+		;;
+		Haiku)
+			export EVOKE_SYSTEM_ABI="$(uname -r)"
+			export EVOKE_SYSTEM_MACHINE="$(uname -m)"
+			export EVOKE_SYSTEM_ARCH="$(uname -p)"
+		;;
+		Darwin)
+			export EVOKE_SYSTEM_ABI="$(sysctl -n kern.osrelease)"
+			export EVOKE_SYSTEM_MACHINE="$(sysctl -n hw.machine)"
+			if [ "${MACHINE}" != "i386" ] ; then
+				export EVOKE_SYSTEM_MACHINE="powerpc"
+			fi
+			export EVOKE_SYSTEM_ARCH="${MACHINE}"
+		;;
+		DragonFly)
+			export EVOKE_SYSTEM_ABI="$(sysctl -n kern.osrelease)"
+			export EVOKE_SYSTEM_MACHINE="$(sysctl -n hw.machine)"
+			export EVOKE_SYSTEM_ARCH="$(sysctl -n hw.machine_arch)"
+		;;
+		*)
+			export EVOKE_SYSTEM_ABI="$(sysctl -n kern.osrelease | cut -d - -f 1)"
+			export EVOKE_SYSTEM_MACHINE="$(sysctl -n hw.machine)"
+			export EVOKE_SYSTEM_ARCH="$(sysctl -n hw.machine_arch)"
+			export EVOKE_SYSTEM_MODEL="$(kenv -q smbios.system.serial)"
+			case "${EVOKE_SYSTEM_MODEL}" in
+				EeePC-1234567890)
+					export EVOKE_SYSTEM_MODEL="EEEPC-$(kenv -q smbios.system.product)"
+				;;
+				*)
+					export EVOKE_SYSTEM_MODEL="GENERIC"
+				;;
+			esac
+		;;
+	esac
+	case "$(kenv -q loaddev)" in
+		cd*)
+			export EVOKE_BOOT_MODE="cdboot"
+		;;
+		pxe*)
+			export EVOKE_BOOT_MODE="pxeboot"
+		;;
+		disk*)
+			export EVOKE_BOOT_MODE="diskboot"
+		;;
+		*)
+			export EVOKE_BOOT_MODE="jailer"
+		;;
+	esac
+
+fi
+
+
+echo "Merging directories"
+
+sh /system/share/bin/merger /system/ /
+
+# This is the cutoff point, everything after this can be dynamically linked, 
+# and everything before it, HAS to be statically linked. No exceptions.
+#
+# merger is what mounts /libexec and /lib so we have a proper dynamic 
+# linker and basic libraries.
+
+mount_nullfs -o union,ro /system/share/bin/ /bin/
+export PATH=/bin
+
+# The fastest root filesystem consistancy check in history.
+# Since the probability that random corruption will cause changes to
+# both the disk, and the fingerprint on that sector to match it exactly
+# is so high, we can assume that if the fingerprint matches the
+# output of sha256 of the device node, that the root filesystem is sane.
+#
+# If not, we reboot forever, as there is nothing else we can really do
+# at this point.
+
+if [ "${MODE}" = "init" ] ; then
+
+	export EVOKE_FINGERPRINT="$(kenv -q evoke.fingerprint)"
+	export EVOKE_UPDATE_MIRROR="$(kenv -q evoke.update.mirror)"
+	export EVOKE_BOOT_SERVER="$(kenv -q boot.nfsroot.server)"
+	export EVOKE_MISC_MESSAGE="$(kenv -q evoke.misc.message)"
+	export EVOKE_MOUSED="$(kenv -q evoke.moused)"
+	export EVOKE_NTPD="$(kenv -q evoke.ntpd)"
+	export EVOKE_USERCONFIG="$(kenv -q evoke.userconfig)"
+	export EVOKE_SYSCONFIG="$(kenv -q evoke.sysconfig)"
+	export EVOKE_SSHKEY="$(kenv -q evoke.sshkey)"
+	export EVOKE_VERSION="$(kenv -q evoke.version)"
+	export EVOKE_USEONLY="$(kenv -q evoke.useonly)"
+	export EVOKE_MONITOR="$(kenv -q evoke.monitor)"
+	export EVOKE_TIMEZONE_PCODE="$(kenv -q dhcp.tz-pcode)"
+	export EVOKE_TIMEZONE_TCODE="$(kenv -q dhcp.tz-tcode)"
+
+	echo "Verifying root filesystem"
+	ROOTDEV=${DEVICES}/$(mount | awk '{ if ($3 == "/") { print $1 } }')
+	if [ "${EVOKE_FINGERPRINT}" != "" ] ; then
+		if [ "${EVOKE_FINGERPRINT}" != "$(sha256 -q ${ROOTDEV})" ] ; then
+			reboot
+		fi
+	fi
+	# Don't need a writable /
+	# mount -o update,async ${ROOTDEV} /
+
+fi
+
+echo "Creating /mem"
+
+
+# Memory store
+export EVOKE_MEMDIR=/mem
+
+# If we are running 7 or higher releases, use tmpfs, everything else,
+# create a large ramdisk.
+
+if [ "${EVOKE_SYSTEM_OS}" = "FreeBSD" ] ; then
+	if [ "$(echo ${EVOKE_SYSTEM_ABI} | cut -d . -f 1)" -ge "7" ] ; then
+		mount -t tmpfs tmpfs ${EVOKE_MEMDIR}
+	else
+		mdmfs -s60m md ${EVOKE_MEMDIR}
+	fi
+fi
+
+# 'Running' files. mainly lockfiles
+export EVOKE_RUNDIR=${EVOKE_MEMDIR}/run
+mkdir -p ${EVOKE_RUNDIR}
+
+# PID files, format is logicalname.pid
+export EVOKE_PIDDIR=${EVOKE_MEMDIR}/pid
+mkdir -p ${EVOKE_PIDDIR}
+
+# DB files, mostly storage of leases, etc.
+export EVOKE_DBDIR=${EVOKE_MEMDIR}/db
+mkdir -p ${EVOKE_DBDIR}
+
+# Temporary mountpoint, ie, /mnt.
+export EVOKE_MNTDIR=${EVOKE_MEMDIR}/mnt
+mkdir -p ${EVOKE_MNTDIR}
+
+# Empty directory
+export EVOKE_NULLDIR=${EVOKE_MEMDIR}/empty
+mkdir -p ${EVOKE_NULLDIR}
+
+# Scratch directory
+export TMPDIR=${EVOKE_MEMDIR}/scratch
+mkdir -p ${TMPDIR}
+chmod 777 ${TMPDIR}
+chmod +t ${TMPDIR}
+
+# Lib Dir (ie, automagically generated config files.)
+
+export EVOKE_LIBDIR=${EVOKE_MEMDIR}/lib
+mkdir -p ${EVOKE_LIBDIR}
+
+mount_nullfs -o union,ro /system/share/lib/ /config/
+mount_nullfs -o union /mem/lib/ /config/
+export EVOKE_CFGDIR=/config
+export TRACKFILE_PUBLIC_KEY=/config/evoke_public.rsa
+
+export EVOKE_SYSCONFIG_DIR=/mem/sysconfig
+mkdir -p ${EVOKE_SYSCONFIG_DIR}
+
+export EVOKE_CURUSER=/mem/curuser
+mkdir -p ${EVOKE_CURUSER}
+
+
+if [ "${MODE}" = "init" ] ; then
+
+	echo "Set timezone"
+	if [ -f "/system/share/lib/zoneinfo/${EVOKE_TIMEZONE_TCODE}" ] ; then
+		ln -s /system/share/lib/zoneinfo/${EVOKE_TIMEZONE_TCODE} /config/localtime
+	fi
+
+	echo "Adding swap, dump,  and entropy"
+	SWAPLIST="$(mounter list swap)"
+
+	if [ "${SWAPLIST}" != "" ] ; then
+		for swap in ${SWAPLIST}
+		do
+			mounter swap:${swap} enc
+		done
+	fi
+
+	ENTLIST="$(mounter list entropy)"
+	if [ "${ENTLIST}" != "" ] ; then
+		for entropy in ${ENTLIST}
+		do
+			mounter entropy:${entropy}
+		done
+	fi
+
+	DUMPDEV=$(mounter list dump)
+	if [ "${DUMPDEV}" != "" ] ; then
+		mounter dump:${DUMPDEV}
+	fi
+
+	echo "Starting system daemons"
+	# Always start powerd if available, some machines do not have proper heat management
+	# and it can be an issue. 
+	#
+	# Do not remove under penalty of death!
+	powerd >${DEVICES}/null 2>${DEVICES}/null
+	watchdogd -I/mem/pid/watchdogd.pid
+	echo "" >/var/run/utmp
+fi
+
+SC_PART=${EVOKE_SCDEVICE}
+
+if [ "$(is_uuid ${SC_PART})" = "no" ] ; then
+	SC_PART=$(sysconfig menu)
+	export EVOKE_SYSCONFIG=${SC_PART} >/dev/null
+fi
+
+if [ "${SC_PART}" != "" ] ; then
+	sysconfig extract ${EVOKE_SYSCONFIG}
+fi
+
+DEFUSER=${EVOKE_USERCONFIG}
+
+if [ "$(is_uuid ${DEFUSER})" = "no" ] ; then
+	DEFUSER=$(userconfig menu)
+	export EVOKE_USERCONFIG=${DEFUSER} >/dev/null
+fi
+
+if [ "${DEFUSER}" != "" ] ; then
+	userconfig login ${EVOKE_USERCONFIG}
+fi
+
+
+echo "Generating files"
+
+export HOME=${EVOKE_MEMDIR}/home
+mkdir -p ${HOME}
+
+echo "root:*:0:0:default:0:0:Super-User:${HOME}:/bin/tcsh" >>${EVOKE_LIBDIR}/master.passwd
+echo "nobody:*:1:1:defau;t:0:0:nobody:${EVOKE_NULLDIR}:${DEVICES}/null" >>${EVOKE_LIBDIR}/master.passwd
+echo "monitor:*:2:2:default:0:0:Evoke Monitoring Daemon (ganglia):${EVOKE_NULLDIR}:${DEVICES}/null" >>${EVOKE_LIBDIR}/master.passwd
+echo "wheel:*:0:" >>${EVOKE_LIBDIR}/group
+echo "operator:*:5:" >>${EVOKE_LIBDIR}/group
+
+pwd_mkdb -i -p -d ${EVOKE_LIBDIR} ${EVOKE_LIBDIR}/master.passwd 2>${DEVICES}/null
+cap_mkdb -f ${EVOKE_LIBDIR}/login.conf ${EVOKE_CFGDIR}/login.conf
+echo "/bin/tcsh" >>${EVOKE_LIBDIR}/shells
+echo "/bin/csh" >>${EVOKE_LIBDIR}/shells
+echo "/bin/sh" >>${EVOKE_LIBDIR}/shells
+cd /config
+file -C -i -m magic
+
+
+if [ "${MODE}" = "init" ] ; then
+	echo "Configuring network"
+	IF="$(kenv -q boot.netif.name)"
+	if [ "${IF}" = "" ] ; then
+		IF="$(list_if | head -n 1)"
+	fi
+
+	# Grab the ip, netmask, and gateway from kenv so pxebooting doesn't need
+	# an extra dhcp request. For robustness.
+
+	IP="$(kenv -q boot.netif.ip)"
+	NETMASK="$(kenv -q boot.netif.netmask)"
+	GATEWAY="$(kenv -q boot.netif.gateway)"
+
+	DNS="$(kenv -q boot.netif.dns)"
+	sysctl net.inet6.ip6.accept_rtadv=1 >/${DEVICES}/null
+
+	EVOKE_NET_HOSTNAME="$(kenv -q dhcp.host-name)"
+	EVOKE_NET_DOMAIN_NAME="$(kenv -q dhcp.domain-name)"
+
+	if [ "${EVOKE_NET_HOSTNAME}" != "" ] ; then
+		sysctl kern.hostname="${EVOKE_NET_HOSTNAME}.${EVOKE_NET_DOMAIN_NAME}"
+	fi
+	INTERFACES=$(list_if)
+	#for network in ${INTERFACES}
+	#do
+	#	BRIDGEIF=$(ifconfig bridge create)
+	#	NETNAME=net$(echo ${BRIDGEIF} | cut -c 7-100)
+	#	NICLINK=$(ifconfig ${network} | grep ether | awk ' { print $2 }')
+	#	BRIDGELINK=$(ifconfig ${BRIDGEIF} | grep ether | awk ' { print $2 }')
+	#	ifconfig ${network} lladdr ${BRIDGELINK}
+	#	ifconfig ${BRIDGEIF} lladdr ${NICLINK}
+	#	ifconfig ${network} up
+	#	ifconfig ${BRIDGEIF} addm ${network} stp ${network} up
+	#	ifconfig ${BRIDGEIF} name ${NETNAME}
+	#	if [ "${network}" = "${IF}" ] ; then
+	#		IF=${NETNAME}
+	#	fi
+	#	rtsol ${network}
+	#done
+	sysctl net.inet6.ip6.accept_rtadv=0 >${DEVICES}/null
+
+	if [ "${IP}" != "" -a "${NETMASK}" != "" -a "${GATEWAY}" != "" ] ; then
+		ifconfig ${IF} inet ${IP} netmask ${NETMASK}
+		route add default ${GATEWAY} 2>${DEVICES}/null >${DEVICES}/null
+	
+		if [ "${DNS}" = "" ] ; then
+			echo "nameserver ${GATEWAY}" >/mem/lib/resolv.conf
+		else
+			echo "nameserver ${DNS}" >/mem/lib/resolv.conf
+		fi
+
+	else
+
+		# If /anything/ is missing, dhclient it. Where else are we going to get it from?
+
+		dhclient ${IF} >${DEVICES}/null 2>/${DEVICES}/null
+	fi
+
+	# This is /needed/, else some programs will just not work, as they need
+	# some ip available.
+
+	ifconfig lo0 inet 127.0.0.1 netmask 255.255.255.255
+	ifconfig lo0 up
+
+case "${EVOKE_NTPD}" in
+	[nN][oO])
+	;;
+	*)
+		echo "Launching ntpd"
+		cat >/mem/lib/ntp.conf << EOF
+server pool.ntp.org
+
+driftfile /tmp/ntp.drift
+EOF
+		ntpd -c /config/ntp.conf -qg
+		ntpd -c /config/ntp.conf
+	;;
+esac
+
+	case "${EVOKE_MOUSED}" in
+		[yY][eE][sS])
+			echo "Starting moused"
+			cd ${DEVICES}
+			# Auto configure moused (note, it is disabled by default as it does slow 
+			# down the boot a bit.)
+			for i in ums* psm*
+			do
+				moused -p ${DEVICES}/${i} -3 -I ${EVOKE_PIDDIR}/${i}.pid 2>${DEVICES}/null
+			done
+			for ttyv in ${DEVICES}/ttyv* ${DEVICES}/console
+			do
+				vidcontrol < ${ttyv} -m on
+			done
+		;;
+	esac
+fi
+
+if [ "${EVOKE_SSHKEY}" != "" ] ; then
+
+	# syslogd is currently unnecessary, may uncomment later
+
+	echo "Starting syslogd"
+	echo "syslog		514/udp" >> ${EVOKE_LIBDIR}/services
+	echo "" >${EVOKE_DBDIR}/log
+	cat >${EVOKE_LIBDIR}/syslogd.conf << EOF
+33*.notice;authpriv.none;kern.debug;*.info;*.crit;*.err	${EVOKE_DBDIR}/log
+!sshd
+*.*	${EVOKE_DBDIR}/log
+EOF
+	syslogd -ss -f ${EVOKE_CFGDIR}/syslogd.conf -P ${EVOKE_PIDDIR}/syslogd.pid -p ${EVOKE_RUNDIR}/log
+
+	echo "Starting sshd"
+
+	mkdir -p ${HOME}/.ssh
+	echo "${EVOKE_SSHKEY}" >>${HOME}/.ssh/authorized_keys
+	set | grep EVOKE | grep -v EVOKE_SSHKEY >>${HOME}/.ssh/environment
+
+	ln -s . ${EVOKE_LIBDIR}/ssh
+
+	if [ ! -f "${EVOKE_CURUSER}/sshd/hostkey" ] ; then
+		mkdir -p "${EVOKE_CURUSER}/sshd"
+		ssh-keygen -t rsa -f "${EVOKE_CURUSER}/sshd/hostkey" -N '' >${DEVICES}/null 2>${DEVICES}/null
+	fi
+
+	# Don't change these under penalty of death!
+
+	cat >${EVOKE_LIBDIR}/sshd.conf << EOF
+HostKey ${EVOKE_CURUSER}/sshd/hostkey
+PermitRootLogin yes
+UsePrivilegeSeparation no                       
+UseDNS no
+PidFile ${EVOKE_PIDDIR}/sshd.pid
+PasswordAuthentication no
+ChallengeResponseAuthentication no
+PermitEmptyPasswords no
+PermitUserEnvironment yes
+ForceCommand tcsh
+UsePAM no
+EOF
+
+	cat >${EVOKE_LIBDIR}/ssh_config << "EOF"
+
+StrictHostKeyChecking no
+
+EOF
+
+	/bin/sshd -f ${EVOKE_CFGDIR}/sshd.conf 2>${DEVICES}/null
+fi
+
+case "${EVOKE_MONITOR}" in
+	[yY][eE][sS])
+		gmond -t | sed '/include/d' | sed 's/ganglia/monitor/g' >${EVOKE_LIBDIR}/gmond.conf
+		gmond -c ${EVOKE_LIBDIR}/gmond.conf
+	;;
+esac
+
+case "${EVOKE_MISC_MESSAGE}" in
+	[yY][eE][sS])
+		cat /system/share/lib/message
+	;;
+esac
+
+cd /
+tcsh
+userconfig logout ${EVOKE_CURUSER}
+
+if [ "${MODE}" = "init" ] ; then
+	reboot
+fi

@@ -1,0 +1,11 @@
+--- sys/fs/tmpfs/tmpfs_vfsops.c.orig	2009-03-08 14:32:14.000000000 -0400
++++ sys/fs/tmpfs/tmpfs_vfsops.c	2009-03-08 14:32:26.000000000 -0400
+@@ -206,8 +206,6 @@
+ 		return EOPNOTSUPP;
+ 	}
+ 
+-	printf("WARNING: TMPFS is considered to be a highly experimental "
+-	    "feature in FreeBSD.\n");
+ 
+ 	vn_lock(mp->mnt_vnodecovered, LK_SHARED | LK_RETRY, td);
+ 	error = VOP_GETATTR(mp->mnt_vnodecovered, &va, mp->mnt_cred, td);
