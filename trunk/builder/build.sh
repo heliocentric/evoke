@@ -193,6 +193,11 @@ do
 	cd ${BUILDDIR}/targets/FreeBSD/share/
 	tar -cf - nsrc | tar -xf - -C ${DESTDIR}/usr/src/
 
+	cd ${BUILDDIR}/targets/FreeBSD/share/nsys
+	tar -cf - evoke | tar -xf - -C ${DESTDIR}/usr/src/sys/modules/
+
+	sed -i .bak "s@if_bridge@if_bridge evoke@g" ${DESTDIR}/usr/src/sys/modules/Makefile
+
 	cd ${DESTDIR}/usr/src/nsrc
 	FILELIST="$(find . -not -path \*.svn\* -not -type d)"
 
