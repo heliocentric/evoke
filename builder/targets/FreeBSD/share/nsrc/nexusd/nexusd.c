@@ -48,10 +48,9 @@
 #include <stdlib.h>
 #include <sys/reboot.h>
 #include <errno.h>
+#include <evoke.h>
 
 #define HEX_DIGEST_LENGTH 65	
-
-typedef int handle;
 
 int main(int argc, char *argv[], char *envp[]);
 
@@ -79,8 +78,6 @@ int startdevd(pid_t * devdpid);
 
 int startsystem(pid_t * systartpid, int mode);
 
-handle acquire(const char * domain, const char * path, int type);
-int release(handle lockid);
 
 #define SYSTART "/system/share/bin/systart"
 #define SYSTOP "/system/share/bin/systop"
@@ -98,12 +95,6 @@ int release(handle lockid);
 
 #define ARCH "%%ARCH%%"
 
-#define LOCK_NULL 0
-#define LOCK_CONCURRENT_READ 1
-#define LOCK_PROTECTED_READ 2
-#define LOCK_CONCURRENT_WRITE 3
-#define LOCK_PROTECTED_WRITE 4
-#define LOCK_EXCLUSIVE 5
  
 
 int main(int argc, char *argv[], char *envp[]) {
@@ -464,23 +455,3 @@ int startsystem(pid_t * systartpid, int mode) {
 	}
 	return 1;
 }
-
-/*
-	This is stub code to support a lock manager we don't have, but will eventually have to.
-
-	Notes: domain is per-cluster, and refers to the namespace the path is relative to. 
-	Right now we only use domain = "hostfs", which is typically mapped differently on each node,
-	to the 'local' filesystem.
-
-	'type' is defined previously.
-
-*/
-
-handle acquire(const char * domain, const char * path, int type) {
-	return 0;
-}
-
-int release(handle lockid) {
-	return 0;
-}
-

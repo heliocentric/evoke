@@ -8,8 +8,8 @@ PRECIOUSPROG=
 INSTALLFLAGS=-b -B.bak
 WARNS?=	6
 CFLAGS+=-DDEBUGSHELL -DSECURE -DLOGIN_CAP -DCOMPAT_SYSV_INIT
-DPADD=	${LIBUTIL} ${LIBCRYPT}
-LDADD=	-lutil -lcrypt
+DPADD=	${LIBUTIL} ${LIBCRYPT} ${LIBEVOKE}
+LDADD=	-lutil -lcrypt -levoke
 DPADD+=  ${LIBMD}                                                                                                            
 LDADD+=  -lmd
 

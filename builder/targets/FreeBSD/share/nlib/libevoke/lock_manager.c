@@ -29,7 +29,6 @@
 
 #include "evoke.h"
 
-
 handle acquire(const char * domain, const char * path, int type) {
 	return 0;
 }
