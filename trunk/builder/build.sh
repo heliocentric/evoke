@@ -198,6 +198,11 @@ do
 
 	sed -i .bak "s@if_bridge@if_bridge evoke@g" ${DESTDIR}/usr/src/sys/modules/Makefile
 
+	cd ${BUILDDIR}/targets/FreeBSD/share/nlib
+	tar -cf - libevoke | tar -xf - -C ${DESTDIR}/usr/src/lib
+
+	sed -i .bak "s@libmd@libmd libevoke@g" ${DESTDIR}/usr/src/lib/Makefile
+
 	cd ${DESTDIR}/usr/src/nsrc
 	FILELIST="$(find . -not -path \*.svn\* -not -type d)"
 
