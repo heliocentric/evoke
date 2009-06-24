@@ -35,7 +35,7 @@ static int load(struct module *module, int cmd, void *arg) {
 	int error = 0;
 	switch (cmd) {
 		case MOD_LOAD:
-			uprintf("Evoke: We have the breathe of life\n");
+			kprintf("Evoke: We have the breathe of life\n");
 		break;
 		case MOD_UNLOAD:
 		break;
