@@ -31,16 +31,21 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <libutil.h>
+#include <evoke.h>
 
 int main(int argc, char *argv[]) {
 	int execcount = argc - 2;
 	int fd;
-	if ((fd = open(argv[1], O_RDWR)) == -1) {
-		return 1;
-	}
-	if (login_tty(fd) == -1) {
-		return 2;
-	} else {
-		execvp(argv[2], &argv[2]);
+	handle ttylock;
+        ttylock = acquire("hostfs", argv[1], LOCK_CONCURRENT_WRITE);
+        if (ttylock != -1) {
+		if ((fd = open(argv[1], O_RDWR)) == -1) {
+			return 1;
+		}
+		if (login_tty(fd) == -1) {
+			return 2;
+		} else {
+			execvp(argv[2], &argv[2]);
+		}
 	}
 }

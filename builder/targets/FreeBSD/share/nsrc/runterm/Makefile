@@ -2,8 +2,8 @@
 # $FreeBSD$
 
 PROG=	runterm
-DPADD=  ${LIBUTIL}
-LDADD=  -lutil
+DPADD=  ${LIBUTIL} ${LIBEVOKE}
+LDADD=  -lutil -levoke
 
 NO_MAN=
 
