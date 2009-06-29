@@ -122,18 +122,50 @@ freebsd_chooser() {
 # Evoke Chooser
 
 evoke_chooser() {
-	echo ""
-	echo -n "Partition Disks? [yN]: "
-	read ANSWER
-	case "${ANSWER}" in
-		[yY])
-			partdisk evoke
+	SYSCONFIG_LIST="$(mounter list sysconfig)"
+	SC_COUNT="$(echo "${SYSCONFIG_LIST}" | wc -l | awk '{ print $1; }')"
+	if [ "${SYSCONFIG_LIST}" != "" ] ; then
+		echo "Existing evoke installation found. Would you like to duplicate?"
+		echo ""
+		echo "Warning, this will duplicate all private configuration data."
+		echo -n "Duplicate? [yN]: "
+		read ANSWER
+		case "${ANSWER}" in
+			[yY])
+				MODE="duplicate"
+			;;
+			*)
+				MODE="normal"
+			;;
+		esac
+	else
+		MODE="normal"
+	fi
+	case "${MODE}" in
+		normal)
+			echo ""
+			echo -n "Partition Disks? [yN]: "
+			read ANSWER
+			case "${ANSWER}" in
+				[yY])
+					partdisk evoke
+				;;
+			esac
+			sysconfig create current
+			USERCONFIG_UUID="$(userconfig create)"
+
+			BOOTHASH="${BOOTHASH}" update menu
+		;;
+		duplicate)
+			for partition in ${SYSCONFIG_LIST}
+			do
+				for disk in $(mounter list real-disk)
+				do
+					echo "${disk}"
+				done
+			done
 		;;
 	esac
-	sysconfig create current
-	USERCONFIG_UUID="$(userconfig create)"
-
-	BOOTHASH="${BOOTHASH}" update menu
 }
 
 # Disk partitioning function
