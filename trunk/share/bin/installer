@@ -243,7 +243,7 @@ evoke_chooser() {
 						mounter unmount ${DESTDIR}
 					;;
 					*)
-						sha256 -q ${DEVICES}/${DEVICE} >${SCRATCHDIR}/${DEVICE}
+						dd if=${DEVICES}/${DEVICE} 2>${DEVICES}/null | sha256 -q>${SCRATCHDIR}/${DEVICE}
 						dd if=${DEVICES}/${DEVICE} bs=512 of=${DEVICES}/${RESULT}p${CURRENTPART} >${DEVICES}/null 2>${DEVICES}/null
 
 					;;
@@ -286,7 +286,7 @@ evoke_chooser() {
 						fi
 					;;
 					*)
-						DESTHASH="$(sha256 -q ${DEVICES}/${RESULT}p${CURRENTPART})"
+						DESTHASH="$(dd if=${DEVICES}/${RESULT}p${CURRENTPART} 2>${DEVICES}/null | sha256 -q)"
 						if [ "${DESTHASH}" != "$(cat ${SCRATCHDIR}/${DEVICE})" ] ; then
 							echo -n "Verification failed "
 							read ANSWER
@@ -297,6 +297,7 @@ evoke_chooser() {
 				CURRENTPART="$(( ${CURRENTPART} + 1))"
 			done
 			IFS="${OLDFS}"
+			rm -r "${SCRATCHDIR}"
 		;;
 	esac
 }
