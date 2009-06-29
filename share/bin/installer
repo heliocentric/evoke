@@ -157,32 +157,115 @@ evoke_chooser() {
 			BOOTHASH="${BOOTHASH}" update menu
 		;;
 		duplicate)
-			for partition in ${SYSCONFIG_LIST}
+			export SOURCEDIR=${EVOKE_MNTDIR}/$(dd if=/dev/random bs=4m count=1 2>/dev/null | sha256 -q)
+			export DESTDIR=${EVOKE_MNTDIR}/$(dd if=/dev/random bs=4m count=1 2>/dev/null | sha256 -q)
+
+			mkdir -p ${SOURCEDIR}
+			mkdir -p ${DESTDIR}
+			DISKS="$(for partition in ${SYSCONFIG_LIST}
 			do
-				for disk in $(mounter list real-disk)
+				for disk in $(mounter list disk)
 				do
-					echo "${disk}"
+					if [ "$(echo "${partition}" | grep "${disk}")" != "" ] ; then
+						echo "${disk}"
+					fi
 				done
+			done)"
+			if [ "$(echo "${DISKS}" | wc -l | awk '{ print $1; }')" -gt 1 ] ; then
+				DISK="$(menu "Choose Source Disk" "${DISKS}")"
+			else
+				DISK="${DISK}"
+			fi
+			SOURCEPARTITIONS="$(lsvol | grep "${DISK}" | grep -v "\:${DISK}$" | sort -t : -k 2)"
+			PARTLIST="$(for partition in ${SOURCEPARTITIONS}
+			do
+				PROTO="$(echo ${partition} | cut -d : -f 1)"
+				DEVICE="$(echo ${partition} | cut -d : -f 2)"
+				SIZE="$(($(sysctl -b kern.geom.conftxt | grep -a "${DEVICE}" | awk '{ print $4; }') / 512))"
+				TYPE="$(sysctl -b kern.geom.conftxt | grep -a "${DEVICE}" | awk '{ print $15; }')"
+				echo "proto=${PROTO} device=${DEVICE} size=${SIZE} type=${TYPE}"
+			done | uniq -f 1)"
+			TOTALSIZE=256
+			IFS=${FORFS}
+			for partition in ${PARTLIST}
+			do
+				SIZE="$(echo "${partition}" | awk '{ print $3; }' | cut -d = -f 2)"
+				TOTALSIZE="$(( ${TOTALSIZE} + ${SIZE} ))"
 			done
+			IFS="${OLDFS}"
+			while [ BLAH != BLEH ]
+			do
+				RESULT=$(menu "Choose Destination Disk" "$(mounter list real-disk)")
+				DESTSIZE="$(( $(sysctl -b kern.geom.conftxt | awk -v DEVICE="${RESULT}" '{ if ($3 == DEVICE) { print $4; } }') / 512))"
+				if [ "${DESTSIZE}" -lt "${TOTALSIZE}" ] ; then
+					echo -n "Destination disk too small"
+					read ANSWER
+				else
+					break
+				fi
+			done
+			partprep "${RESULT}"
+			IFS=${FORFS}
+			echo "Allocating..."
+			for partition in ${PARTLIST}
+			do
+				SIZE="$(echo "${partition}" | awk '{ print $3; }' | cut -d = -f 2)"
+				TYPE="$(echo "${partition}" | awk '{ print $4; }' | cut -d = -f 2)"
+				gpt add -s "${SIZE}" -t "${TYPE}" ${DEVICES}/${RESULT}
+			done
+			echo "Duplicating..."
+			CURRENTPART="2"
+			for partition in ${PARTLIST}
+			do
+				PROTO="$(echo "${partition}" | awk '{ print $1; }' | cut -d = -f 2)"
+				DEVICE="$(echo "${partition}" | awk '{ print $2; }' | cut -d = -f 2)"
+				SIZE="$(echo "${partition}" | awk '{ print $3; }' | cut -d = -f 2)"
+				TYPE="$(echo "${partition}" | awk '{ print $4; }' | cut -d = -f 2)"
+				case "${PROTO}" in
+					*ufs)
+						newfs ${DEVICES}/${RESULT}p${CURRENTPART} >${DEVICES}/null 2>${DEVICES}/null
+						mounter ${PROTO}:${DEVICE} ${SOURCEDIR} >${DEVICES}/null 2>${DEVICES}/null
+						mounter ${PROTO}:${RESULT}p${CURRENTPART} ${DESTDIR} >${DEVICES}/null 2>${DEVICES}/null
+						OLDPWD="$(pwd)"
+						cd "${SOURCEDIR}"
+						tar -cf - * | tar -xpf - -C ${DESTDIR}/
+						cd "${OLDPWD}"
+						mounter unmount ${SOURCEDIR}
+						mounter unmount ${DESTDIR}
+					;;
+					*)
+						dd if=${DEVICES}/${DEVICE} bs=512 of=${DEVICES}/${RESULT}p${CURRENTPART} >${DEVICES}/null 2>${DEVICES}/null
+
+					;;
+				esac
+				CURRENTPART="$(( ${CURRENTPART} + 1))"
+			done
+			IFS="${OLDFS}"
 		;;
 	esac
 }
 
+partprep() {
+	mounter unmount ${1}
+	gpt destroy ${DEVICES}/${1}
+	dd if=/dev/zero bs=4m count=1 of=${DEVICES}/${1} 2>${DEVICES}/null
+	gpt create ${DEVICES}/${1}
+	gpt boot ${DEVICES}/${1}
+}
+
 # Disk partitioning function
 partdisk() {
-	RESULT=$(menu "Choose Disk" "$(mounter list real-disk)")
+	RESULT=$(menu "Choose Disk" "$(mounter list disk)")
 	echo -n "Do you want to use the entire disk? [yN]: "
 	read ANSWER
 	case "${1}" in
 		evoke)
 			case "${ANSWER}" in
 				[yY])
-					mounter unmount ${RESULT}
-					dd if=/dev/zero bs=4m count=1 of=${DEVICES}/${RESULT} 2>${DEVICES}/null
-					gpt create ${DEVICES}/${RESULT}
-					gpt boot ${DEVICES}/${RESULT}
+					partprep "${RESULT}"
 #					gpt add -s 16384 -t 4b4cf826-e53e-4b56-86b6-0f9b728e0436 ${DEVICES}/${RESULT}
 					gpt add -s 4096 -t 4b4cf826-e53e-4b56-86b6-0f9b728e0436 ${DEVICES}/${RESULT}
+					gpt add -s 8 -t ac4b7c4a-9c4c-4687-b55f-f51a731d36d2 ${DEVICES}/${RESULT}
 					export EVOKE_SYSCONFIG="${RESULT}p2"
 					SIZE="$(sysctl -b kern.geom.conftxt | awk -v RESULT=${RESULT} '{ if ($3 == RESULT) { print $4; } }')"
 
