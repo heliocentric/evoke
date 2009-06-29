@@ -13,6 +13,8 @@
 || evoke.userconfig	|| The UUID of the auto-logged in user.						||
 || evoke.sshkey		|| SSH public key (warning, do not use in an untrusted pxeboot environment).	||
 || evoke.useonly	|| If there is only one sysconfig or userconfig to specify, use that.		||
+|| evoke.synclocal	|| Sync the local disks to the evoke version we are running, if we are booting from a boot server.		||
+|| evoke.autoactivate	|| Automatically activate a version if installed by either the local sync, or pushed from a network host with the privileges to do so. ||
 || evoke.monitor	|| If 'yes'. enable the monitoring daemon (ganglia).				||
 || boot.netif.name	|| Interface to set the static ip address on.					||
 || boot.netif.ip	|| Static IP address.								||
