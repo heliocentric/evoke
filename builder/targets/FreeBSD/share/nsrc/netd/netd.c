@@ -24,32 +24,11 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 # $Id$
+
 */
 
-#include <sys/param.h>
-#include <sys/module.h>
-#include <sys/kernel.h>
-#include <sys/systm.h>
+#include <evoke.h>
 
-static int load(struct module *module, int cmd, void *arg) {
-	int error = 0;
-	switch (cmd) {
-		case MOD_LOAD:
-		break;
-		case MOD_UNLOAD:
-		break;
-		default:
-			error = EOPNOTSUPP;
-		break;
-	}
-	return(error);
-
+int main(int argc, char *argv[]) {
+	return 0;
 }
-
-static moduledata_t evoke_mod = {
-	"evoke",
-	load,
-	NULL
-};
-
-DECLARE_MODULE(evoke, evoke_mod, SI_SUB_DRIVERS, SI_ORDER_MIDDLE);
