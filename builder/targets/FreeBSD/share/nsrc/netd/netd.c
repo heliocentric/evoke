@@ -31,14 +31,15 @@
 #include <sys/queue.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <limits.h>
 #include <time.h>
 #include <string.h>
 
 struct host {
 	LIST_ENTRY(host) hosts;
-	int hostcount;
-	char * host;
-	int port;
+	int addresscount;
+	char * address;
+	short port;
 	int mode;
 	time_t boottime;
 };
@@ -46,7 +47,7 @@ struct host {
 LIST_HEAD(hostlist, host) mainlist = LIST_HEAD_INITIALIZER(mainlist);
 struct hostlist *headp;
 
-int find_nodes(int searchmode, char *host, char *port);
+int find_nodes(int searchmode, char *host, unsigned short port);
 
 
 /*
@@ -68,7 +69,17 @@ int find_nodes(int searchmode, char *host, char *port);
 int main(int argc, char *argv[]) {
 	if (argc == 4) {
 		LIST_INIT(&mainlist);
-		find_nodes(direct, argv[2], argv[3]);
+		find_nodes(direct, argv[2], (unsigned short) strtol(argv[3], (char **)NULL , 0));
+
+		struct host *current_host, *temp;
+		int count = 1;
+		LIST_FOREACH_SAFE(current_host, &mainlist, hosts, temp) {
+			printf("Node %d:\n", count);
+			printf("\taddress = \t%s:\n", current_host->address);
+			printf("\tsizeof(address) = \t%d bytes:\n", current_host->addresscount);
+			printf("\tport = \t\t%u:\n", current_host->port);
+			printf("\tmode = \t\t%d:\n", current_host->mode);
+		}
 		return 0;
 	} else {
 		printf("netd needs three options:\n");
@@ -79,17 +90,17 @@ int main(int argc, char *argv[]) {
 	}
 }
 
-int find_nodes(int searchmode, char *host, char *port) {
+int find_nodes(int searchmode, char *address, unsigned short port) {
 	struct host *only_host;
 
 	only_host = malloc(sizeof(struct host));
 
-	only_host->hostcount = strlen(host);
-	only_host->host = &host;
-	only_host->port = 21221;
+	only_host->addresscount = strlen(address);
+	only_host->address = address;
+	only_host->port = port;
 	only_host->mode = direct;
 
-	LIST_INSERT_HEAD(headp, only_host, hosts);
+	LIST_INSERT_HEAD(&mainlist, only_host, hosts);
 
 	return 0;
 }
