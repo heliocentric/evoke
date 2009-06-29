@@ -209,6 +209,7 @@ list_all_disks() {
 						if (ufslabel ~ /^$/) {
 							print PROTO ":" DEVICE;
 						} else {
+							print PROTO ":" DEVICE;
 							print PROTO ":" ufslabel;
 						}
 						ufslabel = "";
