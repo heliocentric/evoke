@@ -28,7 +28,68 @@
 */
 
 #include <evoke.h>
+#include <sys/queue.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include <string.h>
+
+struct host {
+	LIST_ENTRY(host) hosts;
+	int hostcount;
+	char * host;
+	int port;
+	int mode;
+	time_t boottime;
+};
+
+LIST_HEAD(hostlist, host) mainlist = LIST_HEAD_INITIALIZER(mainlist);
+struct hostlist *headp;
+
+int find_nodes(int searchmode, char *host, char *port);
+
+
+/*
+	Host connect modes.
+*/
+
+#define direct 1
+#define stun 2
+#define ssh 3
+
+/*
+	Search modes.
+*/
+
+#define direct 1
+#define global 2
+#define google 3
 
 int main(int argc, char *argv[]) {
+	if (argc == 4) {
+		LIST_INIT(&mainlist);
+		find_nodes(direct, argv[2], argv[3]);
+		return 0;
+	} else {
+		printf("netd needs three options:\n");
+		printf("\t1:\tlisten port\n");
+		printf("\t2:\tconnect host\n");
+		printf("\t3:\tconnect port\n");
+		return 23;
+	}
+}
+
+int find_nodes(int searchmode, char *host, char *port) {
+	struct host *only_host;
+
+	only_host = malloc(sizeof(struct host));
+
+	only_host->hostcount = strlen(host);
+	only_host->host = &host;
+	only_host->port = 21221;
+	only_host->mode = direct;
+
+	LIST_INSERT_HEAD(headp, only_host, hosts);
+
 	return 0;
 }
