@@ -47,6 +47,11 @@ if [ "${EVOKE_MNTDIR}" = "" ] ; then
 		export EVOKE_MNTDIR="/media"
 	fi
 fi
+if [ "${TMPDIR}" = "" ] ; then
+	if [ -d /tmp ] ; then
+		export TMPDIR="/tmp"
+	fi
+fi
 
 if [ ! -d "${EVOKE_SYSCONFIG_DIR}" ] ; then
 	export EVOKE_SYSCONFIG_DIR="/tmp/sysconfig"
@@ -213,6 +218,8 @@ evoke_chooser() {
 				TYPE="$(echo "${partition}" | awk '{ print $4; }' | cut -d = -f 2)"
 				gpt add -s "${SIZE}" -t "${TYPE}" ${DEVICES}/${RESULT}
 			done
+			SCRATCHDIR="${TMPDIR}/installer/$(rand)"
+			mkdir -p "${SCRATCHDIR}"
 			echo "Duplicating..."
 			CURRENTPART="2"
 			for partition in ${PARTLIST}
@@ -223,21 +230,70 @@ evoke_chooser() {
 				TYPE="$(echo "${partition}" | awk '{ print $4; }' | cut -d = -f 2)"
 				case "${PROTO}" in
 					*ufs)
+						export TRACKFILE=${SCRATCHDIR}/${DEVICE}
 						newfs ${DEVICES}/${RESULT}p${CURRENTPART} >${DEVICES}/null 2>${DEVICES}/null
 						mounter ${PROTO}:${DEVICE} ${SOURCEDIR} >${DEVICES}/null 2>${DEVICES}/null
 						mounter ${PROTO}:${RESULT}p${CURRENTPART} ${DESTDIR} >${DEVICES}/null 2>${DEVICES}/null
 						OLDPWD="$(pwd)"
 						cd "${SOURCEDIR}"
+						OPTIONS="write quiet" verify *
 						tar -cf - * | tar -xpf - -C ${DESTDIR}/
 						cd "${OLDPWD}"
 						mounter unmount ${SOURCEDIR}
 						mounter unmount ${DESTDIR}
 					;;
 					*)
+						sha256 -q ${DEVICES}/${DEVICE} >${SCRATCHDIR}/${DEVICE}
 						dd if=${DEVICES}/${DEVICE} bs=512 of=${DEVICES}/${RESULT}p${CURRENTPART} >${DEVICES}/null 2>${DEVICES}/null
 
 					;;
 				esac
+				CURRENTPART="$(( ${CURRENTPART} + 1))"
+			done
+			echo "Verifying..."
+			CURRENTPART="2"
+			for partition in ${PARTLIST}
+			do
+				PROTO="$(echo "${partition}" | awk '{ print $1; }' | cut -d = -f 2)"
+				DEVICE="$(echo "${partition}" | awk '{ print $2; }' | cut -d = -f 2)"
+				SIZE="$(echo "${partition}" | awk '{ print $3; }' | cut -d = -f 2)"
+				TYPE="$(echo "${partition}" | awk '{ print $4; }' | cut -d = -f 2)"
+				case "${PROTO}" in
+					*ufs)
+						mounter ${PROTO}:${RESULT}p${CURRENTPART} ${DESTDIR} >${DEVICES}/null 2>${DEVICES}/null
+						OLDPWD="$(pwd)"
+						cd "${DESTDIR}"
+						export TRACKFILE=${SCRATCHDIR}/${DEVICE}
+						OPTIONS="nowrite quiet" verify
+						RETVAL=$?
+						cd "${OLDPWD}"
+						sleep 5
+						mounter unmount ${DESTDIR}
+						if [ "${RETVAL}" != "0" ] ; then
+							echo -n "Verification failed "
+							read ANSWER
+							break
+						fi
+						
+					;;
+					sysconfig)
+						sysconfig verify ${RESULT}p${CURRENTPART} >${DEVICES}/null
+						RETVAL=$?
+						if [ "${RETVAL}" != "0" ] ; then
+							echo -n "Verification failed "
+							read ANSWER
+							break
+						fi
+					;;
+					*)
+						DESTHASH="$(sha256 -q ${DEVICES}/${RESULT}p${CURRENTPART})"
+						if [ "${DESTHASH}" != "$(cat ${SCRATCHDIR}/${DEVICE})" ] ; then
+							echo -n "Verification failed "
+							read ANSWER
+							break
+						fi
+					;;
+				esac				
 				CURRENTPART="$(( ${CURRENTPART} + 1))"
 			done
 			IFS="${OLDFS}"
