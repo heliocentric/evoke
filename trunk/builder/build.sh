@@ -146,6 +146,9 @@ do
 		sed -i .bak "s@/libexec/ld-elf.so.1@${N_LIBEXEC}/ld-elf.so.1" ${WORKDIR}${file} 1>&2
 	done
 
+	# Remove 'w' from the SUBDIR list.
+	sed -i .bak '/w \\/d' ${WORKDIR}/usr/src/usr.bin/Makefile 1>&2
+
 	# Point rtld to ${N_LIBDIR} instead of the /lib, hopefully, this will allow us to compile the system with 
 	# only init statically linked. 
 	sed -i .bak "s@/lib:/usr/lib@${N_LIBDIR}" ${WORKDIR}/usr/src/libexec/rtld-elf/rtld.h 1>&2
