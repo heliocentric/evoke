@@ -86,6 +86,7 @@ static const char sccsid[] = "@(#)w.c	8.4 (Berkeley) 4/16/94";
 #include <unistd.h>
 #include <utmp.h>
 #include <vis.h>
+#include <evoke.h>
 
 #include "extern.h"
 
@@ -419,7 +420,7 @@ pr_header(time_t *nowp, int nusers)
 {
 	double avenrun[3];
 	time_t uptime;
-	struct timespec tp;
+	time_t cluster_uptime;
 	int days, hrs, i, mins, secs;
 	char buf[256];
 
@@ -432,8 +433,9 @@ pr_header(time_t *nowp, int nusers)
 	/*
 	 * Print how long system has been up.
 	 */
-	if (clock_gettime(CLOCK_MONOTONIC, &tp) != -1) {
-		uptime = tp.tv_sec;
+	cluster_uptime = get_cluster_uptime();
+	if (cluster_uptime != -1) {
+		uptime = cluster_uptime;
 		if (uptime > 60)
 			uptime += 30;
 		days = uptime / 86400;

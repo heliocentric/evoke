@@ -32,7 +32,7 @@
 #include <sys/systm.h>
 #include <sys/sysctl.h>
 
-char evoke_boottime[42] = "00000000000000000000,00000000000000000000";
+char evoke_boottime[42] = "NULL";
 SYSCTL_STRING(_kern, OID_AUTO, evoke_boottime, CTLFLAG_RW, evoke_boottime, sizeof(evoke_boottime), "Evoke specific boot time");
 
 static int load(struct module *module, int cmd, void *arg) {
