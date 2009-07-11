@@ -46,7 +46,7 @@ time_t get_cluster_uptime() {
 			*newstring = strsep(&addrstring, ",");
 			if (*newstring != NULL) {
 				if (**newstring != '\0') {
-					uptime = (time_t) strtol(string, (char **)NULL , 0);
+					uptime = time(NULL) - (time_t) strtol(string, (char **)NULL , 0);
 					
 				} else {
 					if (clock_gettime(CLOCK_MONOTONIC, &tp) != -1) {
