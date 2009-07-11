@@ -1,3 +1,4 @@
+/*
 # Copyright 2007-2009 Dylan Cochran
 # All rights reserved
 #
@@ -24,11 +25,48 @@
 
 # $Id$
 
-LIB=    evoke
-SHLIBDIR?= /lib
-SHLIB_MAJOR= 1
-SRCS+=  lock_manager.c misc.c
-INCS=   evoke.h
+*/
 
-.include <bsd.lib.mk>
+#include "evoke.h"
+#include <time.h>
+#include <sys/timespec.h>
+#include <sys/types.h>
+#include <sys/sysctl.h>
+#include <string.h>
 
+time_t get_cluster_uptime() {
+	time_t uptime;
+        struct timespec tp;
+	char string[42];
+	char * addrstring = string;
+	char **newstring;
+	int size = 42;
+	if (sysctlbyname("kern.evoke_boottime", &string, &size, NULL, 0) != -1) {
+		if (strncmp(string, "NULL", 5) != 0) {
+			*newstring = strsep(&addrstring, ",");
+			if (*newstring != NULL) {
+				if (**newstring != '\0') {
+					uptime = (time_t) strtol(string, (char **)NULL , 0);
+					
+				} else {
+					if (clock_gettime(CLOCK_MONOTONIC, &tp) != -1) {
+						uptime = tp.tv_sec;
+					}
+				}
+			} else {
+				if (clock_gettime(CLOCK_MONOTONIC, &tp) != -1) {
+					uptime = tp.tv_sec;
+				}
+			}
+		} else {
+			if (clock_gettime(CLOCK_MONOTONIC, &tp) != -1) {
+				uptime = tp.tv_sec;
+			}
+		}
+	} else {
+		if (clock_gettime(CLOCK_MONOTONIC, &tp) != -1) {
+			uptime = tp.tv_sec;
+		}
+	}
+	return uptime;
+}

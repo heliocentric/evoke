@@ -1,4 +1,7 @@
-
+#include <time.h>
+#include <sys/timespec.h>
+#include <sys/types.h>
+#include <sys/sysctl.h>
 
 typedef int handle;
 
@@ -21,3 +24,4 @@ typedef int handle;
 
 extern handle acquire(const char * domain, const char * path, int type);
 extern int release(handle lockid);
+extern time_t get_cluster_uptime(void);
