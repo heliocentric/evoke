@@ -187,7 +187,7 @@ EOF
 
 
 	cd ${DESTDIR}/mnt/bin/
-	for lib in $(resolve_libs ${PROGS} ganglia/modcpu.so ganglia/moddisk.so ganglia/modload.so ganglia/modmem.so ganglia/modmulticpu.so ganglia/modnet.so ganglia/modproc.so ganglia/modsys.so libasn1.so.?)
+	for lib in $(resolve_libs ${PROGS} ganglia/modcpu.so ganglia/moddisk.so ganglia/modload.so ganglia/modmem.so ganglia/modmulticpu.so ganglia/modnet.so ganglia/modproc.so ganglia/modsys.so) libasn1.so.?
 	do
 		DIRECTORY="$(dirname ${lib})"
 		FILE="$(basename ${lib})"
