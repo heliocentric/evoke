@@ -28,17 +28,12 @@
 */
 
 #include "evoke.h"
-#include <time.h>
-#include <sys/timespec.h>
-#include <sys/types.h>
-#include <sys/sysctl.h>
-#include <string.h>
 
 time_t get_cluster_uptime() {
 	time_t uptime;
         struct timespec tp;
 	char string[42];
-	char * addrstring = string;
+	char *addrstring = string;
 	char **newstring;
 	int size = 42;
 	if (sysctlbyname("kern.evoke_boottime", &string, &size, NULL, 0) != -1) {
@@ -46,8 +41,10 @@ time_t get_cluster_uptime() {
 			*newstring = strsep(&addrstring, ",");
 			if (*newstring != NULL) {
 				if (**newstring != '\0') {
-					uptime = time(NULL) - (time_t) strtol(string, (char **)NULL , 0);
-					
+					long temptime = strtol(string, (char **)NULL , 0);
+					time_t boottime = _long_to_time(temptime);
+					uptime = time(NULL) - boottime; 
+						
 				} else {
 					if (clock_gettime(CLOCK_MONOTONIC, &tp) != -1) {
 						uptime = tp.tv_sec;

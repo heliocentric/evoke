@@ -434,7 +434,6 @@ pr_header(time_t *nowp, int nusers)
 	 * Print how long system has been up.
 	 */
 	cluster_uptime = get_cluster_uptime();
-	printf("%lld");
 	if (cluster_uptime != -1) {
 		uptime = cluster_uptime;
 		if (uptime > 60)

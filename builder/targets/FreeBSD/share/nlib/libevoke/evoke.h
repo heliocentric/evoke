@@ -1,7 +1,9 @@
 #include <time.h>
 #include <sys/timespec.h>
 #include <sys/types.h>
+#include <timeconv.h>
 #include <sys/sysctl.h>
+#include <string.h>
 
 typedef int handle;
 
