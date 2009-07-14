@@ -34,17 +34,17 @@ time_t get_cluster_uptime() {
         struct timespec tp;
 	char string[42];
 	char *addrstring = string;
-	char **newstring;
+	char *newstring;
 	int size = 42;
 	if (sysctlbyname("kern.evoke_boottime", &string, &size, NULL, 0) != -1) {
 		if (strncmp(string, "NULL", 5) != 0) {
-			*newstring = strsep(&addrstring, ",");
-			if (*newstring != NULL) {
-				if (**newstring != '\0') {
-					long temptime = strtol(string, (char **)NULL , 0);
+			newstring = strsep(&addrstring, ",");
+			if (newstring != NULL) {
+				if (newstring != '\0') {
+					long temptime = strtol(newstring, (char **)NULL , 0);
 					time_t boottime = _long_to_time(temptime);
-					uptime = time(NULL) - boottime; 
-						
+					uptime = time(NULL) - boottime;
+
 				} else {
 					if (clock_gettime(CLOCK_MONOTONIC, &tp) != -1) {
 						uptime = tp.tv_sec;
