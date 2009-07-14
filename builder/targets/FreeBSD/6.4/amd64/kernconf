@@ -96,5 +96,4 @@ device		smb
 device		iicbus		# Bus support, required for ic/iic/iicsmb below.
 device		iicsmb		# smb over i2c bridge
 options         IPX                     #IPX/SPX communications protocols
-options         NCP                     #NetWare Core protocol
 options         NETATALK                #Appletalk communications protocols
