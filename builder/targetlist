@@ -34,8 +34,8 @@
 # Field 7:	The platform (ie, pc98)
 # Field 8:	Kernel only?
 
-#FreeBSD:6:i386:6.4:releng/6.4:191733:::
-#FreeBSD:7:i386:7.1:releng/7.1:191733:::
-FreeBSD:7:i386:7.2:releng/7.2:191733:::
-#FreeBSD:7:amd64:7.2:releng/7.2:191733::y:
+#FreeBSD:6:i386:6.4:releng/6.4:196037:::
+#FreeBSD:7:i386:7.1:releng/7.1:196037:::
+FreeBSD:7:i386:7.2:releng/7.2:196037:::
+#FreeBSD:7:amd64:7.2:releng/7.2:196037:y:
 FreeBSD:8:i386:8:head:196037::y:
