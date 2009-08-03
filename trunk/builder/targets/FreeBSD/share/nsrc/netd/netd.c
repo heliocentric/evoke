@@ -34,21 +34,31 @@
 #include <limits.h>
 #include <time.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netdb.h>
 
+struct string {
+	char * text;
+	int length;
+};
 struct host {
 	LIST_ENTRY(host) hosts;
-	int addresscount;
-	char * address;
-	short port;
-	int mode;
+	int connect_mode;
 	time_t boottime;
+	int fd;
+	struct string networkaddress;
+	struct string hostname;
 };
 
 LIST_HEAD(hostlist, host) mainlist = LIST_HEAD_INITIALIZER(mainlist);
 struct hostlist *headp;
 
-int find_nodes(int searchmode, char *host, unsigned short port);
+int find_nodes(int searchmode, char *host, char *hostname);
 
+int connect_to_host(struct host *current_host);
+int dial(char *address, char *local);
 
 /*
 	Host connect modes.
@@ -69,38 +79,90 @@ int find_nodes(int searchmode, char *host, unsigned short port);
 int main(int argc, char *argv[]) {
 	if (argc == 4) {
 		LIST_INIT(&mainlist);
-		find_nodes(direct, argv[2], (unsigned short) strtol(argv[3], (char **)NULL , 0));
+		find_nodes(direct, argv[2], argv[3]);
 
 		struct host *current_host, *temp;
 		int count = 1;
 		LIST_FOREACH_SAFE(current_host, &mainlist, hosts, temp) {
-			printf("Node %d:\n", count);
-			printf("\taddress = \t%s:\n", current_host->address);
-			printf("\tsizeof(address) = \t%d bytes:\n", current_host->addresscount);
-			printf("\tport = \t\t%u:\n", current_host->port);
-			printf("\tmode = \t\t%d:\n", current_host->mode);
+			if (count <= 20) {
+				connect_to_host(current_host);
+
+				++count;
+			} else {
+				break;
+			}
 		}
 		return 0;
 	} else {
 		printf("netd needs three options:\n");
 		printf("\t1:\tlisten port\n");
 		printf("\t2:\tconnect host\n");
-		printf("\t3:\tconnect port\n");
+		printf("\t3:\thostname\n");
 		return 23;
 	}
 }
 
-int find_nodes(int searchmode, char *address, unsigned short port) {
+int find_nodes(int searchmode, char *address, char *hostname) {
 	struct host *only_host;
 
 	only_host = malloc(sizeof(struct host));
 
-	only_host->addresscount = strlen(address);
-	only_host->address = address;
-	only_host->port = port;
-	only_host->mode = direct;
-
+	only_host->networkaddress.length = strlen(address);
+	only_host->networkaddress.text = address;
+	only_host->hostname.length = strlen(hostname);
+	only_host->hostname.text = hostname;
+	only_host->fd = -1;
+	only_host->connect_mode = searchmode;
 	LIST_INSERT_HEAD(&mainlist, only_host, hosts);
 
+	return 0;
+}
+
+int connect_to_host(struct host *current_host) {
+	char local[] = "0";
+
+	current_host->fd = dial(current_host->networkaddress.text, local);
+
+	printf("Node {\n");
+	printf("\thostname\t = \t%s;\n", current_host->hostname.text);
+	printf("\taddress\t\t = \t%s;\n", current_host->networkaddress.text);
+	printf("\tmode\t\t = \t%d;\n", current_host->connect_mode);
+	printf("\tfd\t\t = \t%d;\n", current_host->fd);
+	printf("}\n");
+	return 1;
+}
+
+int dial(char *address, char *local) {
+/*	int fd;
+	struct sockaddr_in targetaddress;
+	struct hostent *server;
+*/
+	char buffer[256];
+
+	char *tempaddress;
+	tempaddress = strdup(address);
+
+	char *protocol;
+	protocol = strsep(&tempaddress, "!");
+
+	char *host;
+	host = strsep(&tempaddress, "!");
+
+	char *port;
+
+	port = strsep(&tempaddress, "!");
+
+	if (protocol == '\0') {
+		printf("blah");
+	}
+	printf("%s\n", protocol);
+	printf("%s\n", host);
+	printf("%s\n", port);
+
+	if (strncmp(local, "0", 3) == 0) {
+		
+	} else {
+	}
+	free(tempaddress);
 	return 0;
 }
