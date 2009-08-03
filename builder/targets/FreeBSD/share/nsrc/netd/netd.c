@@ -58,7 +58,7 @@ struct hostlist *headp;
 int find_nodes(int searchmode, char *host, char *hostname);
 
 int connect_to_host(struct host *current_host);
-int dial(char *address, char *local);
+int dial(char *address, char *local, int *fdlist);
 
 /*
 	Host connect modes.
@@ -121,7 +121,8 @@ int find_nodes(int searchmode, char *address, char *hostname) {
 int connect_to_host(struct host *current_host) {
 	char local[] = "0";
 
-	current_host->fd = dial(current_host->networkaddress.text, local);
+	int *fdlist;
+	current_host->fd = dial(current_host->networkaddress.text, local, fdlist);
 
 	printf("Node {\n");
 	printf("\thostname\t = \t%s;\n", current_host->hostname.text);
@@ -132,7 +133,7 @@ int connect_to_host(struct host *current_host) {
 	return 1;
 }
 
-int dial(char *address, char *local) {
+int dial(char *address, char *local, int *fdlist) {
 /*	int fd;
 	struct sockaddr_in targetaddress;
 	struct hostent *server;
@@ -144,24 +145,42 @@ int dial(char *address, char *local) {
 
 	char *protocol;
 	protocol = strsep(&tempaddress, "!");
-
-	char *host;
-	host = strsep(&tempaddress, "!");
-
-	char *port;
-
-	port = strsep(&tempaddress, "!");
-
 	if (protocol == '\0') {
-		printf("blah");
+		strerror(22);
+		return 22;
 	}
 	printf("%s\n", protocol);
-	printf("%s\n", host);
-	printf("%s\n", port);
+	if (strncmp(protocol,"net",4) == 0) {
+		char *host;
+		host = strsep(&tempaddress, "!");
 
-	if (strncmp(local, "0", 3) == 0) {
+		char *port;
+
+		port = strsep(&tempaddress, "!");
+
+		if (host == '\0' || port == '\0') {
+			strerror(22);
+			return 22;
+		}
+
+		printf("%s\n", host);
+
+		struct servent * realport;
+		realport = getservbyname(port, "tcp");
+		int portnum;
+		if(!realport) {
+			portnum = strtonum(port, 1, 65535, NULL);
+			if (portnum == 0) {
+				portnum = 21221;
+			}
+		} else {
+			portnum = ntohs(realport->s_port);
+		}
+		printf("%u\n", portnum);
+		if (strncmp(local, "0", 3) == 0) {
 		
-	} else {
+		} else {
+		}
 	}
 	free(tempaddress);
 	return 0;
