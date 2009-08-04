@@ -39,17 +39,13 @@
 #include <netinet/in.h>
 #include <netdb.h>
 
-struct string {
-	char * text;
-	int length;
-};
 struct host {
 	LIST_ENTRY(host) hosts;
 	int connect_mode;
 	time_t boottime;
-	int fd;
-	struct string networkaddress;
-	struct string hostname;
+	handle * fdlist;
+	string networkaddress;
+	string hostname;
 };
 
 LIST_HEAD(hostlist, host) mainlist = LIST_HEAD_INITIALIZER(mainlist);
@@ -58,7 +54,6 @@ struct hostlist *headp;
 int find_nodes(int searchmode, char *host, char *hostname);
 
 int connect_to_host(struct host *current_host);
-int dial(char *address, char *local, int *fdlist);
 
 /*
 	Host connect modes.
@@ -111,7 +106,7 @@ int find_nodes(int searchmode, char *address, char *hostname) {
 	only_host->networkaddress.text = address;
 	only_host->hostname.length = strlen(hostname);
 	only_host->hostname.text = hostname;
-	only_host->fd = -1;
+	only_host->fdlist = (handle *) NULL;
 	only_host->connect_mode = searchmode;
 	LIST_INSERT_HEAD(&mainlist, only_host, hosts);
 
@@ -121,67 +116,14 @@ int find_nodes(int searchmode, char *address, char *hostname) {
 int connect_to_host(struct host *current_host) {
 	char local[] = "0";
 
-	int *fdlist;
-	current_host->fd = dial(current_host->networkaddress.text, local, fdlist);
+	handle fdlist;
+	current_host->fdlist = (handle *) dial(current_host->networkaddress.text, local);
 
 	printf("Node {\n");
 	printf("\thostname\t = \t%s;\n", current_host->hostname.text);
 	printf("\taddress\t\t = \t%s;\n", current_host->networkaddress.text);
 	printf("\tmode\t\t = \t%d;\n", current_host->connect_mode);
-	printf("\tfd\t\t = \t%d;\n", current_host->fd);
+	printf("\tfd\t\t = \t0x%x;\n", current_host->fdlist);
 	printf("}\n");
 	return 1;
-}
-
-int dial(char *address, char *local, int *fdlist) {
-/*	int fd;
-	struct sockaddr_in targetaddress;
-	struct hostent *server;
-*/
-	char buffer[256];
-
-	char *tempaddress;
-	tempaddress = strdup(address);
-
-	char *protocol;
-	protocol = strsep(&tempaddress, "!");
-	if (protocol == '\0') {
-		strerror(22);
-		return 22;
-	}
-	printf("%s\n", protocol);
-	if (strncmp(protocol,"net",4) == 0) {
-		char *host;
-		host = strsep(&tempaddress, "!");
-
-		char *port;
-
-		port = strsep(&tempaddress, "!");
-
-		if (host == '\0' || port == '\0') {
-			strerror(22);
-			return 22;
-		}
-
-		printf("%s\n", host);
-
-		struct servent * realport;
-		realport = getservbyname(port, "tcp");
-		int portnum;
-		if(!realport) {
-			portnum = strtonum(port, 1, 65535, NULL);
-			if (portnum == 0) {
-				portnum = 21221;
-			}
-		} else {
-			portnum = ntohs(realport->s_port);
-		}
-		printf("%u\n", portnum);
-		if (strncmp(local, "0", 3) == 0) {
-		
-		} else {
-		}
-	}
-	free(tempaddress);
-	return 0;
 }
