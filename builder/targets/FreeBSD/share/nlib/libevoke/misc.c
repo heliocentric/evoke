@@ -67,3 +67,106 @@ time_t get_cluster_uptime() {
 	}
 	return uptime;
 }
+
+/* 
+	function to create a handle with a data size as specified in 'size', fully initialized.
+*/
+
+handle * new_handle(size_t size, char * type) {
+	size_t allocsize;
+	size_t type_length = strlen(type) + 1;
+	size_t handle_length = sizeof(handle);
+
+	allocsize = handle_length + type_length + size;
+	handle * temp = malloc(allocsize);
+
+
+	temp->type = (char *) ((size_t) temp + handle_length);
+	strncpy(temp->type, type, type_length);
+
+	temp->data = (void *) ((size_t) temp->type + type_length);
+	temp->size = size;
+	bzero(temp->data, size);
+
+	return temp;
+};
+
+int close_handle(handle handle) {
+}
+
+
+/* 
+	Function specification:
+
+		address = a character string containing a plan9ish address specification.
+			Currently the following formats are valid:
+
+				net!host!port
+				- 'Network' specification, ie, tcp/udp. You can specify tcp or udp, which will force it to use that protocol. 'net' is a basic specification, to find the 'best' protocol to use.
+				- The host and port specification may be either symbolic or numeric.
+
+				unix!/path/name
+				- 'AF_UNIX' socket specification.
+
+				nnet!key=value!key=value!key=value
+				- key and value MUST NOT contain the characters '=', '!', or '\0'; all others are valid.
+				- This method is the reason for MIMO semantics, because it is a 'search' rather then a specification. Multiple can be returned, and must be handled.
+
+		local = Identical to address in format, but specifies the local address, local port, etc, when a socket is bound.
+		fdlist = A 'handle' referring to the fdlist dial creates. In error, this handle remains NULL.
+*/
+
+handle * dial(char *address, char *local) {
+/*	int fd;
+	struct sockaddr_in targetaddress;
+	struct hostent *server;
+*/
+	char buffer[256];
+
+	char *tempaddress;
+	tempaddress = strdup(address);
+
+	char *protocol;
+	protocol = strsep(&tempaddress, "!");
+	if (protocol == '\0') {
+		strerror(22);
+		return NULL;
+	}
+	printf("%s\n", protocol);
+	if (strncmp(protocol,"net",4) == 0) {
+		char *host;
+		host = strsep(&tempaddress, "!");
+
+		char *port;
+
+		port = strsep(&tempaddress, "!");
+
+		if (host == '\0' || port == '\0') {
+			strerror(22);
+			return NULL;
+		}
+
+		printf("%s\n", host);
+
+		struct servent * realport;
+		realport = getservbyname(port, "tcp");
+		int portnum;
+		if(!realport) {
+			portnum = strtonum(port, 1, 65535, NULL);
+			if (portnum == 0) {
+				portnum = 21221;
+			}
+		} else {
+			portnum = ntohs(realport->s_port);
+		}
+		printf("%u\n", portnum);
+		if (strncmp(local, "0", 3) == 0) {
+		
+		} else {
+		}
+	}
+	handle * tempfd;
+	tempfd = new_handle(sizeof(int), "com.googlecode.evoke.FDLIST");
+	free(tempaddress);
+	return NULL;
+}

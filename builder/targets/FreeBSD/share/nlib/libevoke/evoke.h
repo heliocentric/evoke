@@ -3,9 +3,22 @@
 #include <sys/types.h>
 #include <timeconv.h>
 #include <sys/sysctl.h>
+#include <stdlib.h>
+#include <limits.h>
 #include <string.h>
+#include <stdio.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netdb.h>
 
-typedef int handle;
+struct _handle {
+	char * type;
+	size_t size;
+	void * data;
+	void * private; /* Currently unused */
+};
+
+typedef struct _handle handle;
 
 /*
        This is stub code to support a lock manager we don't have, but will eventually have to.
@@ -24,6 +37,17 @@ typedef int handle;
 #define LOCK_EXCLUSIVE 5
 
 
-extern handle acquire(const char * domain, const char * path, int type);
+extern handle * acquire(const char * domain, const char * path, int type);
 extern int release(handle lockid);
 extern time_t get_cluster_uptime(void);
+extern handle * new_handle(size_t size, char * type);
+
+struct _string {
+	char * text;
+	int length;
+};
+
+typedef struct _string string;
+
+extern handle * dial(char *address, char *local);
+extern int close_handle(handle realhandle);
