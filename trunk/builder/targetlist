@@ -38,4 +38,4 @@
 #FreeBSD:7:i386:7.1:releng/7.1:196037:::
 FreeBSD:7:i386:7.2:releng/7.2:196037:::
 #FreeBSD:7:amd64:7.2:releng/7.2:196037:y:
-FreeBSD:8:i386:8:head:196037::y:
+FreeBSD:8:i386:8.0:stable/8:196037::y:
