@@ -5,6 +5,23 @@
 
 = The Evoke Platform =
 
+== Evoke Library ==
+
+*WARNING, THE EVOKE API IS NOT SET IN STONE YET*
+
+=== Handles ===
+
+The basic composite data-type for the Evoke library is the 'handle'. A handle is a struct, strongly typed (within the context of the library), and dynamically typed. It is meant to allow passing of composite data types from one function to another, without resorting to blind pointer dereferencing.
+
+The handle is a struct containing the following public elements:
+
+  * type = char * 
+    * a null terminated character string, in an Apple plist style format. ex. "com.googlecode.evoke.FDLIST"
+  * size = size_t
+    * Size, in bytes, of the payload (contiguous).
+  * data = void *
+    * The payload pointer. The type (obviously) determines the format.
+
 == Evoke program guide ==
 
 Default OPTIONS values:
