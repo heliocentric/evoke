@@ -16,7 +16,7 @@ The basic composite data-type for the Evoke library is the 'handle'. A handle is
 The handle is a struct containing the following public elements:
 
   * type = char `*` 
-    * a null terminated character string, in an Apple plist style format. ex. "com.googlecode.evoke.FDLIST"
+    * a null terminated character string, in an Apple plist style format. ex. "com.googlecode.evoke.FDLIST.v1.0"
   * size = size_t
     * Size, in bytes, of the payload (contiguous).
   * data = void `*`
