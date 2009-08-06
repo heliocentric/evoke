@@ -22,6 +22,10 @@ The handle is a struct containing the following public elements:
   * data = void `*`
     * The payload pointer. The type (obviously) determines the format.
 
+There is also a single private element, which should *never* be used directly by any programs. It is provided for language support elements in the future.
+
+  * private = void `*`
+
 == Evoke program guide ==
 
 Default OPTIONS values:
