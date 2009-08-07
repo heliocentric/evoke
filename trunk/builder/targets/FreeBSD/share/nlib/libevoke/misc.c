@@ -129,58 +129,58 @@ handle * dial(char *address, char *local) {
 	handle * dp2;
 
 	dp2 = dialparse(local);
-	struct dialparse_v1 * localaddress = dp2->data;
-	if (localaddress == NULL) {
-		printf("test");
-	} else {
+	if (dp2 != NULL) {
+		struct dialparse_v1 * localaddress = dp2->data;
 		printf("%s\n", localaddress->host);
 		printf("%s\n", localaddress->protocol);
 		printf("%s\n", localaddress->port);
 	}
 
-	if (strncmp(hostspec->protocol,"net",4) == 0 || strncmp(hostspec->protocol,"tcp",4) == 0 || strncmp(hostspec->protocol,"udp",4) == 0) {
-		tempfd = new_handle(sizeof(int), "com.googlecode.evoke.FDLIST.v1.0");
+	if (strlen(hostspec->protocol) >= 3) {
+		if (strncmp(hostspec->protocol,"net",4) == 0 || strncmp(hostspec->protocol,"tcp",4) == 0 || strncmp(hostspec->protocol,"udp",4) == 0) {
+			tempfd = new_handle(sizeof(int), "com.googlecode.evoke.FDLIST.v1.0");
 
-		struct sockaddr_in targetaddress;
+			struct sockaddr_in targetaddress;
 
-		int * fdlist;
-		fdlist = tempfd->data;
-		fdlist[0] = 2334;
+			int * fdlist;
+			fdlist = tempfd->data;
+			fdlist[0] = 2334;
 
 
-		struct hostent * realserver;
-		realserver = gethostbyname(hostspec->host);
-		if (realserver == NULL) {
-			strerror(65);
-			return NULL;
-		}
-		struct servent * realport;
-		int portnum;
-		if (hostspec->port == NULL) {
-			portnum = 21221;
-		} else {
-			if (hostspec->port == '\0') {
+			struct hostent * realserver;
+			realserver = gethostbyname(hostspec->host);
+			if (realserver == NULL) {
+				strerror(65);
+				return NULL;
+			}
+			struct servent * realport;
+			int portnum;
+			if (hostspec->port == NULL) {
 				portnum = 21221;
 			} else {
-				realport = getservbyname(hostspec->port, "tcp");
-				if(!realport) {
-					portnum = strtonum(hostspec->port, 1, 65535, NULL);
-					if (portnum == 0) {
-						portnum = 21221;
-					}
+				if (hostspec->port == '\0') {
+					portnum = 21221;
 				} else {
-					portnum = ntohs(realport->s_port);
+					realport = getservbyname(hostspec->port, "tcp");
+					if(!realport) {
+						portnum = strtonum(hostspec->port, 1, 65535, NULL);
+						if (portnum == 0) {
+							portnum = 21221;
+						}
+					} else {
+						portnum = ntohs(realport->s_port);
+					}
 				}
 			}
-		}
-		if (strncmp(hostspec->protocol,"udp",4) == 0) {
-			fdlist[0] = socket(PF_INET, SOCK_DGRAM, 0);
-		} else {
-			fdlist[0] = socket(PF_INET, SOCK_STREAM, 0);
-		}
-		if (strncmp(local, "0", 3) == 0) {
+			if (strncmp(hostspec->protocol,"udp",4) == 0) {
+				fdlist[0] = socket(PF_INET, SOCK_DGRAM, 0);
+			} else {
+				fdlist[0] = socket(PF_INET, SOCK_STREAM, 0);
+			}
+			if (strncmp(local, "0", 3) == 0) {
 		
-		} else {
+			} else {
+			}
 		}
 	}
 	return tempfd;
@@ -194,15 +194,17 @@ handle * dialparse(char *address) {
 	char *protocol;
 	protocol = strsep(&tempaddress, "!");
 
-	if (protocol == '\0' || protocol == NULL || protocol == "0") {
+	if (protocol == '\0' || protocol == NULL) {
 		strerror(22);
 		return NULL;
 	}
 
+	size_t structsize = sizeof(struct dialparse_v1);
+
 	printf("protocol = %s\n", protocol);
 
-	size_t structsize = sizeof(struct dialparse_v1);
-	if (strlen(protocol) >= 4) {
+
+	if (strlen(protocol) >= 3) {
 		if (strncmp("net", protocol,4) == 0 || strncmp("tcp", protocol, 4) == 0 || strncmp("udp",protocol,4) == 0) {
 			char *host;
 			host = strsep(&tempaddress, "!");
@@ -240,8 +242,6 @@ handle * dialparse(char *address) {
 				strncpy(temp->port, port, portsize);
 			}
 		}
-	} else {
-		printf("bleh");
 	}
 
 	free(tempaddress);
