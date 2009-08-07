@@ -116,14 +116,24 @@ int find_nodes(int searchmode, char *address, char *hostname) {
 int connect_to_host(struct host *current_host) {
 	char local[] = "0";
 
-	handle fdlist;
-	current_host->fdlist = (handle *) dial(current_host->networkaddress.text, local);
+	handle * dialup = dial(current_host->networkaddress.text, local);
+	if (dialup == NULL) {
+		strerror(65);
+		return 2;
+	}
 
+	if (strncmp("com.googlecode.evoke.FDLIST.v1.0", dialup->type, 33) != 0) {
+		strerror(65);
+		return 2;
+	}
+	current_host->fdlist = dialup;
+	int * fdlist;
+	fdlist = current_host->fdlist->data;
 	printf("Node {\n");
 	printf("\thostname\t = \t%s;\n", current_host->hostname.text);
 	printf("\taddress\t\t = \t%s;\n", current_host->networkaddress.text);
 	printf("\tmode\t\t = \t%d;\n", current_host->connect_mode);
-	printf("\tfd\t\t = \t0x%x;\n", current_host->fdlist);
+	printf("\tfd\t\t = \t0x%x;\n", fdlist[0]);
 	printf("}\n");
 	return 1;
 }

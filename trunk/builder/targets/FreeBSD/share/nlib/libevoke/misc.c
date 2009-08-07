@@ -117,56 +117,121 @@ int close_handle(handle handle) {
 */
 
 handle * dial(char *address, char *local) {
-/*	int fd;
-	struct sockaddr_in targetaddress;
-	struct hostent *server;
-*/
+	handle * tempfd;
 	char buffer[256];
 
-	char *tempaddress;
-	tempaddress = strdup(address);
+	handle * dp;
+	dp = dialparse(address);
+	struct dialparse_v1 * hostspec = dp->data;
 
-	char *protocol;
-	protocol = strsep(&tempaddress, "!");
-	if (protocol == '\0') {
-		strerror(22);
-		return NULL;
+	handle * dp2;
+
+	if (local == "0") {
+		dp2 = dialparse(local);
+		struct dialparse_v1 * localaddress = dp2->data;
 	}
-	printf("%s\n", protocol);
-	if (strncmp(protocol,"net",4) == 0) {
-		char *host;
-		host = strsep(&tempaddress, "!");
 
-		char *port;
+	if (strncmp(hostspec->protocol,"net",4) == 0 || strncmp(hostspec->protocol,"tcp",4) == 0 || strncmp(hostspec->protocol,"udp",4) == 0) {
+		tempfd = new_handle(sizeof(int), "com.googlecode.evoke.FDLIST.v1.0");
 
-		port = strsep(&tempaddress, "!");
+		struct sockaddr_in targetaddress;
 
-		if (host == '\0' || port == '\0') {
-			strerror(22);
+		int * fdlist;
+		fdlist = tempfd->data;
+		fdlist[0] = 2334;
+
+
+		struct hostent * realserver;
+		realserver = gethostbyname(hostspec->host);
+		if (realserver == NULL) {
+			strerror(65);
 			return NULL;
 		}
-
-		printf("%s\n", host);
-
 		struct servent * realport;
-		realport = getservbyname(port, "tcp");
 		int portnum;
-		if(!realport) {
-			portnum = strtonum(port, 1, 65535, NULL);
-			if (portnum == 0) {
-				portnum = 21221;
-			}
+		if (hostspec->port == NULL) {
+			portnum = 21221;
 		} else {
-			portnum = ntohs(realport->s_port);
+			if (hostspec->port == '\0') {
+				portnum = 21221;
+			} else {
+				realport = getservbyname(hostspec->port, "tcp");
+				if(!realport) {
+					portnum = strtonum(hostspec->port, 1, 65535, NULL);
+					if (portnum == 0) {
+						portnum = 21221;
+					}
+				} else {
+					portnum = ntohs(realport->s_port);
+				}
+			}
 		}
-		printf("%u\n", portnum);
+		if (strncmp(hostspec->protocol,"udp",4) == 0) {
+			fdlist[0] = socket(PF_INET, SOCK_DGRAM, 0);
+		} else {
+			fdlist[0] = socket(PF_INET, SOCK_STREAM, 0);
+		}
 		if (strncmp(local, "0", 3) == 0) {
 		
 		} else {
 		}
 	}
-	handle * tempfd;
-	tempfd = new_handle(sizeof(int), "com.googlecode.evoke.FDLIST");
+	return tempfd;
+}
+handle * dialparse(char *address) {
+	handle * pointer;
+	char *tempaddress;
+	tempaddress = strdup(address);
+
+	char *protocol;
+	protocol = strsep(&tempaddress, "!");
+
+	if (protocol == '\0') {
+		strerror(22);
+		return NULL;
+	}
+
+	printf("%s\n", protocol);
+
+	size_t structsize = sizeof(struct dialparse_v1);
+	if (strncmp(protocol,"net",4) == 0 || strncmp(protocol,"tcp",4) == 0 || strncmp(protocol,"udp",4) == 0) {
+
+		char *host;
+		host = strsep(&tempaddress, "!");
+
+		char *port;
+		port = strsep(&tempaddress, "!");
+
+		if (host == '\0') {
+			strerror(22);
+			return NULL;
+		}
+
+		printf("%s\n", host);
+		size_t portsize = 0;
+		if (port != '\0') {
+			portsize = strlen(port) + 1;
+			printf("%s\n", port);
+		}
+		size_t protocolsize = strlen(protocol) + 1;
+		size_t hostsize = strlen(host) + 1;
+		size_t totalsize = structsize + protocolsize + hostsize + portsize;
+		pointer = new_handle(totalsize, "com.googlecode.evoke.DIALPARSE.v1.0");
+		struct dialparse_v1 * temp;
+		temp = pointer->data;
+
+		temp->protocol = (char *) ((size_t) temp + structsize);
+		strncpy(temp->protocol, protocol, protocolsize);
+
+		temp->host = (char *) ((size_t) temp + structsize + protocolsize);
+		strncpy(temp->host, host, hostsize);
+		temp->size = hostsize;
+		temp->port = NULL;
+		if (port != '\0') {
+			temp->port = (char *) ((size_t) temp + structsize + protocolsize + hostsize);
+			strncpy(temp->port, port, portsize);
+		}
+	}
 	free(tempaddress);
-	return NULL;
+	return pointer;
 }
