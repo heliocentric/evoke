@@ -121,10 +121,11 @@ int close_handle(handle * handle) {
 int error(handle * error) {
 	return 0;
 }
-void print_error() {
+void print_error(string prefix, handle * error) {
 }
-
-
+void evoke_exit(handle * error) {
+	exit(1);
+}
 handle * dial(char *address, char *local) {
 	handle * tempfd;
 	char buffer[256];

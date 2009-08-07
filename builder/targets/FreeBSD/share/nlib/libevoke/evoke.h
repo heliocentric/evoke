@@ -72,6 +72,8 @@ extern int release(handle lockid);
 extern time_t get_cluster_uptime(void);
 extern handle * new_handle(size_t size, char * type);
 extern int error(handle * error);
+extern void evoke_exit(handle * error);
+extern void print_error(string prefix, handle * error);
 
 extern handle * dial(char *address, char *local);
 
