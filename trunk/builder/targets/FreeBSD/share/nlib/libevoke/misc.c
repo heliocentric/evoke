@@ -91,7 +91,9 @@ handle * new_handle(size_t size, char * type) {
 	return temp;
 };
 
-int close_handle(handle handle) {
+int close_handle(handle * handle) {
+	free(handle);
+	return 0;
 }
 
 
@@ -126,9 +128,14 @@ handle * dial(char *address, char *local) {
 
 	handle * dp2;
 
-	if (local == "0") {
-		dp2 = dialparse(local);
-		struct dialparse_v1 * localaddress = dp2->data;
+	dp2 = dialparse(local);
+	struct dialparse_v1 * localaddress = dp2->data;
+	if (localaddress == NULL) {
+		printf("test");
+	} else {
+		printf("%s\n", localaddress->host);
+		printf("%s\n", localaddress->protocol);
+		printf("%s\n", localaddress->port);
 	}
 
 	if (strncmp(hostspec->protocol,"net",4) == 0 || strncmp(hostspec->protocol,"tcp",4) == 0 || strncmp(hostspec->protocol,"udp",4) == 0) {
@@ -180,58 +187,63 @@ handle * dial(char *address, char *local) {
 }
 handle * dialparse(char *address) {
 	handle * pointer;
+	pointer = NULL;
 	char *tempaddress;
 	tempaddress = strdup(address);
 
 	char *protocol;
 	protocol = strsep(&tempaddress, "!");
 
-	if (protocol == '\0') {
+	if (protocol == '\0' || protocol == NULL || protocol == "0") {
 		strerror(22);
 		return NULL;
 	}
 
-	printf("%s\n", protocol);
+	printf("protocol = %s\n", protocol);
 
 	size_t structsize = sizeof(struct dialparse_v1);
-	if (strncmp(protocol,"net",4) == 0 || strncmp(protocol,"tcp",4) == 0 || strncmp(protocol,"udp",4) == 0) {
+	if (strlen(protocol) >= 4) {
+		if (strncmp("net", protocol,4) == 0 || strncmp("tcp", protocol, 4) == 0 || strncmp("udp",protocol,4) == 0) {
+			char *host;
+			host = strsep(&tempaddress, "!");
 
-		char *host;
-		host = strsep(&tempaddress, "!");
+			char *port;
+			port = strsep(&tempaddress, "!");
 
-		char *port;
-		port = strsep(&tempaddress, "!");
+			if (host == '\0') {
+				strerror(22);
+				return NULL;
+			}
 
-		if (host == '\0') {
-			strerror(22);
-			return NULL;
+			printf("host = %s\n", host);
+			size_t portsize = 0;
+			if (port != '\0') {
+				portsize = strlen(port) + 1;
+				printf("port = %s\n", port);
+			}
+			size_t protocolsize = strlen(protocol) + 1;
+			size_t hostsize = strlen(host) + 1;
+			size_t totalsize = structsize + protocolsize + hostsize + portsize;
+			pointer = new_handle(totalsize, "com.googlecode.evoke.DIALPARSE.v1.0");
+			struct dialparse_v1 * temp;
+			temp = pointer->data;
+	
+			temp->protocol = (char *) ((size_t) temp + structsize);
+			strncpy(temp->protocol, protocol, protocolsize);
+
+			temp->host = (char *) ((size_t) temp + structsize + protocolsize);
+			strncpy(temp->host, host, hostsize);
+			temp->size = hostsize;
+			temp->port = NULL;
+			if (port != '\0') {
+				temp->port = (char *) ((size_t) temp + structsize + protocolsize + hostsize);
+				strncpy(temp->port, port, portsize);
+			}
 		}
-
-		printf("%s\n", host);
-		size_t portsize = 0;
-		if (port != '\0') {
-			portsize = strlen(port) + 1;
-			printf("%s\n", port);
-		}
-		size_t protocolsize = strlen(protocol) + 1;
-		size_t hostsize = strlen(host) + 1;
-		size_t totalsize = structsize + protocolsize + hostsize + portsize;
-		pointer = new_handle(totalsize, "com.googlecode.evoke.DIALPARSE.v1.0");
-		struct dialparse_v1 * temp;
-		temp = pointer->data;
-
-		temp->protocol = (char *) ((size_t) temp + structsize);
-		strncpy(temp->protocol, protocol, protocolsize);
-
-		temp->host = (char *) ((size_t) temp + structsize + protocolsize);
-		strncpy(temp->host, host, hostsize);
-		temp->size = hostsize;
-		temp->port = NULL;
-		if (port != '\0') {
-			temp->port = (char *) ((size_t) temp + structsize + protocolsize + hostsize);
-			strncpy(temp->port, port, portsize);
-		}
+	} else {
+		printf("bleh");
 	}
+
 	free(tempaddress);
 	return pointer;
 }

@@ -70,4 +70,4 @@ extern handle * dial(char *address, char *local);
 
 extern handle * dialparse(char *address);
 
-extern int close_handle(handle realhandle);
+extern int close_handle(handle * realhandle);
