@@ -33,7 +33,7 @@ For example:
    handle * socket = dial("invalid string", 0);
    if (error(socket)) {
       print_error(socket);
-      exit(socket);
+      evoke_exit(socket);
    }
 }}}
 
