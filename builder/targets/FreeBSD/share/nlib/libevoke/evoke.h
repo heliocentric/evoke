@@ -20,6 +20,23 @@ struct _handle {
 
 typedef struct _handle handle;
 
+struct dial_search_pairs {
+	char * key;
+	char * value;
+};
+
+struct dialparse_v1 {
+	char * protocol;
+	int size;
+	union {
+		struct {
+			char * host;
+			char * port;
+		};
+		char * path;
+		struct dial_search_pairs * key;
+	};
+};
 /*
        This is stub code to support a lock manager we don't have, but will eventually have to.
 
@@ -50,4 +67,7 @@ struct _string {
 typedef struct _string string;
 
 extern handle * dial(char *address, char *local);
+
+extern handle * dialparse(char *address);
+
 extern int close_handle(handle realhandle);
