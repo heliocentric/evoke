@@ -10,6 +10,12 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
+struct _string {
+	char * text;
+	int length;
+};
+
+typedef struct _string string;
 
 struct _handle {
 	char * type;
@@ -26,17 +32,24 @@ struct dial_search_pairs {
 };
 
 struct dialparse_v1 {
-	char * protocol;
+	string protocol;
 	int size;
 	union {
 		struct {
-			char * host;
-			char * port;
+			string host;
+			string port;
 		};
-		char * path;
+		string path;
 		struct dial_search_pairs * key;
 	};
 };
+
+struct errorcode_v1 {
+     unsigned int errno;
+     string type;
+     string message;
+};
+
 /*
        This is stub code to support a lock manager we don't have, but will eventually have to.
 
@@ -58,13 +71,7 @@ extern handle * acquire(const char * domain, const char * path, int type);
 extern int release(handle lockid);
 extern time_t get_cluster_uptime(void);
 extern handle * new_handle(size_t size, char * type);
-
-struct _string {
-	char * text;
-	int length;
-};
-
-typedef struct _string string;
+extern int error(handle * error);
 
 extern handle * dial(char *address, char *local);
 
