@@ -39,13 +39,13 @@ For example:
 
 The 'errorcode_v1' struct in the handle, with public elements defined as follows:
 
-{{
+{{{
    struct errorcode_v1 {
      unsigned int errno;
      string type;
      string message;
   }
-}}
+}}}
 
 'type' is a symbolic type, 
 
