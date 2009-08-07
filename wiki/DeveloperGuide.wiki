@@ -26,6 +26,35 @@ There is also a single private element, which should *never* be used directly by
 
   * private = void `*`
 
+Programs must always use the function error() and evaluate the return value on any handle they recieve. This function checks for NULL pointers, and looks for the general error datatype.
+
+For example:
+{{{
+   handle * socket = dial("invalid string", 0);
+   if (error(socket)) {
+      print_error(socket);
+      exit(4);
+   }
+}}}
+
+The 'errorcode_v1' struct in the handle, with public elements defined as follows:
+
+{{
+   struct errorcode_v1 {
+     unsigned int errno;
+     string type;
+     string message;
+  }
+}}
+
+'type' is a symbolic type, 
+
+=== Defined handle types ===
+
+  * "com.googlecode.evoke.fdlist.v1.0"
+  * "com.googlecode.evoke.dialparse.v1.0"
+  * "com.googlecode.evoke.error.v1.0"
+
 == Evoke program guide ==
 
 Default OPTIONS values:
