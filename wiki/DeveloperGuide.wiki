@@ -54,6 +54,7 @@ The 'errorcode_v1' struct in the handle, with public elements defined as follows
   * "com.googlecode.evoke.fdlist.v1.0"
   * "com.googlecode.evoke.dialparse.v1.0"
   * "com.googlecode.evoke.error.v1.0"
+  * "com.googlecode.evoke.lock.v1.0"
 
 == Evoke program guide ==
 
