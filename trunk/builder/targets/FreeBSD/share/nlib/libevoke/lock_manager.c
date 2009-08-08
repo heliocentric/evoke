@@ -33,7 +33,7 @@ handle * acquire(const char * domain, const char * path, int type) {
 	return NULL;
 }
 
-int release(handle lockid) {
+int release(handle * lockid) {
 	return 0;
 }
 

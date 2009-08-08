@@ -53,7 +53,7 @@ struct hostlist *headp;
 
 int find_nodes(int searchmode, char *host, char *hostname);
 
-int connect_to_host(struct host *current_host);
+int connect_to_host(struct host *current_host, char *localaddress);
 
 /*
 	Host connect modes.
@@ -80,7 +80,7 @@ int main(int argc, char *argv[]) {
 		int count = 1;
 		LIST_FOREACH_SAFE(current_host, &mainlist, hosts, temp) {
 			if (count <= 20) {
-				connect_to_host(current_host);
+				connect_to_host(current_host, argv[1]);
 
 				++count;
 			} else {
@@ -113,7 +113,7 @@ int find_nodes(int searchmode, char *address, char *hostname) {
 	return 0;
 }
 
-int connect_to_host(struct host *current_host) {
+int connect_to_host(struct host *current_host, char *localaddress) {
 	char local[] = "0";
 
 	handle * dialup = dial(current_host->networkaddress.text, local);

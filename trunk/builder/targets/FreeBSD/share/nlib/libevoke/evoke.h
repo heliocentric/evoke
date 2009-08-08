@@ -45,7 +45,7 @@ struct dialparse_v1 {
 };
 
 struct errorcode_v1 {
-     unsigned int errno;
+     unsigned int numeric;
      string type;
      string message;
 };
@@ -68,7 +68,7 @@ struct errorcode_v1 {
 
 
 extern handle * acquire(const char * domain, const char * path, int type);
-extern int release(handle lockid);
+extern int release(handle * lockid);
 extern time_t get_cluster_uptime(void);
 extern handle * new_handle(size_t size, char * type);
 extern int error(handle * error);
