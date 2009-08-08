@@ -119,7 +119,12 @@ int close_handle(handle * handle) {
 */
 
 int error(handle * error) {
-	return 0;
+	if (error == NULL) {
+		return 2;
+	} else {
+		return 0;
+	}
+
 }
 void print_error(string prefix, handle * error) {
 }
@@ -132,7 +137,7 @@ handle * dial(char *address, char *local) {
 
 	handle * dp;
 	dp = dialparse(address);
-	if (dp == NULL) {
+	if (error(dp)) {
 		printf("%s\n", strerror(65));
 		return NULL;
 	}
@@ -142,7 +147,7 @@ handle * dial(char *address, char *local) {
 
 	dp2 = dialparse(local);
 
-	if (dp2 != NULL) {
+	if (! error(dp2)) {
 		struct dialparse_v1 * localaddress = dp2->data;
 		printf("%s\n", localaddress->host.text);
 		printf("%s\n", localaddress->protocol.text);

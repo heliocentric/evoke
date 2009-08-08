@@ -224,7 +224,7 @@ int checkhash() {
 	handle * devicelock;
 
 	devicelock = acquire("hostfs", "/dev/md0", LOCK_PROTECTED_READ);
-	if (devicelock != NULL) {
+	if (! error(devicelock)) {
 		realhash = SHA256_File("/dev/md0", buffer);
 		release(devicelock);
 
@@ -257,7 +257,7 @@ int setctty(const char *name) {
 
 	devicelock = acquire("hostfs", name, LOCK_CONCURRENT_WRITE);
 
-	if (devicelock != NULL) {
+	if (! error(devicelock)) {
 
 	        revoke(name);
 
