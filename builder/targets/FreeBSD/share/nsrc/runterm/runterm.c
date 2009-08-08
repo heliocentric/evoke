@@ -36,9 +36,9 @@
 int main(int argc, char *argv[]) {
 	int execcount = argc - 2;
 	int fd;
-	handle ttylock;
+	handle * ttylock;
         ttylock = acquire("hostfs", argv[1], LOCK_CONCURRENT_WRITE);
-        if (ttylock != -1) {
+        if (! error(ttylock)) {
 		if ((fd = open(argv[1], O_RDWR)) == -1) {
 			return 1;
 		}

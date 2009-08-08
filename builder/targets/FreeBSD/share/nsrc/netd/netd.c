@@ -114,15 +114,9 @@ int find_nodes(int searchmode, char *address, char *hostname) {
 }
 
 int connect_to_host(struct host *current_host, char *localaddress) {
-	char local[] = "0";
 
-	handle * dialup = dial(current_host->networkaddress.text, local);
-	if (dialup == NULL) {
-		strerror(65);
-		return 2;
-	}
-
-	if (strncmp("com.googlecode.evoke.FDLIST.v1.0", dialup->type, 33) != 0) {
+	handle * dialup = dial(current_host->networkaddress.text, localaddress);
+	if (error(dialup)) {
 		strerror(65);
 		return 2;
 	}
