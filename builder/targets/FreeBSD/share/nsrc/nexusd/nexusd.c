@@ -52,7 +52,6 @@
 
 #define HEX_DIGEST_LENGTH 65	
 
-int main(int argc, char *argv[], char *envp[]);
 
 int setctty(const char *);
 
@@ -97,7 +96,7 @@ int startsystem(pid_t * systartpid, int mode);
 
  
 
-int main(int argc, char *argv[], char *envp[]) {
+int main(int argc, char *argv[]) {
 
 
 	int mode = MULTIUSER;
@@ -222,10 +221,10 @@ int checkhash() {
 	char *realhash;
 	char storedhash[HEX_DIGEST_LENGTH];
 	int ret;
-	handle devicelock;
+	handle * devicelock;
 
 	devicelock = acquire("hostfs", "/dev/md0", LOCK_PROTECTED_READ);
-	if (devicelock != -1) {
+	if (devicelock != NULL) {
 		realhash = SHA256_File("/dev/md0", buffer);
 		release(devicelock);
 
@@ -254,11 +253,11 @@ int checkhash() {
 
 int setctty(const char *name) {
         int fd;
-	handle devicelock;
+	handle * devicelock;
 
 	devicelock = acquire("hostfs", name, LOCK_CONCURRENT_WRITE);
 
-	if (devicelock != -1) {
+	if (devicelock != NULL) {
 
 	        revoke(name);
 
@@ -358,7 +357,7 @@ int startwatchdogd(pid_t * watchdogdpid) {
 }
 
 int watchdoginit(int * fd) {
-	handle devicelock = acquire("hostfs", "/dev/" _PATH_WATCHDOG, LOCK_EXCLUSIVE);
+	handle * devicelock = acquire("hostfs", "/dev/" _PATH_WATCHDOG, LOCK_EXCLUSIVE);
         *fd = open("/dev/" _PATH_WATCHDOG, O_RDWR);
         if (*fd >= 0) {
                 return (0);
@@ -397,7 +396,7 @@ int startdevd(pid_t * devdpid) {
 }
 
 int startsystem(pid_t * systartpid, int mode) {
-	int status;
+	int * status;
 	int ret;
 	*systartpid = fork();
 
@@ -442,13 +441,13 @@ int startsystem(pid_t * systartpid, int mode) {
 		break;
 		default:
 			while (1) {
-				waitpid(systartpid, &status, 0);
-				printf("wait returned %d\n", status);
-				if (status == 0) {
+				waitpid(*systartpid, status, 0);
+				printf("wait returned %d\n", *status);
+				if (*status == 0) {
 					sleep(1);
 				} else {
 					perror("systart:");
-					return status;
+					return *status;
 				}
 			}
 		break;
