@@ -37,6 +37,8 @@ For example:
    }
 }}}
 
+This should be self explanatory, if the dial call returns an error, the message string is printed, and the process exits with the proper errno.
+
 The 'errorcode_v1' struct in the handle, with public elements defined as follows:
 
 {{{
