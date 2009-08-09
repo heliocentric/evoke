@@ -192,7 +192,7 @@ EOF
 		DIRECTORY="$(dirname ${lib})"
 		FILE="$(basename ${lib})"
 
-		echo "Working on ${lib}" 1>&2
+		echo "Working on ${lib}" >&2
 		if [ "${DIRECTORY}" = "." ] ; then
 			DEST="${FSDIR}/${N_LIB}/${FILE}"
 		else
@@ -201,7 +201,7 @@ EOF
 		fi
 
 		cat ${DESTDIR}/mnt/lib/${lib} >${DEST}
-		echo "Copying to ${DEST}" 1>&2
+		echo "Copying to ${DEST}" >&2
 		case "${lib}" in
 			*.so.*)
 				ln -s ${FILE} $(echo $(echo ${DEST} | cut -d "." -f 1-2))
