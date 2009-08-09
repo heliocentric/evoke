@@ -144,7 +144,15 @@ filetype () {
 if [ -d /system ] ; then
 	FILEDB_MTIME="$(stat -f "%m" /system/share/lib/magic.mime 2>/dev/null)"
 else
-	FILEDB_MTIME="$(stat -f "%m" /usr/share/misc/magic.mime 2>/dev/null)"
+	if [ ! -f /usr/share/misc/magic.mime ] ; then
+		if [ ! -f /usr/share/misc/magic ] ; then
+			FILEDB_MTIME="0"
+		else
+			FILEDB_MTIME="$(stat -f "%m" /usr/share/misc/magic 2>/dev/null)"
+		fi
+	else
+		FILEDB_MTIME="$(stat -f "%m" /usr/share/misc/magic.mime 2>/dev/null)"
+	fi
 fi
 
 filetype "$@"
