@@ -30,7 +30,10 @@
 #include "evoke.h"
 
 handle * acquire(const char * domain, const char * path, int type) {
-	return new_handle(0,"com.googlecode.evoke.lock.v1.0");
+	string locktype;
+	locktype.text = "com.googlecode.evoke.lock.v1.0";
+	locktype.length = 31;
+	return new_handle(0, locktype);
 }
 
 int release(handle * lockid) {

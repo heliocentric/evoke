@@ -117,6 +117,7 @@ int connect_to_host(struct host *current_host, char *localaddress) {
 
 	handle * dialup = dial(current_host->networkaddress.text, localaddress);
 	if (error(dialup)) {
+		printf("blah");
 		strerror(65);
 		return 2;
 	}
@@ -127,7 +128,8 @@ int connect_to_host(struct host *current_host, char *localaddress) {
 	printf("\thostname\t = \t%s;\n", current_host->hostname.text);
 	printf("\taddress\t\t = \t%s;\n", current_host->networkaddress.text);
 	printf("\tmode\t\t = \t%d;\n", current_host->connect_mode);
-	printf("\tfd\t\t = \t0x%x;\n", fdlist[0]);
+	printf("\tfd\t\t = \t0x%u;\n", fdlist[0]);
+	system("netstat -aln | more");
 	printf("}\n");
 	return 1;
 }
