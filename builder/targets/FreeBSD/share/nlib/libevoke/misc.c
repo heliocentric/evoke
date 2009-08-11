@@ -27,6 +27,7 @@
 
 */
 
+#include <errno.h>
 #include "evoke.h"
 
 time_t get_cluster_uptime() {
@@ -72,20 +73,31 @@ time_t get_cluster_uptime() {
 	function to create a handle with a data size as specified in 'size', fully initialized.
 */
 
-handle * new_handle(size_t size, char * type) {
+handle * new_handle(size_t size, string type) {
 	size_t allocsize;
-	size_t type_length = strlen(type) + 1;
 	size_t handle_length = sizeof(handle);
 
-	allocsize = handle_length + type_length + size;
+	allocsize = handle_length + type.length + size;
+
 	handle * temp = malloc(allocsize);
 
 
-	temp->type = (char *) ((size_t) temp + handle_length);
-	strncpy(temp->type, type, type_length);
-
-	temp->data = (void *) ((size_t) temp->type + type_length);
+	temp->type.text = (char *) ((size_t) temp + handle_length);
+	strncpy(temp->type.text, type.text, type.length);
+	temp->type.length = type.length;
+	temp->data = (void *) ((size_t) temp->type.text + type.length);
 	temp->size = size;
+/*
+	printf("temp: %s\n", temp->type.text);
+	printf("temp: %u\n", allocsize);
+	printf("temp: %u\n", temp);
+	printf("temp: %u\n", handle_length);
+	printf("temp: %u\n", temp->type.text);
+	printf("temp: %u\n", temp->type.length);
+	printf("temp: %u\n", temp->data);
+	printf("temp: %u\n", size);
+	printf("temp: %u\n", (size_t) temp + (size_t) allocsize);
+*/
 	bzero(temp->data, size);
 
 	return temp;
@@ -143,20 +155,12 @@ handle * dial(char *address, char *local) {
 	}
 	struct dialparse_v1 * hostspec = dp->data;
 
-	handle * dp2;
-
-	dp2 = dialparse(local);
-
-	if (! error(dp2)) {
-		struct dialparse_v1 * localaddress = dp2->data;
-		printf("%s\n", localaddress->host.text);
-		printf("%s\n", localaddress->protocol.text);
-		printf("%s\n", localaddress->port.text);
-	}
-
 	if (hostspec->protocol.length >= 4) {
 		if (strncmp(hostspec->protocol.text,"net",4) == 0 || strncmp(hostspec->protocol.text,"tcp",4) == 0 || strncmp(hostspec->protocol.text,"udp",4) == 0) {
-			tempfd = new_handle(sizeof(int), "com.googlecode.evoke.fdlist.v1.0");
+			string fdlist_type;
+			fdlist_type.text = "com.googlecode.evoke.fdlist.v1.0";
+			fdlist_type.length = strlen(fdlist_type.text) + 1;
+			tempfd = new_handle(sizeof(int), fdlist_type);
 
 			struct sockaddr_in targetaddress;
 
@@ -190,16 +194,55 @@ handle * dial(char *address, char *local) {
 					}
 				}
 			}
+			bzero((char *) &targetaddress, sizeof(targetaddress));
+			targetaddress.sin_family = AF_INET;
+			bcopy((char *) realserver->h_addr, (char *) &targetaddress.sin_addr.s_addr, realserver->h_length);
+			targetaddress.sin_port = htons(portnum);
+
 			if (strncmp(hostspec->protocol.text,"udp",4) == 0) {
 				fdlist[0] = socket(PF_INET, SOCK_DGRAM, 0);
 			} else {
 				fdlist[0] = socket(PF_INET, SOCK_STREAM, 0);
 			}
-			if (strncmp(local, "0", 3) == 0) {
-		
-			} else {
+
+			handle * dp2;
+
+			dp2 = dialparse(local);
+
+			if (! error(dp2)) {
+				struct dialparse_v1 * localaddress = dp2->data;
+				struct sockaddr_in bind_address;
+				struct hostent *bind_host;
+				if (localaddress->port.text == '\0') {
+					portnum = 0;
+				} else {
+					realport = getservbyname(localaddress->port.text, "tcp");
+					if(!realport) {
+						portnum = strtonum(localaddress->port.text, 1, 65535, NULL);
+						if (portnum == 0) {
+							portnum = 0;
+						}
+					} else {
+						portnum = ntohs(realport->s_port);
+					}
+				}
+
+				bind_host = gethostbyname(localaddress->host.text);
+
+				bzero((char *) &bind_address, sizeof(bind_address));
+				bind_address.sin_family = AF_INET;
+				bcopy((char *) bind_host->h_addr, (char *) &bind_address.sin_addr.s_addr, bind_host->h_length);
+				bind_address.sin_port = htons(portnum);
+
+				if (bind(fdlist[0], (struct sockaddr *) &bind_address, sizeof(bind_address)) < 0) {
+					return NULL;
+				}
+			}
+			if (connect(fdlist[0], (struct sockaddr *) &targetaddress, sizeof(targetaddress)) < 0) {
+				return NULL;
 			}
 		}
+
 	}
 	return tempfd;
 }
@@ -244,7 +287,11 @@ handle * dialparse(char *address) {
 			}
 			size_t hostsize = strlen(host) + 1;
 			size_t totalsize = structsize + protocolsize + hostsize + portsize;
-			pointer = new_handle(totalsize, "com.googlecode.evoke.dialparse.v1.0");
+			string dialparse_type;
+			dialparse_type.text = "com.googlecode.evoke.dialparse.v1.0";
+			dialparse_type.length = strlen(dialparse_type.text) + 1;
+
+			pointer = new_handle(totalsize, dialparse_type);
 			struct dialparse_v1 * temp;
 			temp = pointer->data;
 	

@@ -18,7 +18,7 @@ struct _string {
 typedef struct _string string;
 
 struct _handle {
-	char * type;
+	string type;
 	size_t size;
 	void * data;
 	void * private; /* Currently unused */
@@ -70,7 +70,7 @@ struct errorcode_v1 {
 extern handle * acquire(const char * domain, const char * path, int type);
 extern int release(handle * lockid);
 extern time_t get_cluster_uptime(void);
-extern handle * new_handle(size_t size, char * type);
+extern handle * new_handle(size_t size, string type);
 extern int error(handle * error);
 extern void evoke_exit(handle * error);
 extern void print_error(string prefix, handle * error);
