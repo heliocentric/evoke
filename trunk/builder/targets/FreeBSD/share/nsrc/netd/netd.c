@@ -38,6 +38,8 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
+#include <sys/uio.h>
+#include <unistd.h>
 
 struct host {
 	LIST_ENTRY(host) hosts;
@@ -129,7 +131,13 @@ int connect_to_host(struct host *current_host, char *localaddress) {
 	printf("\taddress\t\t = \t%s;\n", current_host->networkaddress.text);
 	printf("\tmode\t\t = \t%d;\n", current_host->connect_mode);
 	printf("\tfd\t\t = \t0x%u;\n", fdlist[0]);
-	system("netstat -aln | more");
 	printf("}\n");
+	ssize_t num;
+	uint32_t size;
+	num = read(fdlist[0], &size, sizeof(size));
+	short convsize = ntohl(size);
+	printf("0x%lu\n", convsize);
+	char * payload = malloc(convsize);
+	read(fdlist[0], payload, convsize);
 	return 1;
 }
