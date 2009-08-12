@@ -62,6 +62,8 @@ mkdir -p ${DESTDIR}/rescue 1>&2
 
 mkdir -p ${DESTDIR}${BOOTPATH}/defaults
 priv make distribution 1>&2
+mkdir -p ${DESTDIR}/usr/src/tmp/config
+
 priv make LOCAL_DIRS="nsrc" -DWITHOUT_LIB32 installworld 1>&2
 mkdir -p ${DESTDIR}/boot
 cp ${DESTDIR}/usr/src/sys/${TARGET_ARCH}/conf/GENERIC.hints ${DESTDIR}${BOOTPATH}/device.hints
