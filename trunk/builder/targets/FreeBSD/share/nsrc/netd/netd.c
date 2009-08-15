@@ -49,6 +49,10 @@ struct host {
 	string networkaddress;
 	string hostname;
 };
+/*
+char signature[4] = { 0xC9, 0xBB, 0xC8, 0xBC };
+*/
+char signature[4] = { 'w', 'H', 'a', 'T' };
 
 LIST_HEAD(hostlist, host) mainlist = LIST_HEAD_INITIALIZER(mainlist);
 struct hostlist *headp;
@@ -56,6 +60,14 @@ struct hostlist *headp;
 int find_nodes(int searchmode, char *host, char *hostname);
 
 int connect_to_host(struct host *current_host, char *localaddress);
+
+handle * parse_message(int fd);
+handle * send_message(int fd, handle * message);
+
+struct message {
+	long opcode;
+	char * message;
+};
 
 /*
 	Host connect modes.
@@ -74,7 +86,16 @@ int connect_to_host(struct host *current_host, char *localaddress);
 #define google 3
 
 int main(int argc, char *argv[]) {
+	handle * scratch;
+	struct message * rmsg;
 	if (argc == 4) {
+		handle * server	= announce(argv[1]);
+
+		if (error(server)) {
+			print_error(server);
+			evoke_exit(server);
+		}
+
 		LIST_INIT(&mainlist);
 		find_nodes(direct, argv[2], argv[3]);
 
@@ -82,13 +103,22 @@ int main(int argc, char *argv[]) {
 		int count = 1;
 		LIST_FOREACH_SAFE(current_host, &mainlist, hosts, temp) {
 			if (count <= 20) {
-				connect_to_host(current_host, argv[1]);
-
-				++count;
+				if (connect_to_host(current_host, argv[1])) {
+					printf("blah\n");
+					int * fdlist = current_host->fdlist->data;
+					printf("blah\n");
+					scratch = parse_message(fdlist[0]);
+					if (error(scratch)) {
+					} else {
+						rmsg = scratch->data;
+					}
+					++count;
+				}
 			} else {
 				break;
 			}
 		}
+		system("netstat -aln");
 		return 0;
 	} else {
 		printf("netd needs three options:\n");
@@ -117,11 +147,10 @@ int find_nodes(int searchmode, char *address, char *hostname) {
 
 int connect_to_host(struct host *current_host, char *localaddress) {
 
-	handle * dialup = dial(current_host->networkaddress.text, localaddress);
+	handle * dialup = dial(current_host->networkaddress.text, "0");
 	if (error(dialup)) {
-		printf("blah");
 		strerror(65);
-		return 2;
+		return 0;
 	}
 	current_host->fdlist = dialup;
 	int * fdlist;
@@ -132,12 +161,57 @@ int connect_to_host(struct host *current_host, char *localaddress) {
 	printf("\tmode\t\t = \t%d;\n", current_host->connect_mode);
 	printf("\tfd\t\t = \t0x%u;\n", fdlist[0]);
 	printf("}\n");
+	return 2;
+}
+
+handle * send_message(int fd, handle * message) {
+	
+}
+
+handle * parse_message(int fd) {
 	ssize_t num;
 	uint32_t size;
-	num = read(fdlist[0], &size, sizeof(size));
+	char tempsignature[4];
+	num = read(fd, &tempsignature, 4);
+	handle * returnvalue;
+
+	if (num < 4) {
+		return NULL;
+	}
+
+	if (!strncpy(tempsignature, signature, 4)) {
+		return NULL;
+	}
+	long opcode;
+	num = read(fd, &opcode, 4);
+	if (num != 4) {
+		return NULL;
+	}
+
+	num = read(fd, &tempsignature, sizeof(size));
 	short convsize = ntohl(size);
 	printf("0x%lu\n", convsize);
-	char * payload = malloc(convsize);
-	read(fdlist[0], payload, convsize);
-	return 1;
+
+	string netd_message_type;
+
+	netd_message_type.text = "com.googlecode.evoke.netdmessage.v1.0";
+	netd_message_type.length = strlen(netd_message_type.text) + 1;
+
+	returnvalue = new_handle(convsize + sizeof(struct message), netd_message_type);
+
+	if (error(returnvalue)) {
+		return returnvalue;
+	}
+
+	struct message * packet = returnvalue->data;
+	packet->opcode = ntohl(opcode);
+	packet->message = returnvalue->data + sizeof(struct message);
+	num = read(fd, packet->message, convsize);
+
+	if (num < convsize) { 
+		free(returnvalue);
+		return NULL;
+	}
+
+	return returnvalue;
 }
