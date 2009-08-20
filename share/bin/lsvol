@@ -194,19 +194,11 @@ list_all_disks() {
 					DEVICE=$2;
 					if (PROTO ~ /ufs/) {
 						FS=" "
-						"dumpfs -m " DEVICE " 2>/dev/null | grep -v ^#" | getline;
-						for (operator = 1; operator <= NF; operator++) {
-							if ($operator == "-L") {
-								operand = ++operator;
-								ufslabel = "ufs/" $operand;
-								break;
-							}
-						}	
+						"dumpfs " DEVICE " 2>/dev/null | head -n 2 | tail -n 1" | getline;
+						ufslabel = "ufsid/" $6$7;
 
 						FS=":";
-						close("dumpfs -m " DEVICE);
-
-						if (ufslabel ~ /^$/) {
+						if (ufslabel ~ /^$/ || ufslabel ~ /^ufsid\/$/) {
 							print PROTO ":" DEVICE;
 						} else {
 							print PROTO ":" DEVICE;
