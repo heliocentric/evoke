@@ -167,6 +167,7 @@ EOF
 	resolve_libs() {
 		for file in "$@"
 		do
+			cd ${DESTDIR}/mnt/lib
 			echo "${file}" >&2
 			TYPE="$(OPTIONS="quiet" filetype ${file})"
 			case "${TYPE}" in
@@ -188,11 +189,12 @@ EOF
 
 
 	cd ${DESTDIR}/mnt/lib
-	EXTRALIBS="libasn1.so.*"
+	EXTRALIBS="$(echo libasn1.so.*)"
 	echo "${EXTRALIBS}" >&2
 	cd ${DESTDIR}/mnt/bin/
 	for lib in $(resolve_libs ${PROGS}) ganglia/modcpu.so ganglia/moddisk.so ganglia/modload.so ganglia/modmem.so ganglia/modmulticpu.so ganglia/modnet.so ganglia/modproc.so ganglia/modsys.so ${EXTRALIBS}
  	do
+		cd ${DESTDIR}/mnt/lib
 		DIRECTORY="$(dirname ${lib})"
 		FILE="$(basename ${lib})"
 
