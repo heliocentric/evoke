@@ -187,10 +187,12 @@ EOF
 	}
 
 
-
+	cd ${DESTDIR}/mnt/lib
+	EXTRALIBS="libasn1.so.*"
+	echo "${EXTRALIBS}" >&2
 	cd ${DESTDIR}/mnt/bin/
-	for lib in $(resolve_libs ${PROGS} ganglia/modcpu.so ganglia/moddisk.so ganglia/modload.so ganglia/modmem.so ganglia/modmulticpu.so ganglia/modnet.so ganglia/modproc.so ganglia/modsys.so) libasn1.so.?
-	do
+	for lib in $(resolve_libs ${PROGS}) ganglia/modcpu.so ganglia/moddisk.so ganglia/modload.so ganglia/modmem.so ganglia/modmulticpu.so ganglia/modnet.so ganglia/modproc.so ganglia/modsys.so ${EXTRALIBS}
+ 	do
 		DIRECTORY="$(dirname ${lib})"
 		FILE="$(basename ${lib})"
 
