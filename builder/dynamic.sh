@@ -214,7 +214,7 @@ EOF
 			;;
 		esac
 	done
-
+	cd ${DESTDIR}/mnt/bin
 	# Strip and copy the binaries to the FSDIR
 	${CROSSTOOLSPATH}/strip --remove-section=.note --remove-section=.comment --strip-unneeded ${PROGS}
 	tar -cLf - ${PROGS} | tar -xpf - -C ${FSDIR}${N_BIN}/	
