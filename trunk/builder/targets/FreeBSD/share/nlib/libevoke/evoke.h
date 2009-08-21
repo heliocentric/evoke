@@ -9,7 +9,9 @@
 #include <stdio.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <netinet/sctp.h>
 #include <netdb.h>
+
 struct _string {
 	char * text;
 	int length;
