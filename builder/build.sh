@@ -206,11 +206,13 @@ do
 
 	sed -i .bak "s@libmd@libmd libevoke@g" ${DESTDIR}/usr/src/lib/Makefile
 
-	cd ${DESTDIR}/usr/src/nsrc
+	cd ${DESTDIR}/usr/src
 	FILELIST="$(find . -not -path \*.svn\* -not -type d)"
 
 	sed -i .bak "s@%%ABI%%@FreeBSD-${RELEASE}@g" ${FILELIST}
 	sed -i .bak "s@%%ARCH%%@${TARGET}@g" ${FILELIST}
+	sed -i .bak "s@%%VERSION%%@${VERSION}@g" ${FILELIST}
+	sed -i .bak "s@%%REVISION%%@${REVISION}}@g" ${FILELIST}
 
 	# Allow us to build both statically and dynamically. Note, it needs to be automated more.
 
