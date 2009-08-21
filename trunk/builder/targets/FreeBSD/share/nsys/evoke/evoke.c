@@ -35,6 +35,12 @@
 char evoke_boottime[42] = "NULL";
 SYSCTL_STRING(_kern, OID_AUTO, evoke_boottime, CTLFLAG_RW, evoke_boottime, sizeof(evoke_boottime), "Evoke specific boot time");
 
+char evoke_version[256] = "%%VERSION%%";
+SYSCTL_STRING(_kern, OID_AUTO, evoke_version, CTLFLAG_RW, evoke_version, sizeof(evoke_version), "Evoke system version");
+
+char evoke_revision[256] = "%%REVISION%%";
+SYSCTL_STRING(_kern, OID_AUTO, evoke_revision, CTLFLAG_RW, evoke_revision, sizeof(evoke_revision), "Evoke system revision");
+
 static int load(struct module *module, int cmd, void *arg) {
 	int error = 0;
 	switch (cmd) {
