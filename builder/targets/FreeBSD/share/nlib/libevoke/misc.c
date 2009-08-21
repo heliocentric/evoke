@@ -279,19 +279,53 @@ handle * announce(char *address) {
 	string fdlist_type;
 	fdlist_type.text = "com.googlecode.evoke.fdlist.v1.0";
 	fdlist_type.length = strlen(fdlist_type.text) + 1;
-	tempfd = new_handle(sizeof(int), fdlist_type);
+
+/*
+	Ok, we do all this here, because we need to know the length of the fdlist before we allocate a handle for it.
+*/
+	int socknum;
+	if (localaddress->protocol.length >= 4) {
+		if (strncmp(localaddress->protocol.text, "net", 4) == 0) { 
+			socknum = 6;
+		} else {
+			if (localaddress->host.length == 2) {
+				if (strncmp(localaddress->host.text, "*", 2) == 0) {
+					socknum = 1;
+				} else {
+					/* 
+						This value should be 1. We need to figure out what type, and rewrite 
+						this function accordingly, so that:
+ 
+							tcp!2001:db8:85a3:0:0:8a2e:370:7334!http
+						will only bind to PF_INET6.
+					*/
+					socknum = 1;
+				}
+			}
+		}
+	}
+
+	tempfd = new_handle(sizeof(int) * socknum, fdlist_type);
 	int * fdlist;
 	fdlist = tempfd->data;
 
 	if (localaddress->protocol.length >= 4) {
 		if (strncmp(localaddress->protocol.text, "udp", 4) == 0) { 
-			fdlist[0] = socket(PF_INET, SOCK_DGRAM, 0);
+			fdlist[0] = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
+			fdlist[1] = socket(PF_INET6, SOCK_DGRAM, IPPROTO_UDP);
 		} else if (strncmp(localaddress->protocol.text, "tcp", 4) == 0) {
-			fdlist[0] = socket(PF_INET, SOCK_STREAM, 0);
+			fdlist[0] = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
+			fdlist[1] = socket(PF_INET6, SOCK_STREAM, IPPROTO_TCP);
 		} else if (strncmp(localaddress->protocol.text, "sctp", 5) == 0) {
 			fdlist[0] = socket(PF_INET, SOCK_STREAM, IPPROTO_SCTP);
+			fdlist[1] = socket(PF_INET6, SOCK_STREAM, IPPROTO_SCTP);
 		} else if (strncmp(localaddress->protocol.text, "net", 4) == 0) {
-			fdlist[0] = socket(PF_INET, SOCK_STREAM, 0);
+			fdlist[0] = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
+			fdlist[1] = socket(PF_INET, SOCK_STREAM, IPPROTO_SCTP);
+			fdlist[2] = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
+			fdlist[3] = socket(PF_INET6, SOCK_STREAM, IPPROTO_TCP);
+			fdlist[4] = socket(PF_INET6, SOCK_STREAM, IPPROTO_SCTP);
+			fdlist[5] = socket(PF_INET6, SOCK_DGRAM, IPPROTO_UDP);
 		} else {
 			return NULL;
 		}
@@ -317,31 +351,32 @@ handle * announce(char *address) {
 			portnum = ntohs(realport->s_port);
 		}
 	}
-	bzero((char *) &bind_address, sizeof(bind_address));
-	bind_address.sin_family = AF_INET;
+	for (int i = 0; i < socknum; i++) {
+		bzero((char *) &bind_address, sizeof(bind_address));
+		
+		bind_address.sin_family = AF_INET;
 
-	if (localaddress->host.length == 2) {
-		if (strncmp(localaddress->host.text, "*", 2) == 0) {
-			bind_address.sin_addr.s_addr = htonl(INADDR_ANY);
+		if (localaddress->host.length == 2) {
+			if (strncmp(localaddress->host.text, "*", 2) == 0) {
+				bind_address.sin_addr.s_addr = htonl(INADDR_ANY);
+			} else {
+				bind_host = gethostbyname(localaddress->host.text);
+				bcopy((char *) bind_host->h_addr, (char *) &bind_address.sin_addr.s_addr, bind_host->h_length);
+			}
 		} else {
 			bind_host = gethostbyname(localaddress->host.text);
 			bcopy((char *) bind_host->h_addr, (char *) &bind_address.sin_addr.s_addr, bind_host->h_length);
 		}
-	} else {
-		bind_host = gethostbyname(localaddress->host.text);
-		bcopy((char *) bind_host->h_addr, (char *) &bind_address.sin_addr.s_addr, bind_host->h_length);
-	}
 
-	bind_address.sin_port = htons(portnum);
-
-	int retval = bind(fdlist[0], (struct sockaddr *) &bind_address, sizeof(bind_address));
-
-	if (retval < 0) {
-		printf("%d", retval);
-		return NULL;
-	}
-	if (listen(fdlist[0], 255) == -1) {
-		return NULL;
+		bind_address.sin_port = htons(portnum);
+		int retval = bind(fdlist[0], (struct sockaddr *) &bind_address, sizeof(bind_address));
+		printf("%d\n", retval);
+		if (retval < 0) {
+			return NULL;
+		}
+		if (listen(fdlist[0], 255) == -1) {
+			return NULL;
+		}
 	}
 	return tempfd;
 }
