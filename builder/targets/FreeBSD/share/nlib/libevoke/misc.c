@@ -156,7 +156,7 @@ handle * dial(char *address, char *local) {
 	struct dialparse_v1 * hostspec = dp->data;
 
 	if (hostspec->protocol.length >= 4) {
-		if (strncmp(hostspec->protocol.text,"net",4) == 0 || strncmp(hostspec->protocol.text,"tcp",4) == 0 || strncmp(hostspec->protocol.text,"udp",4) == 0) {
+		if (strncmp(hostspec->protocol.text,"net",4) == 0 || strncmp(hostspec->protocol.text,"tcp",4) == 0 || strncmp(hostspec->protocol.text,"udp",4) == 0 || strncmp(hostspec->protocol.text,"sctp",5) == 0) {
 			string fdlist_type;
 			fdlist_type.text = "com.googlecode.evoke.fdlist.v1.0";
 			fdlist_type.length = strlen(fdlist_type.text) + 1;
@@ -183,7 +183,7 @@ handle * dial(char *address, char *local) {
 				if (hostspec->port.text == '\0') {
 					portnum = 21221;
 				} else {
-					realport = getservbyname(hostspec->port.text, "tcp");
+					realport = getservbyname(hostspec->port.text, hostspec->protocol.text);
 					if(!realport) {
 						portnum = strtonum(hostspec->port.text, 1, 65535, NULL);
 						if (portnum == 0) {
@@ -201,6 +201,8 @@ handle * dial(char *address, char *local) {
 
 			if (strncmp(hostspec->protocol.text,"udp",4) == 0) {
 				fdlist[0] = socket(PF_INET, SOCK_DGRAM, 0);
+			} else if (strncmp(hostspec->protocol.text,"sctp",5) == 0) {
+				fdlist[0] = socket(PF_INET, SOCK_STREAM, IPPROTO_SCTP);
 			} else {
 				fdlist[0] = socket(PF_INET, SOCK_STREAM, 0);
 			}
@@ -282,11 +284,13 @@ handle * announce(char *address) {
 	fdlist = tempfd->data;
 
 	if (localaddress->protocol.length >= 4) {
-		if (strncmp(localaddress->protocol.text, "udp", 4)) { 
+		if (strncmp(localaddress->protocol.text, "udp", 4) == 0) { 
 			fdlist[0] = socket(PF_INET, SOCK_DGRAM, 0);
-		} else if (strncmp(localaddress->protocol.text, "tcp", 4)) {
+		} else if (strncmp(localaddress->protocol.text, "tcp", 4) == 0) {
 			fdlist[0] = socket(PF_INET, SOCK_STREAM, 0);
-		} else if (strncmp(localaddress->protocol.text, "net", 4)) {
+		} else if (strncmp(localaddress->protocol.text, "sctp", 5) == 0) {
+			fdlist[0] = socket(PF_INET, SOCK_STREAM, IPPROTO_SCTP);
+		} else if (strncmp(localaddress->protocol.text, "net", 4) == 0) {
 			fdlist[0] = socket(PF_INET, SOCK_STREAM, 0);
 		} else {
 			return NULL;
@@ -302,7 +306,8 @@ handle * announce(char *address) {
 	if (localaddress->port.text == '\0') {
 		portnum = 0;
 	} else {
-		realport = getservbyname(localaddress->port.text, "tcp");
+		realport = getservbyname(localaddress->port.text, localaddress->protocol.text);
+		printf("%d", realport);
 		if(!realport) {
 			portnum = strtonum(localaddress->port.text, 1, 65535, NULL);
 			if (portnum == 0) {
@@ -315,33 +320,38 @@ handle * announce(char *address) {
 	bzero((char *) &bind_address, sizeof(bind_address));
 	bind_address.sin_family = AF_INET;
 
-				if (localaddress->host.length == 2) {
-					printf("%d\n", strncmp(localaddress->host.text, "*", 2));
-					if (strncmp(localaddress->host.text, "*", 2) == 0) {
-						bind_address.sin_addr.s_addr = htonl(INADDR_ANY);
-					} else {
-						bind_host = gethostbyname(localaddress->host.text);
-						bcopy((char *) bind_host->h_addr, (char *) &bind_address.sin_addr.s_addr, bind_host->h_length);
-					}
-				} else {
-					bind_host = gethostbyname(localaddress->host.text);
-					bcopy((char *) bind_host->h_addr, (char *) &bind_address.sin_addr.s_addr, bind_host->h_length);
-				}
+	if (localaddress->host.length == 2) {
+		if (strncmp(localaddress->host.text, "*", 2) == 0) {
+			bind_address.sin_addr.s_addr = htonl(INADDR_ANY);
+		} else {
+			bind_host = gethostbyname(localaddress->host.text);
+			bcopy((char *) bind_host->h_addr, (char *) &bind_address.sin_addr.s_addr, bind_host->h_length);
+		}
+	} else {
+		bind_host = gethostbyname(localaddress->host.text);
+		bcopy((char *) bind_host->h_addr, (char *) &bind_address.sin_addr.s_addr, bind_host->h_length);
+	}
 
-				bind_address.sin_port = htons(portnum);
+	bind_address.sin_port = htons(portnum);
 
-				if (bind(fdlist[0], (struct sockaddr *) &bind_address, sizeof(bind_address)) < 0) {
-					return NULL;
-				}
+	int retval = bind(fdlist[0], (struct sockaddr *) &bind_address, sizeof(bind_address));
 
+	if (retval < 0) {
+		printf("%d", retval);
+		return NULL;
+	}
+	if (listen(fdlist[0], 255) == -1) {
+		return NULL;
+	}
+	return tempfd;
 }
 
 handle * dialparse(char *address) {
 	handle * pointer;
 	pointer = NULL;
-	char *tempaddress;
+	char *tempaddress, *realaddress;
 	tempaddress = strdup(address);
-
+	realaddress = tempaddress;
 	char *protocol;
 	protocol = strsep(&tempaddress, "!");
 
@@ -357,7 +367,7 @@ handle * dialparse(char *address) {
 	size_t protocolsize = strlen(protocol) + 1;
 
 	if (protocolsize >= 4) {
-		if (strncmp("net", protocol,4) == 0 || strncmp("tcp", protocol, 4) == 0 || strncmp("udp",protocol,4) == 0) {
+		if (strncmp("net", protocol,4) == 0 || strncmp("tcp", protocol, 4) == 0 || strncmp("udp",protocol,4) == 0 || strncmp("sctp",protocol,5) == 0) {
 			char *host;
 			host = strsep(&tempaddress, "!");
 
@@ -402,7 +412,7 @@ handle * dialparse(char *address) {
 			}
 		}
 	}
+	free(realaddress);
 
-	free(tempaddress);
 	return pointer;
 }
