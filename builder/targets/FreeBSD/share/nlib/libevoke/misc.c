@@ -351,32 +351,30 @@ handle * announce(char *address) {
 			portnum = ntohs(realport->s_port);
 		}
 	}
-	for (int i = 0; i < socknum; i++) {
-		bzero((char *) &bind_address, sizeof(bind_address));
+	bzero((char *) &bind_address, sizeof(bind_address));
 		
-		bind_address.sin_family = AF_INET;
+	bind_address.sin_family = AF_INET;
 
-		if (localaddress->host.length == 2) {
-			if (strncmp(localaddress->host.text, "*", 2) == 0) {
-				bind_address.sin_addr.s_addr = htonl(INADDR_ANY);
-			} else {
-				bind_host = gethostbyname(localaddress->host.text);
-				bcopy((char *) bind_host->h_addr, (char *) &bind_address.sin_addr.s_addr, bind_host->h_length);
-			}
+	if (localaddress->host.length == 2) {
+		if (strncmp(localaddress->host.text, "*", 2) == 0) {
+			bind_address.sin_addr.s_addr = htonl(INADDR_ANY);
 		} else {
 			bind_host = gethostbyname(localaddress->host.text);
 			bcopy((char *) bind_host->h_addr, (char *) &bind_address.sin_addr.s_addr, bind_host->h_length);
 		}
+	} else {
+		bind_host = gethostbyname(localaddress->host.text);
+		bcopy((char *) bind_host->h_addr, (char *) &bind_address.sin_addr.s_addr, bind_host->h_length);
+	}
 
-		bind_address.sin_port = htons(portnum);
-		int retval = bind(fdlist[0], (struct sockaddr *) &bind_address, sizeof(bind_address));
-		printf("%d\n", retval);
-		if (retval < 0) {
-			return NULL;
-		}
-		if (listen(fdlist[0], 255) == -1) {
-			return NULL;
-		}
+	bind_address.sin_port = htons(portnum);
+	int retval = bind(fdlist[0], (struct sockaddr *) &bind_address, sizeof(bind_address));
+	printf("%d\n", retval);
+	if (retval < 0) {
+		return NULL;
+	}
+	if (listen(fdlist[0], 255) == -1) {
+		return NULL;
 	}
 	return tempfd;
 }
