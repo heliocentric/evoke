@@ -185,8 +185,7 @@ do
 
 	# Patch for lib/libmagic's build-tools target.
 	sed -i .bak "s_usr/sbin usr/share/misc_usr/sbin usr/share/misc config_g" ${WORKDIR}/usr/src/Makefile.inc1 1>&2
-	sed -i .bak "s_/usr/share/misc_/config_g" ${WORKDIR}/usr/src/usr.bin/file/Makefile 1>&2
-	sed -i .bak "s_/usr/share/misc_/config_g" ${WORKDIR}/usr/src/lib/libmagic/Makefile 1>&2
+	sed -i .bak "s_lib usr_lib usr config_g" ${WORKDIR}/usr/src/Makefile.inc1 1>&2
 
 	# We use TMPDIR so that it can be different then the OBJDIR, as TMPDIR is write heavy.
 	export MAKEOBJDIRPREFIX=${OBJDIR}/obj/${TARGET_HASH}
