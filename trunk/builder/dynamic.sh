@@ -188,11 +188,14 @@ EOF
 	}
 
 
+	echo "Executing resolve_libs" >&2
+	cd ${DESTDIR}/mnt/bin/
+	BASELIBS=$(resolve_libs ${PROGS})
+	echo "${BASELIBS}" >&2
 	cd ${DESTDIR}/mnt/lib
 	EXTRALIBS="$(echo libasn1.so.*)"
 	echo "${EXTRALIBS}" >&2
-	cd ${DESTDIR}/mnt/bin/
-	for lib in $(resolve_libs ${PROGS}) ganglia/modcpu.so ganglia/moddisk.so ganglia/modload.so ganglia/modmem.so ganglia/modmulticpu.so ganglia/modnet.so ganglia/modproc.so ganglia/modsys.so ${EXTRALIBS}
+	for lib in ${BASELIBS} ganglia/modcpu.so ganglia/moddisk.so ganglia/modload.so ganglia/modmem.so ganglia/modmulticpu.so ganglia/modnet.so ganglia/modproc.so ganglia/modsys.so ${EXTRALIBS}
  	do
 		cd ${DESTDIR}/mnt/lib
 		DIRECTORY="$(dirname ${lib})"
