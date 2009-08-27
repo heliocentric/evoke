@@ -35,12 +35,29 @@ CROSSTOOLSPATH=${MAKEOBJDIRPREFIX}/${TARGET}${WORKDIR}/usr/src/tmp/usr/bin
 # Copy kernel config to the source.
 cp ${BUILDDIR}/targets/FreeBSD/${RELEASE}/${TARGET}/kernconf ${WORKDIR}/usr/src/sys/${TARGET}/conf/${KERNCONF}
 
+
 # Patch in the binary path into the kernel directly, so that loader.conf doesn't need to.
-if [ "${TARGET_ARCH}" = "amd64" ] ; then
-	echo "options INIT_PATH=${N_BIN}/nexusd:${N_BIN}/init:/system/FreeBSD-${RELEASE}/i386/bin/nexusd:/system/FreeBSD-${RELEASE}/i386/bin/init:/sbin/init:/stand/sysinstall" >> ${WORKDIR}/usr/src/sys/${TARGET}/conf/${KERNCONF}
-else
-	echo "options INIT_PATH=${N_BIN}/nexusd:${N_BIN}/init:/sbin/init:/stand/sysinstall" >> ${WORKDIR}/usr/src/sys/${TARGET}/conf/${KERNCONF}
-fi
+
+VERSIONLIST="$(echo "${TARGETLIST}" | cut -d -f : 4 | sort -r | uniq)"
+INIT_PATH="${N_BIN}/nexusd:${N_BIN}/init:/system/FreeBSD-${RELEASE}/i386/bin/nexusd:/system/FreeBSD-${RELEASE}/i386/bin/init"
+
+for version in ${VERSIONLIST}
+do
+	if [ "${version}" -lt "${RELEASE}" ] ; then
+		if [ "${TARGET_ARCH}" = "amd64" ] ; then		
+			INIT_PATH=${INIT_PATH}:/system/FreeBSD-${version}/amd64/bin/nexusd
+			INIT_PATH=${INIT_PATH}:/system/FreeBSD-${version}/amd64/bin/init
+			INIT_PATH=${INIT_PATH}:/system/FreeBSD-${version}/i386/bin/nexusd
+			INIT_PATH=${INIT_PATH}:/system/FreeBSD-${version}/i386/bin/init
+		else
+			INIT_PATH=${INIT_PATH}:/system/FreeBSD-${version}/${TARGET_ARCH}/bin/nexusd
+			INIT_PATH=${INIT_PATH}:/system/FreeBSD-${version}/${TARGET_ARCH}/bin/init
+		fi
+	fi
+done
+
+echo "options INIT_PATH=${INIT_PATH}:/sbin/init:/stand/sysinstall" >> ${WORKDIR}/usr/src/sys/${TARGET}/conf/${KERNCONF}
+
 if [ "${ABI}" = "7" ] ; then
 	svn co --force http://svn.freebsd.org/base/head/sys/contrib/dev/ath ${WORKDIR}/usr/src/sys/contrib/dev/ath
 fi
@@ -167,9 +184,11 @@ EOF
 	resolve_libs() {
 		for file in "$@"
 		do
-			cd ${DESTDIR}/mnt/lib
 			echo "${file}" >&2
-			TYPE="$(OPTIONS="quiet" filetype ${file})"
+			TYPE="$(OPTIONS="quiet" filetype ${RESOLVE_BINDIR}/${file})"
+			if [ "${TYPE}" = "" ] ; then
+				TYPE="$(OPTIONS="quiet" filetype ${RESOLVE_LIBDIR}/${file})"
+			fi
 			case "${TYPE}" in
 				application/x-executable)
 					DEPENDENCIES=$(${CROSSTOOLSPATH}/readelf -d ${DESTDIR}/mnt/bin/${file} | grep '(NEEDED)' | cut -d [ -f 2 | cut -d ] -f 1)
@@ -187,7 +206,8 @@ EOF
 
 	}
 
-
+	RESOLVE_BINDIR="${DESTDIR}/mnt/bin"
+	RESOLVE_LIBDIR="${DESTDIR}/mnt/lib"
 	echo "Executing resolve_libs" >&2
 	cd ${DESTDIR}/mnt/bin/
 	BASELIBS=$(resolve_libs ${PROGS})
