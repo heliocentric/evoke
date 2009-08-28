@@ -38,12 +38,12 @@ cp ${BUILDDIR}/targets/FreeBSD/${RELEASE}/${TARGET}/kernconf ${WORKDIR}/usr/src/
 
 # Patch in the binary path into the kernel directly, so that loader.conf doesn't need to.
 
-VERSIONLIST="$(echo "${TARGETLIST}" | cut -d -f : 4 | sort -r | uniq)"
+VERSIONLIST="$(echo "${TARGETLIST}" | cut -d : -f 4 | sort -r | uniq)"
 INIT_PATH="${N_BIN}/nexusd:${N_BIN}/init:/system/FreeBSD-${RELEASE}/i386/bin/nexusd:/system/FreeBSD-${RELEASE}/i386/bin/init"
 
 for version in ${VERSIONLIST}
 do
-	if [ "${version}" -lt "${RELEASE}" ] ; then
+	if [ "$(echo "${version}" | cut -d . -f 1)" -lt "$(echo "${RELEASE}" | cut -d . -f 1)" ] ; then
 		if [ "${TARGET_ARCH}" = "amd64" ] ; then		
 			INIT_PATH=${INIT_PATH}:/system/FreeBSD-${version}/amd64/bin/nexusd
 			INIT_PATH=${INIT_PATH}:/system/FreeBSD-${version}/amd64/bin/init
