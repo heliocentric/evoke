@@ -392,7 +392,6 @@ if [ "${EVOKE_SSHKEY}" != "" ] ; then
 	# syslogd is currently unnecessary, may uncomment later
 
 	echo "Starting syslogd"
-	echo "syslog		514/udp" >> ${EVOKE_LIBDIR}/services
 	echo "" >${EVOKE_DBDIR}/log
 	cat >${EVOKE_LIBDIR}/syslogd.conf << EOF
 33*.notice;authpriv.none;kern.debug;*.info;*.crit;*.err	${EVOKE_DBDIR}/log
