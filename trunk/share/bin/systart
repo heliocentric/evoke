@@ -434,12 +434,12 @@ EOF
 StrictHostKeyChecking no
 
 EOF
-
 	/bin/sshd -f ${EVOKE_CFGDIR}/sshd.conf 2>${DEVICES}/null
 fi
 
 case "${EVOKE_MONITOR}" in
 	[yY][eE][sS])
+		echo "Starting monitor daemon"
 		gmond -t | sed '/include/d' | sed 's/ganglia/monitor/g' >${EVOKE_LIBDIR}/gmond.conf
 		gmond -c ${EVOKE_LIBDIR}/gmond.conf
 	;;
@@ -447,10 +447,10 @@ esac
 
 case "${EVOKE_MISC_MESSAGE}" in
 	[yY][eE][sS])
-		runterm /dev/ttyv0 cat /system/share/lib/message
+		cat /system/share/lib/message
 	;;
 esac
 
 cd /
-runterm /dev/ttyv0 tcsh
+tcsh
 userconfig logout ${EVOKE_CURUSER}
