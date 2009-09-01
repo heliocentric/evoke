@@ -39,6 +39,7 @@ int main(int argc, char *argv[]) {
 	handle * ttylock;
         ttylock = acquire("hostfs", argv[1], LOCK_CONCURRENT_WRITE);
         if (! error(ttylock)) {
+		revoke(argv[1]);
 		if ((fd = open(argv[1], O_RDWR)) == -1) {
 			return 1;
 		}
