@@ -87,6 +87,7 @@ handle * new_handle(size_t size, string type) {
 	temp->type.length = type.length;
 	temp->data = (void *) ((size_t) temp->type.text + type.length);
 	temp->size = size;
+
 /*
 	printf("temp: %s\n", temp->type.text);
 	printf("temp: %u\n", allocsize);
@@ -98,6 +99,7 @@ handle * new_handle(size_t size, string type) {
 	printf("temp: %u\n", size);
 	printf("temp: %u\n", (size_t) temp + (size_t) allocsize);
 */
+
 	bzero(temp->data, size);
 
 	return temp;
@@ -138,11 +140,14 @@ int error(handle * error) {
 	}
 
 }
+
 void print_error(handle * error) {
 }
+
 void evoke_exit(handle * error) {
 	exit(1);
 }
+
 handle * dial(char *address, char *local) {
 	handle * tempfd;
 	char buffer[256];
@@ -162,50 +167,10 @@ handle * dial(char *address, char *local) {
 			fdlist_type.length = strlen(fdlist_type.text) + 1;
 			tempfd = new_handle(sizeof(int), fdlist_type);
 
-			struct sockaddr_in targetaddress;
-
 			int * fdlist;
-			fdlist = tempfd->data;
-			fdlist[0] = 2334;
-
-
-			struct hostent * realserver;
-			realserver = gethostbyname(hostspec->host.text);
-			if (realserver == NULL) {
-				printf("%s\n", strerror(65));
-				return NULL;
-			}
-			struct servent * realport;
 			int portnum;
-			if (hostspec->port.text == NULL) {
-				portnum = 21221;
-			} else {
-				if (hostspec->port.text == '\0') {
-					portnum = 21221;
-				} else {
-					realport = getservbyname(hostspec->port.text, hostspec->protocol.text);
-					if(!realport) {
-						portnum = strtonum(hostspec->port.text, 1, 65535, NULL);
-						if (portnum == 0) {
-							portnum = 21221;
-						}
-					} else {
-						portnum = ntohs(realport->s_port);
-					}
-				}
-			}
-			bzero((char *) &targetaddress, sizeof(targetaddress));
-			targetaddress.sin_family = AF_INET;
-			bcopy((char *) realserver->h_addr, (char *) &targetaddress.sin_addr.s_addr, realserver->h_length);
-			targetaddress.sin_port = htons(portnum);
-
-			if (strncmp(hostspec->protocol.text,"udp",4) == 0) {
-				fdlist[0] = socket(PF_INET, SOCK_DGRAM, 0);
-			} else if (strncmp(hostspec->protocol.text,"sctp",5) == 0) {
-				fdlist[0] = socket(PF_INET, SOCK_STREAM, IPPROTO_SCTP);
-			} else {
-				fdlist[0] = socket(PF_INET, SOCK_STREAM, 0);
-			}
+			struct servent * realport;
+			fdlist = tempfd->data;
 
 			handle * dp2;
 
@@ -249,14 +214,59 @@ handle * dial(char *address, char *local) {
 					return NULL;
 				}
 			}
-			if (connect(fdlist[0], (struct sockaddr *) &targetaddress, sizeof(targetaddress)) < 0) {
+
+			struct addrinfo hints, *res, *res0;
+			struct sockaddr_in targetaddress;
+			int error;
+			const char *cause = NULL;
+			hints.ai_family = PF_UNSPEC;
+
+			if (strncmp(hostspec->protocol.text,"udp",4) == 0) {
+				hints.ai_socktype = SOCK_DGRAM;
+				hints.ai_protocol = IPPROTO_UDP;
+			} else if (strncmp(hostspec->protocol.text,"sctp",5) == 0) {
+				hints.ai_socktype = SOCK_STREAM;
+				hints.ai_protocol = IPPROTO_SCTP;
+			} else if (strncmp(hostspec->protocol.text,"tcp",5) == 0) {
+				hints.ai_socktype = SOCK_STREAM;
+				hints.ai_protocol = IPPROTO_TCP;
+			} else {
+				hints.ai_socktype = SOCK_STREAM;
+			}
+
+			error = getaddrinfo(hostspec->host.text, hostspec->port.text, &hints, &res);
+			if (error) {
 				return NULL;
 			}
+
+			fdlist[0] = -1;
+
+			for (res = res0; res; res = res->ai_next) {
+				fdlist[0] = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+				if (fdlist[0] < 0) { 
+					cause = "socket";
+					continue;
+				}
+				if (connect(fdlist[0], res->ai_addr, res->ai_addrlen) < 0) {
+					cause = "connect";
+					close(fdlist[0]);
+					fdlist[0] = -1;
+					continue;
+				}
+				break;
+			}
+
+			if (fdlist[0] < 0) {
+				return NULL;
+			}
+
+			freeaddrinfo(res0);
 		}
 
 	}
 	return tempfd;
 }
+
 handle * announce(char *address) {
 	handle * ap = NULL;
 	handle * tempfd = NULL;
@@ -283,7 +293,7 @@ handle * announce(char *address) {
 /*
 	Ok, we do all this here, because we need to know the length of the fdlist before we allocate a handle for it.
 */
-	int socknum;
+	int socknum = 1;
 	if (localaddress->protocol.length >= 4) {
 		if (strncmp(localaddress->protocol.text, "net", 4) == 0) { 
 			socknum = 6;
@@ -292,15 +302,10 @@ handle * announce(char *address) {
 				if (strncmp(localaddress->host.text, "*", 2) == 0) {
 					socknum = 1;
 				} else {
-					/* 
-						This value should be 1. We need to figure out what type, and rewrite 
-						this function accordingly, so that:
- 
-							tcp!2001:db8:85a3:0:0:8a2e:370:7334!http
-						will only bind to PF_INET6.
-					*/
 					socknum = 1;
 				}
+			} else {
+				socknum = 1;
 			}
 		}
 	}
