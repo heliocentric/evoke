@@ -11,6 +11,7 @@
 #include <netinet/in.h>
 #include <netinet/sctp.h>
 #include <netdb.h>
+#include <unistd.h>
 
 struct _string {
 	char * text;
