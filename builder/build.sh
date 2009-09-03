@@ -211,7 +211,7 @@ do
 	find . -not -path \*.svn\* -not -type d -exec sed -i .bak "s@%%ABI%%@FreeBSD-${RELEASE}@g" '{}' \;
 	find . -not -path \*.svn\* -not -type d -exec sed -i .bak "s@%%ARCH%%@${TARGET}@g"  '{}' \;
 	find . -not -path \*.svn\* -not -type d -exec sed -i .bak "s@%%VERSION%%@${VERSION}@g"  '{}' \;
-	find . -not -path \*.svn\* -not -type d -exec sed -i .bak "s@%%REVISION%%@${REVISION}}@g"  '{}' \;
+	find . -not -path \*.svn\* -not -type d -exec sed -i .bak "s@%%REVISION%%@${REVISION}@g"  '{}' \;
 
 	# Allow us to build both statically and dynamically. Note, it needs to be automated more.
 
