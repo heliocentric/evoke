@@ -39,3 +39,4 @@ B:dmidecode:sysutils/dmidecode:
 #B:pidgin:net-im/pidgin:
 #D:/usr/local/share/pidgin:net-im:binshare:
 B:ddrescue:sysutils/ddrescue:
+B:in.tftpd:ftp/tftp-hpa::tftpd:
