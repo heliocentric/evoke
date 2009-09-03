@@ -217,7 +217,7 @@ handle * dial(char *address, char *local) {
 
 			struct addrinfo hints, *res, *res0;
 			struct sockaddr_in targetaddress;
-			int error;
+			int retval;
 			const char *cause = NULL;
 			hints.ai_family = PF_UNSPEC;
 
@@ -234,8 +234,8 @@ handle * dial(char *address, char *local) {
 				hints.ai_socktype = SOCK_STREAM;
 			}
 
-			error = getaddrinfo(hostspec->host.text, hostspec->port.text, &hints, &res);
-			if (error) {
+			retval = getaddrinfo(hostspec->host.text, hostspec->port.text, &hints, &res);
+			if (retval) {
 				return NULL;
 			}
 
@@ -268,6 +268,9 @@ handle * dial(char *address, char *local) {
 }
 
 handle * announce(char *address) {
+
+#define		SOCK_MAX	128
+
 	handle * ap = NULL;
 	handle * tempfd = NULL;
 	struct sockaddr_in bind_address;
@@ -286,51 +289,38 @@ handle * announce(char *address) {
 		return NULL;
 	}
 
+
 	string fdlist_type;
 	fdlist_type.text = "com.googlecode.evoke.fdlist.v1.0";
 	fdlist_type.length = strlen(fdlist_type.text) + 1;
 
-/*
-	Ok, we do all this here, because we need to know the length of the fdlist before we allocate a handle for it.
-*/
-	int socknum = 1;
-	if (localaddress->protocol.length >= 4) {
-		if (strncmp(localaddress->protocol.text, "net", 4) == 0) { 
-			socknum = 6;
-		} else {
-			if (localaddress->host.length == 2) {
-				if (strncmp(localaddress->host.text, "*", 2) == 0) {
-					socknum = 1;
-				} else {
-					socknum = 1;
-				}
-			} else {
-				socknum = 1;
-			}
-		}
-	}
+	struct addrinfo hints, *res, *res0;
+	int retval;
+	int socklist[SOCK_MAX];
+	int nsocklist[SOCK_MAX];
+	int nsock;
+	const char *cause = NULL;
 
-	tempfd = new_handle(sizeof(int) * socknum, fdlist_type);
-	int * fdlist;
-	fdlist = tempfd->data;
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = PF_UNSPEC;
+	hints.ai_flags = AI_PASSIVE;
+
+
+	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_protocol = IPPROTO_TCP;
 
 	if (localaddress->protocol.length >= 4) {
 		if (strncmp(localaddress->protocol.text, "udp", 4) == 0) { 
-			fdlist[0] = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
-			fdlist[1] = socket(PF_INET6, SOCK_DGRAM, IPPROTO_UDP);
+			hints.ai_socktype = SOCK_DGRAM;
+			hints.ai_protocol = IPPROTO_UDP;
 		} else if (strncmp(localaddress->protocol.text, "tcp", 4) == 0) {
-			fdlist[0] = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
-			fdlist[1] = socket(PF_INET6, SOCK_STREAM, IPPROTO_TCP);
+			hints.ai_socktype = SOCK_STREAM;
+			hints.ai_protocol = IPPROTO_TCP;
 		} else if (strncmp(localaddress->protocol.text, "sctp", 5) == 0) {
-			fdlist[0] = socket(PF_INET, SOCK_STREAM, IPPROTO_SCTP);
-			fdlist[1] = socket(PF_INET6, SOCK_STREAM, IPPROTO_SCTP);
+			hints.ai_socktype = SOCK_STREAM;
+			hints.ai_protocol = IPPROTO_SCTP;
 		} else if (strncmp(localaddress->protocol.text, "net", 4) == 0) {
-			fdlist[0] = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
-			fdlist[1] = socket(PF_INET, SOCK_STREAM, IPPROTO_SCTP);
-			fdlist[2] = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
-			fdlist[3] = socket(PF_INET6, SOCK_STREAM, IPPROTO_TCP);
-			fdlist[4] = socket(PF_INET6, SOCK_STREAM, IPPROTO_SCTP);
-			fdlist[5] = socket(PF_INET6, SOCK_DGRAM, IPPROTO_UDP);
+			hints.ai_socktype = SOCK_STREAM;
 		} else {
 			return NULL;
 		}
@@ -338,49 +328,46 @@ handle * announce(char *address) {
 		return NULL;
 	}
 
-	int portnum;
-
-	struct servent * realport;
-
-	if (localaddress->port.text == '\0') {
-		portnum = 0;
-	} else {
-		realport = getservbyname(localaddress->port.text, localaddress->protocol.text);
-		printf("%d", realport);
-		if(!realport) {
-			portnum = strtonum(localaddress->port.text, 1, 65535, NULL);
-			if (portnum == 0) {
-				portnum = 0;
-			}
-		} else {
-			portnum = ntohs(realport->s_port);
-		}
-	}
-	bzero((char *) &bind_address, sizeof(bind_address));
-		
-	bind_address.sin_family = AF_INET;
-
 	if (localaddress->host.length == 2) {
 		if (strncmp(localaddress->host.text, "*", 2) == 0) {
-			bind_address.sin_addr.s_addr = htonl(INADDR_ANY);
+			retval = getaddrinfo(NULL, localaddress->port.text, &hints, &res0);
 		} else {
-			bind_host = gethostbyname(localaddress->host.text);
-			bcopy((char *) bind_host->h_addr, (char *) &bind_address.sin_addr.s_addr, bind_host->h_length);
+			retval = getaddrinfo(localaddress->host.text, localaddress->port.text, &hints, &res0);
 		}
 	} else {
-		bind_host = gethostbyname(localaddress->host.text);
-		bcopy((char *) bind_host->h_addr, (char *) &bind_address.sin_addr.s_addr, bind_host->h_length);
+		retval = getaddrinfo(localaddress->host.text, localaddress->port.text, &hints, &res0);
 	}
 
-	bind_address.sin_port = htons(portnum);
-	int retval = bind(fdlist[0], (struct sockaddr *) &bind_address, sizeof(bind_address));
-	printf("%d\n", retval);
-	if (retval < 0) {
+	if (retval) {
 		return NULL;
 	}
-	if (listen(fdlist[0], 255) == -1) {
+
+	nsock = 0;
+	for (res = res0; res && nsock < SOCK_MAX; res = res->ai_next) {
+		socklist[nsock] = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+		if (socklist[nsock] < 0) {
+			cause = "socket";
+			continue;
+		}
+		if (bind(socklist[nsock], res->ai_addr, res->ai_addrlen) < 0) {
+			cause = "bind";
+			close(socklist[nsock]);
+			continue;
+		}
+		(void) listen(socklist[nsock], 5);
+		nsocklist[nsock] = socklist[nsock];
+		nsock++;
+	}
+
+	if (nsock == 0) {
 		return NULL;
 	}
+	
+	freeaddrinfo(res0);
+	tempfd = new_handle(sizeof(int) * nsock, fdlist_type);
+	int * fdlist;
+	fdlist = tempfd->data;
+	bcopy(nsocklist, fdlist, sizeof(int) * nsock);
 	return tempfd;
 }
 

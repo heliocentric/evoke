@@ -152,6 +152,7 @@ int connect_to_host(struct host *current_host, char *localaddress) {
 		strerror(65);
 		return 0;
 	}
+
 	current_host->fdlist = dialup;
 	int * fdlist;
 	fdlist = current_host->fdlist->data;
