@@ -452,5 +452,9 @@ case "${EVOKE_MISC_MESSAGE}" in
 esac
 
 cd /
-tcsh
+if [ -x "${EVOKE_CURUSER}/autologin" ] ; then
+	"${EVOKE_CURUSER}/autologin"
+else
+	tcsh
+fi
 userconfig logout ${EVOKE_CURUSER}
