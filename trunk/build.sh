@@ -47,7 +47,7 @@ groups gunzip gzcat gzip halt head id ifconfig jail jexec jls kenv kill init ken
 kldconfig kldload kldstat kldunload less link ln login ls md5 mdconfig 
 mdmfs mkdir more mount moused mv nc newfs pciconf ping powerd ps pwd cut uname mount_nullfs
 printf pwd_mkdb reboot rm route sed sh sha1 sha256 ssh ssh-keygen sshd stty 
-swapon swapoff swapinfo syslogd tail tar tcsh tftp tftpd top umount sysctl
+swapon swapoff swapinfo syslogd tail tar tcsh tftp top umount sysctl
 uniq unlink usbdevs vidcontrol whoami zcat sort pfctl du makefs 
 mount_msdosfs getextattr setextattr devinfo newfs_msdos stat dirname lsvfs
 rtsol egrep mount_cd9660 rmdir gpt tr file bsdiff bspatch savecore dumpon runterm
