@@ -242,7 +242,8 @@ EOF
 	${CROSSTOOLSPATH}/strip --remove-section=.note --remove-section=.comment --strip-unneeded ${PROGS}
 	tar -cLf - ${PROGS} | tar -xpf - -C ${FSDIR}${N_BIN}/	
 	cd ${FSDIR}${N_BIN}
-	for binary in $(grep -v ^# ${BUILDDIR}/portlist | grep ^B: | cut -d : -f 2,5)"
+
+	for binary in $(grep -v ^# ${BUILDDIR}/portlist | grep ^B: | cut -d : -f 2,5)
 	do
 		STARTNAME="$(echo ${binary} | cut -d : -f 1)"
 		ENDNAME="$(echo ${binary} | cut -d : -f 1)"
