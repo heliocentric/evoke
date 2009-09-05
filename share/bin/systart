@@ -369,22 +369,6 @@ EOF
 	;;
 esac
 
-	case "${EVOKE_MOUSED}" in
-		[yY][eE][sS])
-			echo "Starting moused"
-			cd ${DEVICES}
-			# Auto configure moused (note, it is disabled by default as it does slow 
-			# down the boot a bit.)
-			for i in ums* psm*
-			do
-				moused -p ${DEVICES}/${i} -3 -I ${EVOKE_PIDDIR}/${i}.pid 2>${DEVICES}/null
-			done
-			for ttyv in ${DEVICES}/ttyv* ${DEVICES}/console
-			do
-				vidcontrol < ${ttyv} -m on
-			done
-		;;
-	esac
 fi
 
 if [ "${EVOKE_SSHKEY}" != "" ] ; then
@@ -445,6 +429,24 @@ case "${EVOKE_MONITOR}" in
 	;;
 esac
 
+if [ "${MODE}" = "init" ] ; then
+	case "${EVOKE_MOUSED}" in
+		[yY][eE][sS])
+			echo "Starting moused"
+			cd ${DEVICES}
+			# Auto configure moused (note, it is disabled by default as it does slow 
+			# down the boot a bit.)
+			for i in ums* psm*
+			do
+				moused -p ${DEVICES}/${i} -3 -I ${EVOKE_PIDDIR}/${i}.pid 2>${DEVICES}/null
+			done
+			for ttyv in ${DEVICES}/ttyv* ${DEVICES}/console
+			do
+				vidcontrol < ${ttyv} -m on
+			done
+		;;
+	esac
+fi
 case "${EVOKE_MISC_MESSAGE}" in
 	[yY][eE][sS])
 		cat /system/share/lib/message
