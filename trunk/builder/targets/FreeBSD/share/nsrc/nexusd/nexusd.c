@@ -398,6 +398,7 @@ int startdevd(pid_t * devdpid) {
 int startsystem(pid_t * systartpid, int mode) {
 	int * status;
 	int ret;
+	pid_t pid;
 	*systartpid = fork();
 
 	switch (*systartpid) {
@@ -441,13 +442,17 @@ int startsystem(pid_t * systartpid, int mode) {
 		break;
 		default:
 			while (1) {
-				waitpid(*systartpid, status, 0);
+				pid = waitpid(-1, status, 0);
 				printf("wait returned %d\n", *status);
 				if (*status == 0) {
 					sleep(1);
 				} else {
-					perror("systart:");
-					return *status;
+					if (pid == *systartpid) {
+						perror("systart:");
+						return *status;
+					} else {
+						sleep(1);
+					}
 				}
 			}
 		break;
