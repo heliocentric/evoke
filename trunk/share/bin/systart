@@ -454,7 +454,6 @@ esac
 cd /
 if [ -x "${EVOKE_CURUSER}/autologin" ] ; then
 	"${EVOKE_CURUSER}/autologin"
-else
-	tcsh
 fi
+tcsh
 userconfig logout ${EVOKE_CURUSER}
