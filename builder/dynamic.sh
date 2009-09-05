@@ -246,7 +246,7 @@ EOF
 	for binary in $(grep -v ^# ${BUILDDIR}/portlist | grep ^B: | cut -d : -f 2,5)
 	do
 		STARTNAME="$(echo ${binary} | cut -d : -f 1)"
-		ENDNAME="$(echo ${binary} | cut -d : -f 1)"
+		ENDNAME="$(echo ${binary} | cut -d : -f 2)"
 		if [ "${ENDNAME}" != "" ] ; then
 			mv "${STARTNAME}" "${ENDNAME}"
 		fi
