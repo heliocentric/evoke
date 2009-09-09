@@ -1,3 +1,4 @@
+
 # Magic
 # Magic data for file(1) command.
 # Machine-generated from src/cmd/file/magdir/*; edit there only!
@@ -12,11 +13,19 @@
 # text if readable, executable if runnable binary, data if unreadable.
 # Evoke specific files
 0       string          I:1.1              Evoke Trackfile v1.1   
-!:mime	text/vnd.evoke-trackfile.1.1
+!:mime	text/vnd.evoke.trackfile.1.1
 
 0       string          I:trackfile:1.2    Evoke Trackfile v1.2
-!:mime	text/vnd.evoke-trackfile.1.2
+!:mime  text/vnd.evoke.trackfile.1.2
 
+65       string          version=1.0              Evoke Sysconfig v1.0
+!:mime  text/vnd.evoke.sysconfig.1.0
+
+65       string          proto=sysconfig              Evoke Sysconfig
+>81      string           version=1.0            v1.0
+!:mime  text/vnd.evoke.sysconfig.1.0
+>81      string           version=1.1            v1.1
+!:mime  text/vnd.evoke.sysconfig.1.1
 
 
 
