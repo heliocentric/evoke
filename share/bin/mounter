@@ -724,6 +724,9 @@ fs_mount () {
 		ERRNO=$?
 		if [ "${ERRNO}" = "0" ] ; then
 			case "${MIME_TYPE}" in
+				application/vnd.evoke.sysconfig*)
+					PROTO="sysconfig"
+				;;
 				application/vnd.evoke.fs.ufs*)
 					PROTO="ufs"
 				;;
@@ -968,7 +971,16 @@ object_mount () {
 # sysconfig basic wrapper.
 
 sysconfig_mount () {
-
+	echo_config
+	if [ "${M_STYPE}" = "GEOM" ] ; then
+		if [ -c "${DEVICES}/${M_FILE}" ] ; then
+			sysconfig extract ${M_FILE} ${M_DESTINATION} >&2
+		else
+			mexit 9
+		fi
+	else
+		mexit 8
+	fi
 }
 
 # Wrapper for the real mount binary. Set default options here 
