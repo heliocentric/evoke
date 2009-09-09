@@ -143,7 +143,6 @@ int realmain(int mode) {
 		close(1);
 		close(2);
 
-		setctty("/dev/console");
 		int mib[2], realversion;
 		size_t length;
 
@@ -158,6 +157,7 @@ int realmain(int mode) {
 		length = sizeof(architecture);
 		sysctl(mib, 2, &architecture, &length, NULL, 0);
 
+		setctty("/dev/console");
 		printf("Initializing FreeBSD/%s: %d (FreeBSD/%%ARCH%%: %d)\n", architecture, realversion, __FreeBSD_version);
 
 
@@ -399,63 +399,57 @@ int startsystem(pid_t * systartpid, int mode) {
 	int * status;
 	int ret;
 	pid_t pid;
+
 	*systartpid = fork();
 
-	switch (*systartpid) {
-		case 0:
-			if (mode == MULTIUSER) {
-				static char * shell = SHPATH;
-				static char * nargv[4];
-				struct sigaction systart_sa;
-				sigemptyset(&systart_sa.sa_mask);
-				systart_sa.sa_flags = 0;
-				systart_sa.sa_handler = SIG_IGN;
-				sigprocmask(SIG_SETMASK, &systart_sa.sa_mask, (sigset_t *) 0);
-				setctty("/dev/console");
-				nargv[0] = "sh";
-				nargv[1] = "/system/share/bin/systart";
-				nargv[2] = "autoboot";
-				nargv[3] = "0";
-				ret = execv(shell, nargv);
-				perror(shell);
-				exit(5);
-			}
-			if (mode == SINGLEUSER) {
-				static char * shell = TCSHPATH;
-				static char * nargv[1];
-				struct sigaction systart_sa;
-				sigfillset(&systart_sa.sa_mask);
-				systart_sa.sa_flags = 0;
-				systart_sa.sa_handler = SIG_IGN;
-				sigprocmask(SIG_SETMASK, &systart_sa.sa_mask, (sigset_t *) 0);
-				setctty("/dev/console");
-				nargv[0] = "tcsh";
-				ret = execv(shell, nargv);
-				perror(shell);
-				exit(5);
-			}
+	if (*systartpid == 0) {
+		if (mode == MULTIUSER) {
+			static char * shell = SHPATH;
+			static char * nargv[4];
+			struct sigaction systart_sa;
+			sigemptyset(&systart_sa.sa_mask);
+			systart_sa.sa_flags = 0;
+			systart_sa.sa_handler = SIG_IGN;
+			sigprocmask(SIG_SETMASK, &systart_sa.sa_mask, (sigset_t *) 0);
+			nargv[0] = "sh";
+			nargv[1] = "/system/share/bin/systart";
+			nargv[2] = "autoboot";
+			nargv[3] = "0";
+			ret = execv(shell, nargv);
+			perror(shell);
+			exit(5);
+		}
+		if (mode == SINGLEUSER) {
+			static char * shell = TCSHPATH;
+			static char * nargv[1];
+			struct sigaction systart_sa;
+			sigfillset(&systart_sa.sa_mask);
+			systart_sa.sa_flags = 0;
+			systart_sa.sa_handler = SIG_IGN;
+			sigprocmask(SIG_SETMASK, &systart_sa.sa_mask, (sigset_t *) 0);
+			nargv[0] = "tcsh";
+			ret = execv(shell, nargv);
+			perror(shell);
+			exit(5);
+		}
 
-		break;
-		case -1:
+	} else {
+		if (*systartpid == -1) {
 			printf("Fork error, bailing out before we do any damage\n");
 			return 4;
-		break;
-		default:
+		} else {
 			while (1) {
 				pid = waitpid(-1, status, 0);
+				printf("pid(%d) returned %d\n", pid, *status);
 				printf("wait returned %d\n", *status);
-				if (*status == 0) {
-					sleep(1);
+				if (pid == *systartpid) {
+					perror("systart:");
+					return *status;
 				} else {
-					if (pid == *systartpid) {
-						perror("systart:");
-						return *status;
-					} else {
-						sleep(1);
-					}
+					printf("pid(%d) returned %d\n", pid, *status);
 				}
 			}
-		break;
+		}
 	}
 	return 1;
 }
