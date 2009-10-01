@@ -52,7 +52,7 @@ uniq unlink usbdevs vidcontrol whoami zcat sort pfctl du makefs
 mount_msdosfs getextattr setextattr devinfo newfs_msdos stat dirname lsvfs
 rtsol egrep mount_cd9660 rmdir gpt tr file bsdiff bspatch savecore dumpon runterm
 openssl fetch basename dumpfs command wc sleep uptime adjkerntz ntpd iostat systat nexusd ddb curl
-netd chroot netstat sockstat nslookup dig traceroute
+netd chroot netstat sockstat nslookup dig traceroute ktrace kdump
 "
 
 # List of kernel objects in base that will be on the image. Ports modules
@@ -107,7 +107,7 @@ fi
 
 export BUILDDIR=${ROOTDIR}/builder
 
-${BUILDDIR}/build.sh 2>>${ERRFILE}
+/usr/bin/time -l ${BUILDDIR}/build.sh 2>>${ERRFILE}
 if [ "${OBJENV}" != "" ] ; then 
 	mounter umount ${OBJDIR} 2>>${ERRFILE}
 fi

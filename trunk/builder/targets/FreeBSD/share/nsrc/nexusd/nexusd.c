@@ -48,6 +48,10 @@
 #include <stdlib.h>
 #include <sys/reboot.h>
 #include <errno.h>
+#include <kenv.h>
+#include <sys/ktrace.h>
+#include <ctype.h>
+
 #include <evoke.h>
 
 #define HEX_DIGEST_LENGTH 65	
@@ -57,7 +61,7 @@ int setctty(const char *);
 
 int fmount(const char *fstype, const char *sourcepath, const char *destpath, int flags);
 
-int realmain(int mode);
+int realmain(int mode, int tracemode);
 
 int checkhash(void);
 
@@ -98,24 +102,30 @@ int startsystem(pid_t * systartpid, int mode);
 
 int main(int argc, char *argv[]) {
 
-
 	int mode = MULTIUSER;
+	int tracemode = 0;
 	int ret;
 	char c;
 
-	while ((c = getopt(argc, argv, "s")) != -1) {
+	while ((c = getopt(argc, argv, "st")) != -1) {
 		switch (c) {
 			case 's':
 				mode = SINGLEUSER;
 			break;
+			case 't':
+				tracemode = 1;
+			break;
+	                default:
+				printf("unrecognized flag %c", c);
+                        break;
 		}
 	}
-	ret = realmain(mode);
+	ret = realmain(mode, tracemode);
 	/* How the hell did we get here? */
 	return (ret);
 }
 
-int realmain(int mode) {
+int realmain(int mode, int tracemode) {
 	int ret;
 	if (getpid() == 1) {
 		struct sigaction init_handler;
@@ -137,6 +147,8 @@ int realmain(int mode) {
 		sigaction(SIGTERM, &init_handler, (struct sigaction *)0);
 		sigaction(SIGUSR1, &init_handler, (struct sigaction *)0);
 		sigaction(SIGUSR2, &init_handler, (struct sigaction *)0);
+		sigaction(SIGUSR2, &init_handler, (struct sigaction *)0);
+		sigaction(SIGCHLD, &init_handler, (struct sigaction *)0);
 		sigprocmask(SIG_SETMASK, &init_handler.sa_mask, (sigset_t *) 0);
 
 		close(0);
@@ -190,14 +202,35 @@ int realmain(int mode) {
 			fmount("nullfs", LIBEXECPATH, "/libexec", MNT_NOATIME|MNT_RDONLY|MNT_UNION);
 			fmount("nullfs", BOOTPATH, "/boot", MNT_NOATIME|MNT_RDONLY|MNT_UNION);
 		} else {
-			printf("Error, unsupported kernel! Naughty, naughty boy!");
+			printf("Error, unsupported kernel! Naughty, naughty boy!\n");
 			exit(7);
 		}
 		fmount("nullfs", "/system/share/bin", "/bin", MNT_NOATIME|MNT_RDONLY|MNT_UNION);
 		fmount("nullfs", "/system/share/lib", "/config", MNT_NOATIME|MNT_RDONLY|MNT_UNION);
 		fmount("tmpfs", "tmpfs", "/mem", MNT_NOATIME);
+		/* process 1 tracing support */
+		mkdir("/mem/trace", S_IRWXU | S_IRWXG | S_IRWXO);
+		char tracepoint[4];
+
+		ret = kenv(KENV_GET, "evoke.trace", tracepoint, sizeof(tracepoint));
 
 
+		if (ret != -1) {
+			tracepoint[3] = '\0';
+			if (strncasecmp(tracepoint, "yes", 4) == 0) {
+				tracemode = 1;
+			}
+		}
+
+		if (tracemode == 1) {
+			printf("Tracing enabled for pid 1 (nexusd)\n");
+			int tracefd = open("/mem/trace/pid1.nexusd", O_CREAT | O_WRONLY | O_NONBLOCK);
+			(void) close(tracefd);
+			ret = ktrace("/mem/trace/pid1.nexusd", KTROP_SET, KTRFAC_SYSCALL | KTRFAC_SYSRET | KTRFAC_NAMEI | KTRFAC_PSIG, 1);
+			if (ret == -1) {
+				printf("Unable to enable tracing on nexusd\n");
+			}
+		}
 		pid_t watchdogd_pid;
 		startwatchdogd(&watchdogd_pid);
 
@@ -439,7 +472,7 @@ int startsystem(pid_t * systartpid, int mode) {
 			return 4;
 		} else {
 			while (1) {
-				pid = waitpid(-1, status, 0);
+				pid = waitpid(-1, (int *) 0, WUNTRACED);
 				printf("pid(%d) returned %d\n", pid, *status);
 				printf("wait returned %d\n", *status);
 				if (pid == *systartpid) {
