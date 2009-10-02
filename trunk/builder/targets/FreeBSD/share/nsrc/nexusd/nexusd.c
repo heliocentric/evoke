@@ -473,14 +473,7 @@ int startsystem(pid_t * systartpid, int mode) {
 		} else {
 			while (1) {
 				pid = waitpid(-1, (int *) 0, WUNTRACED);
-				printf("pid(%d) returned %d\n", pid, *status);
-				printf("wait returned %d\n", *status);
-				if (pid == *systartpid) {
-					perror("systart:");
-					return *status;
-				} else {
-					printf("pid(%d) returned %d\n", pid, *status);
-				}
+				printf("wait returned on (%d)", pid);
 			}
 		}
 	}
