@@ -403,10 +403,6 @@ cd ${BOOTDIR}${BOOTPREFIX}
 tar -cf - * | tar -xf - -C ${RELEASEDIR}${BOOTPREFIX}/
 echo ""
 
-echo " * share = Generating Binary Diffs"
-update create "${VERSION}/${REVISION}" "${BOOTDIR}${BOOTPREFIX}" ${VERSIONLIST} 1>&2
-#cd "${RELEASEDIR}" && tar -cf - "evoke/misc/BIN-UPDATES/${VERSION}/${REVISION}" | tar -xvpf - -C "${BOOTDIR}/"
-echo ""
 
 echo " * share = Making ISO image"
 
@@ -441,6 +437,12 @@ mv "${TMPDIR}/mirrortest" "${RELEASEDIR}/evoke/misc/versionlist"
 rm ${RELEASEDIR}/evoke/${VERSION}/HEAD
 ln -sf ${REVISION} ${RELEASEDIR}/evoke/${VERSION}/HEAD
 
+if [ "${EVOKE_BUILD_UPDATES}" != "no" ] ; then
+	echo " * share = Generating Binary Diffs"
+	update create "${VERSION}/${REVISION}" "${BOOTDIR}${BOOTPREFIX}" ${VERSIONLIST} 1>&2
+	#cd "${RELEASEDIR}" && tar -cf - "evoke/misc/BIN-UPDATES/${VERSION}/${REVISION}" | tar -xvpf - -C "${BOOTDIR}/"
+	echo ""
+fi
 if [ "${EVOKE_PUSH_MIRROR}" != "" ] ; then
 	cd ${RELEASEDIR}/evoke
 
