@@ -151,6 +151,7 @@ export EVOKE_MEMDIR=/mem
 # 'Running' files. mainly lockfiles
 export EVOKE_RUNDIR=${EVOKE_MEMDIR}/run
 mkdir -p ${EVOKE_RUNDIR}
+mkdir -p ${EVOKE_RUNDIR}/dbus
 
 # PID files, format is logicalname.pid
 export EVOKE_PIDDIR=${EVOKE_MEMDIR}/pid
