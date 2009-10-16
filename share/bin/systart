@@ -278,8 +278,12 @@ mkdir -p ${HOME}
 echo "root:*:0:0:default:0:0:Super-User:${HOME}:/bin/tcsh" >>${EVOKE_LIBDIR}/master.passwd
 echo "nobody:*:1:1:defau;t:0:0:nobody:${EVOKE_NULLDIR}:${DEVICES}/null" >>${EVOKE_LIBDIR}/master.passwd
 echo "monitor:*:2:2:default:0:0:Evoke Monitoring Daemon (ganglia):${EVOKE_NULLDIR}:${DEVICES}/null" >>${EVOKE_LIBDIR}/master.passwd
+echo "messagebus:*:556:556::0:0:D-BUS Daemon User:${EVOKE_NULLDIR}:${DEVICES}/null" >>${EVOKE_LIBDIR}/master.passwd
+echo "haldaemon:*:560:560::0:0:HAL Daemon User:${EVOKE_NULLDIR}:${DEVICES}/null" >>${EVOKE_LIBDIR}/master.passwd
 echo "wheel:*:0:" >>${EVOKE_LIBDIR}/group
 echo "operator:*:5:" >>${EVOKE_LIBDIR}/group
+echo "haldaemon:*:560:" >>${EVOKE_LIBDIR}/group
+echo "messagebus:*:556:" >>${EVOKE_LIBDIR}/group
 
 pwd_mkdb -i -p -d ${EVOKE_LIBDIR} ${EVOKE_LIBDIR}/master.passwd 2>${DEVICES}/null
 cap_mkdb -f ${EVOKE_LIBDIR}/login.conf ${EVOKE_CFGDIR}/login.conf
@@ -445,6 +449,14 @@ if [ "${MODE}" = "init" ] ; then
 			do
 				vidcontrol < ${ttyv} -m on
 			done
+		;;
+	esac
+	case "${EVOKE_DBUS}" in
+		[nN][oO])
+		;;
+		*)
+			echo "Starting dbus"
+			dbus-daemon --config-file=/config/dbus/system.conf
 		;;
 	esac
 fi
