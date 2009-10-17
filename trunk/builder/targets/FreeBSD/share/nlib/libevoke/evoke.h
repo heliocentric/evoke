@@ -1,5 +1,9 @@
 #include <time.h>
-#include <sys/timespec.h>
+
+#if defined(__FreeBSD__)
+#	include <sys/timespec.h>
+#endif
+
 #include <sys/types.h>
 #include <timeconv.h>
 #include <sys/sysctl.h>

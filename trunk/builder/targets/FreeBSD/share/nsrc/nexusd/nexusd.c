@@ -32,7 +32,6 @@
 #include <sys/wait.h>
 #include <sys/rtprio.h>
 #include <sys/sysctl.h>
-#include <sys/watchdog.h>
 #include <fcntl.h>
 #include <libutil.h>
 #include <stdio.h>
@@ -51,6 +50,10 @@
 #include <kenv.h>
 #include <sys/ktrace.h>
 #include <ctype.h>
+
+#if defined(__FreeBSD__)
+#	include <sys/watchdog.h>
+#endif
 
 #include <evoke.h>
 
@@ -72,11 +75,12 @@ int startpowerd(pid_t * powerdpid);
 #define DEFAULT_POLL_INTERVAL   250     /* Poll interval in milliseconds */
 
 int startwatchdogd(pid_t * watchdogdpid);
+#if defined(__FreeBSD__)
 int watchdoginit(int * fd);
 int watchdogpat(int fd, u_int timeout);
 int watchdogonoff(int fd, u_int timeout, int onoff);
 int watchdogloop(int fd, u_int timeout);
-
+#endif
 int startdevd(pid_t * devdpid);
 
 int startsystem(pid_t * systartpid, int mode);
@@ -231,9 +235,10 @@ int realmain(int mode, int tracemode) {
 				printf("Unable to enable tracing on nexusd\n");
 			}
 		}
+#if defined(__FreeBSD__)
 		pid_t watchdogd_pid;
 		startwatchdogd(&watchdogd_pid);
-
+#endif
 		pid_t powerd_pid;
 		startpowerd(&powerd_pid);
 
@@ -353,6 +358,7 @@ int startpowerd(pid_t * powerdpid) {
 }
 
 
+#if defined(__FreeBSD__)
 int startwatchdogd(pid_t * watchdogdpid) {
 	struct rtprio rtp;
 	int watchdog_fd;
@@ -423,6 +429,7 @@ int watchdogloop(int fd, u_int timeout) {
 		sleep(1);
 	}
 }
+#endif
 
 int startdevd(pid_t * devdpid) {
 	return 0;
