@@ -50,7 +50,7 @@
 #include <kenv.h>
 #include <sys/ktrace.h>
 #include <ctype.h>
-
+#include <osreldate.h>
 #if defined(__FreeBSD__)
 #	include <sys/watchdog.h>
 #endif
