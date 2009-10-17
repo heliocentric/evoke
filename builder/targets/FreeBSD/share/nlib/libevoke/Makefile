@@ -25,7 +25,6 @@
 # $Id$
 
 LIB=    evoke
-SHLIBDIR?= /lib
 SHLIB_MAJOR= 1
 SRCS+=  lock_manager.c misc.c
 INCS=   evoke.h
