@@ -42,5 +42,6 @@ B:ddrescue:sysutils/ddrescue:::
 B:in.tftpd:ftp/tftp-hpa::tftpd:
 B:dhcpd:net/isc-dhcp31-server:::
 B:dbus-daemon:devel/dbus:::
-B:hald:sysutils/hal:::
 B:dbus-daemon-launch-helper:devel/dbus:::
+B:hald:sysutils/hal:::
+B:hald-runner:sysutils/hal:::

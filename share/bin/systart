@@ -152,6 +152,7 @@ export EVOKE_MEMDIR=/mem
 export EVOKE_RUNDIR=${EVOKE_MEMDIR}/run
 mkdir -p ${EVOKE_RUNDIR}
 mkdir -p ${EVOKE_RUNDIR}/dbus
+mkdir -p ${EVOKE_RUNDIR}/hald
 
 # PID files, format is logicalname.pid
 export EVOKE_PIDDIR=${EVOKE_MEMDIR}/pid
@@ -280,10 +281,14 @@ echo "nobody:*:1:1:defau;t:0:0:nobody:${EVOKE_NULLDIR}:${DEVICES}/null" >>${EVOK
 echo "monitor:*:2:2:default:0:0:Evoke Monitoring Daemon (ganglia):${EVOKE_NULLDIR}:${DEVICES}/null" >>${EVOKE_LIBDIR}/master.passwd
 echo "messagebus:*:556:556::0:0:D-BUS Daemon User:${EVOKE_NULLDIR}:${DEVICES}/null" >>${EVOKE_LIBDIR}/master.passwd
 echo "haldaemon:*:560:560::0:0:HAL Daemon User:${EVOKE_NULLDIR}:${DEVICES}/null" >>${EVOKE_LIBDIR}/master.passwd
+echo "polkit:*:520:562::0:0:PolicyKit Daemon User:${EVOKE_NULLDIR}:${DEVICES}/null" >>${EVOKE_LIBDIR}/master.passwd
+echo "avahi:*:558:558::0:0:Avahi Daemon User:${EVOKE_NULLDIR}:${DEVICES}/null" >>${EVOKE_LIBDIR}/master.passwd
 echo "wheel:*:0:" >>${EVOKE_LIBDIR}/group
 echo "operator:*:5:" >>${EVOKE_LIBDIR}/group
 echo "haldaemon:*:560:" >>${EVOKE_LIBDIR}/group
 echo "messagebus:*:556:" >>${EVOKE_LIBDIR}/group
+echo "polkit:*:520:" >>${EVOKE_LIBDIR}/group
+echo "avahi:*:558:" >>${EVOKE_LIBDIR}/group
 
 pwd_mkdb -i -p -d ${EVOKE_LIBDIR} ${EVOKE_LIBDIR}/master.passwd 2>${DEVICES}/null
 cap_mkdb -f ${EVOKE_LIBDIR}/login.conf ${EVOKE_CFGDIR}/login.conf
