@@ -282,7 +282,7 @@ EOF
 		if [ -d "${DESTDIR}/${DIRNAME}" ] ; then
 			cd ${DESTDIR}/${DIRNAME}
 			echo " * ${target} = Copying ${DESTDIR}/${DIRNAME}/${DIRECTORY} to ${N_BINSHARE}"
-			tar -cf - "${DIRECTORY}" | tar -xvpf - -C "${N_BINSHARE}/"
+			tar -cf - "${DIRECTORY}" | tar -xvpf - -C "${FSDIR}${N_BINSHARE}/"
 		fi
 	done
 

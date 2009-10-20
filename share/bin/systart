@@ -162,6 +162,9 @@ mkdir -p ${EVOKE_PIDDIR}
 export EVOKE_DBDIR=${EVOKE_MEMDIR}/db
 mkdir -p ${EVOKE_DBDIR}
 
+export EVOKE_LOGDIR=${EVOKE_MEMDIR}/log
+mkdir -p ${EVOKE_LOGDIR}
+
 # Temporary mountpoint, ie, /mnt.
 export EVOKE_MNTDIR=${EVOKE_MEMDIR}/mnt
 mkdir -p ${EVOKE_MNTDIR}
