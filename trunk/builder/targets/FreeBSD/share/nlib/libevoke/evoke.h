@@ -16,13 +16,24 @@
 #include <netinet/sctp.h>
 #include <netdb.h>
 #include <unistd.h>
+#include <sys/queue.h>
+
+/*
+
+	Next Gen functions. All functions and variables are prefixed with V_, so there are no more collisions.
+
+*/
+
 
 struct _string {
 	char * text;
 	int length;
 };
 
-typedef struct _string string;
+
+typedef struct _string V_String;
+
+#define string V_String
 
 struct _handle {
 	string type;
@@ -32,6 +43,38 @@ struct _handle {
 };
 
 typedef struct _handle handle;
+
+
+struct _V_Handle {
+	string type;
+};
+
+typedef struct _V_Handle V_Handle;
+
+
+struct _V_Object {
+	string type;
+	void * private;
+	LIST_HEAD(_datahead, _V_ObjectData) datahead;
+};
+
+typedef struct _V_Object V_Object;
+
+struct _V_ObjectData {
+        LIST_ENTRY(_V_ObjectData) datalist;
+	string name;
+	size_t size;
+	string type;
+	void * data;
+};
+
+typedef struct _V_ObjectData V_ObjectData;
+
+
+extern V_Object * V_ObjectNew(V_String type);
+extern V_Handle * V_ObjectAddData(V_Object * object, V_String name, V_String type, void * data, size_t size);
+extern V_Handle * V_ObjectFindData(V_Object * object, V_String name);
+
 
 struct dial_search_pairs {
 	char * key;

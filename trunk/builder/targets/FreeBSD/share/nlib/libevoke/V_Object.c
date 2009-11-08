@@ -1,3 +1,4 @@
+/*
 # Copyright 2007-2009 Dylan Cochran
 # All rights reserved
 #
@@ -24,10 +25,31 @@
 
 # $Id$
 
-LIB=    evoke
-SHLIB_MAJOR= 1
-SRCS+=  lock_manager.c misc.c V_Object.c
-INCS=   evoke.h
+*/
 
-.include <bsd.lib.mk>
+#include <errno.h>
+#include "evoke.h"
 
+V_Object * V_ObjectNew(V_String type) {
+	size_t size = sizeof(V_Object) + type.length;
+	V_Object * pointer = malloc(size);
+	pointer->type.text = (char *) pointer + sizeof(V_Object);
+	pointer->type.length = type.length;
+	bcopy(type.text, pointer->type.text, type.length);
+	printf("V_Object: 0x%x\n", (size_t) pointer);
+	printf("V_String: 0x%x \"%s\"\n", (size_t) pointer + (size_t) sizeof(V_Object), pointer->type.text);
+	return pointer;
+};
+
+V_Handle * V_ObjectAddData(V_Object * object, V_String name, V_String type, void * data, size_t size) {
+	printf("V_ObjectData: (%d)\n", (size_t) sizeof(V_ObjectData));
+	printf("V_ObjectData Name: (%d) \"%s\"\n", (size_t) name.length, name.text);
+	printf("V_ObjectData Type: (%d) \"%s\"\n", (size_t) type.length, type.text);
+	printf("V_ObjectData Payload: (%d)\n", (size_t) size);
+	printf("V_ObjectData Total: (%d)\n", (size_t) size + (size_t) sizeof(V_ObjectData) + (size_t) name.length + (size_t) type.length);
+	return NULL;
+};
+
+V_Handle * V_ObjectFindData(V_Object * object, V_String name) {
+	return NULL;
+};
