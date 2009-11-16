@@ -41,7 +41,7 @@ V_Object * V_ObjectNew(V_String type) {
 	return pointer;
 };
 
-V_Handle * V_ObjectAddData(V_Object * object, V_String name, V_String type, void * data, size_t size) {
+V_ObjectData * V_ObjectAddData(V_Object * object, V_String name, V_String type, void * data, size_t size) {
 	printf("V_ObjectData: (%d)\n", (size_t) sizeof(V_ObjectData));
 	printf("V_ObjectData Name: (%d) \"%s\"\n", (size_t) name.length, name.text);
 	printf("V_ObjectData Type: (%d) \"%s\"\n", (size_t) type.length, type.text);
@@ -50,6 +50,6 @@ V_Handle * V_ObjectAddData(V_Object * object, V_String name, V_String type, void
 	return NULL;
 };
 
-V_Handle * V_ObjectFindData(V_Object * object, V_String name) {
+V_ObjectData * V_ObjectFindData(V_Object * object, V_String name) {
 	return NULL;
 };

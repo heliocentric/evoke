@@ -86,7 +86,27 @@ struct message {
 #define google 3
 
 int main(int argc, char *argv[]) {
+
+	V_String typecode;
+
+	typecode.text = "com.googlecode.evoke.test";
+	typecode.length = strlen(typecode.text) + 1;
+
+	V_Object * pointer;
+	pointer = V_ObjectNew(typecode);
+
 	handle * scratch;
+
+	typecode.text = "text/plain";
+	typecode.length = strlen(typecode.text) + 1;
+
+	V_String name;
+	name.text = "TestValue";
+	name.length = strlen(name.text) + 1;
+
+	void * testpointer = malloc(2);
+	scratch = V_ObjectAddData(pointer, name, typecode, testpointer, 2);
+
 	struct message * rmsg;
 	if (argc == 4) {
 		handle * server	= announce(argv[1]);
