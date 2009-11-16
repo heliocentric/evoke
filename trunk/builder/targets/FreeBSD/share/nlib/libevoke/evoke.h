@@ -35,25 +35,14 @@ typedef struct _string V_String;
 
 #define string V_String
 
-struct _handle {
-	string type;
-	size_t size;
-	void * data;
-	void * private; /* Currently unused */
-};
 
-typedef struct _handle handle;
-
-
-struct _V_Handle {
-	string type;
-};
 
 typedef struct _V_Handle V_Handle;
 
 
+
 struct _V_Object {
-	string type;
+	V_String type;
 	void * private;
 	LIST_HEAD(_datahead, _V_ObjectData) datahead;
 };
@@ -62,9 +51,9 @@ typedef struct _V_Object V_Object;
 
 struct _V_ObjectData {
         LIST_ENTRY(_V_ObjectData) datalist;
-	string name;
+	V_String name;
 	size_t size;
-	string type;
+	V_String type;
 	void * data;
 };
 
@@ -72,8 +61,27 @@ typedef struct _V_ObjectData V_ObjectData;
 
 
 extern V_Object * V_ObjectNew(V_String type);
-extern V_Handle * V_ObjectAddData(V_Object * object, V_String name, V_String type, void * data, size_t size);
-extern V_Handle * V_ObjectFindData(V_Object * object, V_String name);
+extern V_ObjectData * V_ObjectAddData(V_Object * object, V_String name, V_String type, void * data, size_t size);
+extern V_ObjectData * V_ObjectFindData(V_Object * object, V_String name);
+
+
+extern V_Object * V_ErrorObject(int number, V_String type, V_String message);
+extern int V_Error(V_Object * ErrorObject);
+extern int V_PrintError(V_Object * ErrorObject);
+extern int V_Exit(V_Object * ErrorObject);
+
+/* 
+	Old functions
+*/
+
+struct _handle {
+	string type;
+	size_t size;
+	void * data;
+	void * private; /* Currently unused */
+};
+
+typedef struct _handle handle;
 
 
 struct dial_search_pairs {
