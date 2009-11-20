@@ -480,7 +480,6 @@ int startsystem(pid_t * systartpid, int mode) {
 		} else {
 			while (1) {
 				pid = waitpid(-1, (int *) 0, WUNTRACED);
-				printf("wait returned on (%d)", pid);
 			}
 		}
 	}

@@ -38,24 +38,27 @@ fi
 
 type_check() {
 	MIME="$(getextattr -q user mime_type "${1}")"
-	CACHE_MTIME="$(getextattr -q user mime_mtime "${1}")"
+	if [ "${MIME}" = "" ] ; then
+		MIME="$(getextattr -q user cache_mime_type "${1}")"
+		CACHE_MTIME="$(getextattr -q user cache_mtime "${1}")"
 
-	if [ "${CACHE_MTIME}" = "" ] ; then
-		CACHE_MTIME=0
-	fi
+		if [ "${CACHE_MTIME}" = "" ] ; then
+			CACHE_MTIME=0
+		fi
 
-	REAL_MTIME="$(stat -f "%m" "${1}" 2>/dev/null)"
+		REAL_MTIME="$(stat -f "%m" "${1}" 2>/dev/null)"
 
-	if [ "${2}" != "" ] ; then
-		MIME="${2}"
-	else
-		if [ "${MIME}" = "" -o "${FORCE_WRITE_MIME}" = "yes" -o "${REAL_MTIME}" -gt "${CACHE_MTIME}" -o "${FILEDB_MTIME}" -gt "${CACHE_MTIME}" ] ; then
-			if [ "${WARNING}" = "yes" ] ; then
-				echo "WARNING: 1 ${1}"
+		if [ "${2}" != "" ] ; then
+			MIME="${2}"
+		else
+			if [ "${CMIME}" = "" -o "${FORCE_WRITE_MIME}" = "yes" -o "${REAL_MTIME}" -gt "${CACHE_MTIME}" -o "${FILEDB_MTIME}" -gt "${CACHE_MTIME}" ] ; then
+				if [ "${WARNING}" = "yes" ] ; then
+					echo "WARNING: 1 ${1}"
+				fi
+				MIME="$(file -sbL --mime-type "${1}" | cut -d , -f 1)"
+				setextattr -q user cache_mime_type "${MIME}" "${1}"
+				setextattr -q user cache_mtime "$(date "+%s")" "${1}"
 			fi
-			MIME="$(file -sbL --mime-type "${1}" | cut -d , -f 1)"
-			setextattr -q user mime_type "${MIME}" "${1}"
-			setextattr -q user mime_mtime "$(date "+%s")" "${1}"
 		fi
 	fi
 	if [ "${ECHO_FILE}" != "no" ] ; then
