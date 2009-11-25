@@ -58,3 +58,4 @@ B:polkit-action:sysutils/policykit:::
 B:polkit-auth:sysutils/policykit:::
 B:polkit-config-file-validate:sysutils/policykit:::
 B:polkit-policy-file-validate:sysutils/policykit:::
+B:monitest:graphics/libggi:::
