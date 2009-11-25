@@ -105,33 +105,3 @@ options PRINTF_BUFR_SIZE=128
 options         IPX                     #IPX/SPX communications protocols
 options         NETATALK                #Appletalk communications protocols
 
-options KGI_COMPAT              # Enables KGI compatibility.
-options KGI_DBG_LEVEL=0         # KGI debug output level.
-options KGI_IGNORE_VGAPCI  
-options        KGC_RENDER_640x480
-# Define a colour mode (bpp);
-options KGC_RENDER_16BITS       # Use 16bit mode. 
-options KGC_DEFAULT_FONT=kgc_bold8x16
-device  kgi     # Kernel Graphic Interface core system (includes KII)                                                       
-
-# KGI KIP (Kernel Input Parser)                                                                                             
-# It works on top of kbd in RAW mode. Scancodes are translated by
-# kip maps.                                                                                                                 
-device  kip     # Default KIP.
-                                                                                                                            
-# Input and graphic user interfaces (e.g /dev/graphic and /dev/event)
-device  kgu     # KGI graphic user interface.                                                                               
-device  kiu     # KGI input user interface.
-device  kgc     # Kernel graphic console.                                                                                   
-device  kgy     # KGI VESA compatible display.
-device  kgim    # KGI module driver interface.                     
-# Syscons emulation.
-device  sce
-
-# Disable sc and splash
-nodevice        sc
-nodevice        splash
-
-# FreeBSD's VESA mod
-options VESA
-
