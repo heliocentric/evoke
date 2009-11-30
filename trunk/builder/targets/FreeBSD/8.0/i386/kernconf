@@ -104,4 +104,3 @@ device		iicsmb		# smb over i2c bridge
 options PRINTF_BUFR_SIZE=128
 options         IPX                     #IPX/SPX communications protocols
 options         NETATALK                #Appletalk communications protocols
-
