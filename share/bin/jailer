@@ -35,21 +35,49 @@ if [ ! -c "${DEVICES}/null" ] ; then
 	fi
 fi
 
-case "${1}" in
+COMMAND="${1}"
+shift
+DESTDIR="${1}"
+shift
+if [ ! -d "${DESTDIR}" ] ; then
+	mkdir -p "${DESTDIR}"
+	if [ ! -d "${DESTDIR}" ] ; then
+		echo "Unable to use "${DESTDIR}" as destination directory"
+		exit 4
+	fi
+fi
+case "${COMMAND}" in
 	[mM][oO][uU][nN][tT])
-		if [ -c "${DEVICES}/${2}" ] ; then
-			sysctl -b kern.geom.conftxt | grep -aw ${2} |  awk '{
-				if ($2 == "BSD") {
-					if ($11 == "7") {
 
-					}
-				};
-			}'
-		else
-			echo "${DEVICES}/${2} is not a device node"  >&2 
-		fi
 	;;
 	[rR][uU][nN])
-
+		if [ -f "${DESTDIR}/.evoke-jailer-v1" ] ; then
+			MODE="jailer-v1"
+		else
+			MODE="chroot"
+		fi
+		case "${MODE}" in
+			jailer-v1)
+				
+			;;
+			chroot)
+				if [ ! -d "${DESTDIR}/dev" ] ; then
+					echo "Missing /dev directory, bailing out"
+					exit 2
+				fi
+				if [ ! -f "${DESTDIR}/etc/rc" ] ; then
+					echo "Missing /etc/rc directory, bailing out"
+					exit 2
+				fi
+				if [ ! -f "${DESTDIR}/bin/sh" ] ; then
+					echo "Missing /etc/rc directory, bailing out"
+					exit 2
+				fi
+				mounter devfs: "${DESTDIR}/dev"
+				chroot "${DESTDIR}" sh /etc/rc
+			;;
+			*)
+			;;
+		esac
 	;;
 esac
