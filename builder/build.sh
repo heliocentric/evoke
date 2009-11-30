@@ -123,7 +123,7 @@ do
 
 	# Before we do anything else, apply all diffs in the shared directory for the release.
 
-	PATCHLIST="$(echo ${BUILDDIR}/targets/FreeBSD/${RELEASE}/share/patches/*)"
+	PATCHLIST="$(echo ${BUILDDIR}/targets/FreeBSD/${RELEASE}/share/patches/*.diff)"
 	if [ "${PATCHLIST}" != "" ] ; then
 		cd ${WORKDIR}/usr/src
 
