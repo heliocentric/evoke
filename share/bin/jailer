@@ -39,7 +39,8 @@ COMMAND="${1}"
 shift
 DESTDIR="${1}"
 shift
-if [ ! -d "${DESTDIR}" ] ; then
+
+if [ ! -d "${DESTDIR}" -a "${DESTDIR}" != "" ] ; then
 	mkdir -p "${DESTDIR}"
 	if [ ! -d "${DESTDIR}" ] ; then
 		echo "Unable to use "${DESTDIR}" as destination directory"
