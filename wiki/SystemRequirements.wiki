@@ -2,7 +2,7 @@
 #labels Phase-Deploy
 
 =General=
-  * 128MB of ram recommended, it can run in 32MB, however, you must have configured swap space.
+  * 128MB of ram recommended, it can run in 72MB, however, you must have configured swap space.
 
 =Qemu=
 
