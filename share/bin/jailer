@@ -67,11 +67,15 @@ case "${COMMAND}" in
 					exit 2
 				fi
 				if [ ! -f "${DESTDIR}/etc/rc" ] ; then
-					echo "Missing /etc/rc directory, bailing out"
+					echo "Missing /etc/rc, bailing out"
 					exit 2
 				fi
 				if [ ! -f "${DESTDIR}/bin/sh" ] ; then
-					echo "Missing /etc/rc directory, bailing out"
+					echo "Missing /bin/sh, bailing out"
+					exit 2
+				fi
+				if [ ! -f "${DESTDIR}/etc/fstab" ] ; then
+					echo "Missing /etc/fstab, bailing out"
 					exit 2
 				fi
 				mounter devfs: "${DESTDIR}/dev"
