@@ -391,7 +391,6 @@ mount_proto () {
 			else
 				mexit 3
 			fi
-	
 			case "${M_PROTO}" in
 				cryptofs)
 					M_PTYPE="REMOUNT"
@@ -510,35 +509,40 @@ mount_proto () {
 
 prep_transport () {
 	echo_config
-	case "${M_PTYPE}" in
-		DEV)
-			case "${M_STYPE}" in
-				URI)
-					case "${M_TRANSPORT}" in
-						[gG][gG][aA][tT][eE])
-							ggate_handler
-						;;
-						*)
-							ggate_handler
-						;;
-					esac
-				;;
-				FILE)
-					mdconfig_handler
-				;;
-				GEOM)
-					DIRECTORY="$(mount | grep ^${DEVICES}/${M_FILE} | cut -d " " -f 3)"
-					if [ "${DIRECTORY}" = "" ] ; then
-						DIRECTORY="$(mount | grep ^${M_FILE} | cut -d " " -f 3)"
-					fi
-					if [ "${DIRECTORY}" != "" ] ; then
-						mounter "remount:${DIRECTORY}" "${M_DESTINATION}"
-						mexit 0
-					fi
-				;;
-			esac
-		;;
-	esac
+	if [ "${M_IGNORETRANSPORT}" = "" ] ; then
+		case "${M_PTYPE}" in
+			DEV)
+				case "${M_STYPE}" in
+					URI)
+						case "${M_TRANSPORT}" in
+							[gG][gG][aA][tT][eE])
+								ggate_handler
+							;;
+							*)
+								ggate_handler
+							;;
+						esac
+					;;
+					FILE)
+						mdconfig_handler
+					;;
+					GEOM)
+						DIRECTORY="$(mount | grep ^${DEVICES}/${M_FILE} | cut -d " " -f 3)"
+						if [ "${DIRECTORY}" = "" ] ; then
+							DIRECTORY="$(mount | grep ^${M_FILE} | cut -d " " -f 3)"
+						fi
+						if [ "${DIRECTORY}" != "" ] ; then
+							mounter "remount:${DIRECTORY}" "${M_DESTINATION}"
+							mexit 0
+						fi
+					;;
+				esac
+			;;
+		esac
+		if [ "${M_STYPE}" = "GEOM" ] ; then
+			camcontrol load "${M_FILE}" 2>/dev/null
+		fi
+	fi
 }
 
 # mdconfig wrapper, trap errors, and terminate if necessary.
@@ -755,6 +759,7 @@ fs_mount () {
 					mexit 4
 				;;
 			esac
+			M_IGNORETRANSPORT="yes"
 			mounter "${PROTO}:${M_FILE}" ${M_DESTINATION}
 		else
 			mexit 4
@@ -1026,8 +1031,8 @@ rmount () {
 }
 
 unmount_handler () {
-	DEVICE="${1}"
-	TYPE="$(echo "${GEOMLIST}" | awk -v DEVICE="${DEVICE}" '{
+	local DEVICE="${1}"
+	local TYPE="$(echo "${GEOMLIST}" | awk -v DEVICE="${DEVICE}" '{
 			if ($3 == DEVICE) {
 				print $2;
 			}
@@ -1056,6 +1061,7 @@ unmount_handler () {
 				mounter unmount "${geom}"
 			done
 			IFS="${OLDFS}"
+			umount "${DEVICES}/${DEVICE}" 2>/dev/null
 		;;
 		*)
 			if [ "${TYPE}" = "" ] ; then
@@ -1181,6 +1187,26 @@ list_proto () {
 # The main command parsing portion.
 # It's static, and could be shared, but isn't for other reasons.
 
+eject_command () {
+	while [ "${1}" != "" ]
+	do
+		echo "${1}"
+		case "${1}" in
+		        ${DEVICES}/*)
+		                GEOM="$(echo "${1}" | sed "s@${DEVICES}/@@g")"
+		        ;;
+		        *)
+		                GEOM="${1}"
+		        ;;
+		esac
+		shift
+		if [ -c "${DEVICES}/${GEOM}" ] ; then
+			mounter unmount "${GEOM}"
+			camcontrol eject "${GEOM}"
+		fi
+	done
+}
+
 mounter_command () {
 
 	QUIET="yes"
@@ -1210,6 +1236,10 @@ mounter_command () {
 		[sS][eE][aA][rR][cC][hH])
 			shift
 			lsvol $@
+		;;
+		[eE][jJ][eE][cC][tT])
+			shift
+			eject_command $@
 		;;
 	  	[lL][iI][sS][tT])
 	
