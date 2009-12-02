@@ -1,0 +1,69 @@
+#!/bin/sh
+rand () {
+	openssl rand -hex 10
+}
+
+TMPDIR="/tmp/profiler/$(rand)"
+mkdir -p "${TMPDIR}"
+
+DESTINATION="${1}"
+if [ ! -d "${DESTINATION}" ] ; then
+	exit
+fi
+profiler () {
+	local NUM=0
+	if [ -f "${1}" ] ; then
+		while [ "${NUM}" -lt 20 ]
+		do
+			local SEED="$(rand)"
+			case "${SEED}" in
+				[0-4]*)
+					local SIZE="1000"	
+					local COUNT="8000"
+				;;
+				[5-7]*)
+					local SIZE="8000000"	
+					local COUNT="1"
+				;;
+				[8-a]*)
+					local SIZE="2m"	
+					local COUNT="4"
+				;;
+				[b-f]*)
+					local SIZE="500000"	
+					local COUNT="16"
+				;;
+			esac
+			DESTFILE="${DESTINATION}/$(rand)"
+			RATE="$(dd if=/dev/zero bs="${SIZE}" count="${COUNT}" of="${DESTFILE}" 2>&1 | tail -n 1 | cut -d \( -f 2 | awk ' { print $1; }')"
+			echo "${RATE}"
+			NUM="$((${NUM} + 1))"
+			rm "${DESTFILE}"
+		done >"${1}"
+	else
+		while [ "${NUM}" -lt 40 ]
+		do
+			STATFILE="${TMPDIR}/$(rand)"
+			touch "${STATFILE}"
+			profiler "${STATFILE}" &
+			NUM="$((${NUM} + 1))"
+			PID="$!"
+			PIDLIST="$(printf "${PIDLIST}\n${PID}")"
+		done
+		wait
+		cd "${TMPDIR}" && cat *  >"${TMPDIR}/collection"
+		ministat <"${TMPDIR}/collection" | grep -v ^x | grep -v Avg
+		MIN="$(blocksize "$(ministat <"${TMPDIR}/collection" | grep ^x | tail -n 1 | awk ' { print $3 }')")"
+		MAX="$(blocksize "$(ministat <"${TMPDIR}/collection" | grep ^x | tail -n 1 | awk ' { print $4 }')")"
+		MED="$(blocksize "$(ministat <"${TMPDIR}/collection" | grep ^x | tail -n 1 | awk ' { print $5 }')")"
+		AVG="$(blocksize "$(ministat <"${TMPDIR}/collection" | grep ^x | tail -n 1 | awk ' { print $6 }')")"
+		STDDEV="$(blocksize "$(ministat <"${TMPDIR}/collection" | grep ^x | tail -n 1 | awk ' { print $7 }')")"
+		echo "Min: ${MIN}"
+		echo "Max: ${MAX}"
+		echo "Median: ${MED}"
+		echo "Average: ${AVG}"
+		echo "Std Deviation: ${STDDEV}"
+	fi
+}
+
+profiler
