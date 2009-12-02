@@ -222,7 +222,7 @@ EOF
 	BASELIBS=$(resolve_libs ${PROGS})
 	echo "${BASELIBS}" >&2
 	cd ${DESTDIR}/mnt/lib
-	EXTRALIBS="$(echo libasn1.so.*)"
+	EXTRALIBS="$(echo libasn1.so.* ggi/input/stdin.so ggi/input/vgl.so ggi/display/vgl.so)"
 	echo "${EXTRALIBS}" >&2
 	for lib in ${BASELIBS} ganglia/modcpu.so ganglia/moddisk.so ganglia/modload.so ganglia/modmem.so ganglia/modmulticpu.so ganglia/modnet.so ganglia/modproc.so ganglia/modsys.so ${EXTRALIBS}
  	do
