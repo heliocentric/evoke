@@ -28,19 +28,63 @@
 
 DUMPDIR="${1}"
 
+create_message () {
+	printf "<?xml version='1.0' encoding='UTF-8'?>\n"
+	printf "<entry xmlns='http://www.w3.org/2005/Atom' xmlns:issues='http://schemas.google.com/projecthosting/issues/2009'>\n"
+	printf "  <title>this is an issue summary</title>\n"
+	printf "  <content type='html'>this is an issue description</content>\n"
+	printf "  <author>\n"
+	printf "    <name>${AUTHOR}</name>\n"
+	printf "  </author>\n"
+	printf "  <issues:status>Autosubmit</issues:status>\n"
+	printf "  <issues:owner>\n"
+	printf "    <issues:username>${AUTHOR}</issues:username>\n"
+	printf "  </issues:owner>\n"
+	printf "  <issues:label>Type-Panic</issues:label>\n"
+	printf "  <issues:label>Milestone-${EVOKE_VERSION}</issues:label>\n"
+	printf "  <issues:label>Priority-Medium</issues:label>\n"
+	printf "</entry>\n"
+}
+
+submit_message () {
+	if [ -f "${1}" ] ; then
+		RESPONSE="$(curl -d "accountType=GOOGLE" -d "Email=${AUTHOR}" -d "Passwd=${PASSWORD}" -d "service=code" -d "source=evoke-senddump-v1.0" 'https://www.google.com/accounts/ClientLogin' 2>/dev/null)"
+		AUTHKEY="$(echo ${RESPONSE} | grep Auth= | cut -d = -f 2 | awk '{ print $1; }')"
+		CAPTCHA="$(echo ${RESPONSE} | grep ^Error=CaptchaRequired)"
+		echo "${AUTHKEY}"
+		if [ "${CAPTCHA}" = "" ] ; then
+			if [ "${AUTHKEY}" != "" ] ; then
+				curl --request POST --data "${1}" --header "Authorization: GoogleLogin auth=${AUTHKEY}" --header "Content-Type: application/atom+xml" 'http://code.google.com/feeds/issues/p/evoke/issues/full'
+			else
+				echo "No auth key"
+			fi
+		else
+			echo "Captcha support does not exist"
+		fi
+	fi
+}
+
 if [ -d "${DUMPDIR}" ] ; then
 	STATUS="$(grep "Dump Status" "${DUMPDIR}/info")"
 	case "${STATUS}" in
 		*[gG][oO][oO][dD]*)
 			tar -xpf "${DUMPDIR}/textdump.tar" -C "${DUMPDIR}/"
-			EVOKE_VERSION="$(cat ${DUMPDIR}/config.txt | grep ident | awk '{ print $2; }')"
-			PANIC_MESSAGE="$(cat ${DUMPDIR}/panic.txt 2>/dev/null)"
-			DMESG="$(cat ${DUMPDIR}/msgbuf.txt 2>/dev/null)"
-			DMESG="$(cat ${DUMPDIR}/ddb.txt 2>/dev/null)"
-			SYSID="$(kenv -q smbios.system.uuid 2>/dev/null)"
-			SMBIOS="$(kenv -q | grep ^smbios 2>/dev/null)"
-
-			curl -F "version=${EVOKE_VERSION}" -F "panic=${PANIC_MESSAGE}" -F "dmesg=${DMESG}" -F "systemid=${SYSID}" -F "trace=${TRACE}" -F "smbios=${SMBIOS}" http://www.damnsmallbsd.org/panic.php
+			export EVOKE_VERSION="$(cat ${DUMPDIR}/config.txt | grep ident | awk '{ print $2; }')"
+			export PANIC_MESSAGE="$(cat ${DUMPDIR}/panic.txt 2>/dev/null)"
+			export DMESG="$(cat ${DUMPDIR}/msgbuf.txt 2>/dev/null)"
+			export DMESG="$(cat ${DUMPDIR}/ddb.txt 2>/dev/null)"
+			export SYSID="$(kenv -q smbios.system.uuid 2>/dev/null)"
+			export SMBIOS="$(kenv -q | grep ^smbios 2>/dev/null)"
+			echo "Please enter your Google Account information to submit this bug report"
+			read -p "Username: " AUTHOR
+			stty -echo
+			trap "stty echo ; echo 'Interrupted' ; exit 1" 1 2 3 15
+			read -p "Password: " PASSWORD
+			stty echo
+			printf '\n'
+			create_message >${DUMPDIR}/message
+			submit_message "${DUMPDIR}/message"
+#			curl -F "version=${EVOKE_VERSION}" -F "panic=${PANIC_MESSAGE}" -F "dmesg=${DMESG}" -F "systemid=${SYSID}" -F "trace=${TRACE}" -F "smbios=${SMBIOS}" http://www.damnsmallbsd.org/panic.php
 
 		;;
 	esac

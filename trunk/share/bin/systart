@@ -210,25 +210,26 @@ if [ "${MODE}" = "init" ] ; then
 	echo "Adding swap, dump,  and entropy"
 
 	SWAPLIST="$(mounter list swap)"
-	DUMPDEV=$(mounter list dump)
+	DUMPDEV="$(mounter list dump)"
 	ENTLIST="$(mounter list entropy)"
 
 	ddb script kdb.enter.default="textdump set; capture on; show pcpu;trace;show locks;ps;alltrace;show alllocks;show lockedvnods;call doadump;reboot"
 
-	if [ "${DUMPDEV}" != "" ] ; then
-		mounter dump:${DUMPDEV}
-	else
+	if [ "${DUMPDEV}" = "" ] ; then
 		if [ "${SWAPLIST}" != "" ] ; then
 			DUMPDEV="$(echo "${SWAPLIST}" | head -n 1)"
-			mounter "dump:${DUMPDEV}"
 		fi
 		
 	fi
-	if savecore -C "${EVOKE_DEBUGDIR}" "${DEVICES}/${DUMPDEV}" >${DEVICES}/null; then
-		savecore "${EVOKE_DEBUGDIR}" "${DEVICES}/${DUMPDEV}" >${DEVICES}/null 2>${DEVICES}/null
-		mv "${EVOKE_DEBUGDIR}/textdump.tar.0" "${EVOKE_DEBUGDIR}/textdump.tar"
-		mv "${EVOKE_DEBUGDIR}/info.0" "${EVOKE_DEBUGDIR}/info"
-		senddump "${EVOKE_DEBUGDIR}"
+
+	if [ "${DUMPDEV}" != "" ] ; then
+		mounter dump:${DUMPDEV}
+		if savecore -C "${EVOKE_DEBUGDIR}" "${DEVICES}/${DUMPDEV}" >${DEVICES}/null; then
+			savecore "${EVOKE_DEBUGDIR}" "${DEVICES}/${DUMPDEV}" >${DEVICES}/null 2>${DEVICES}/null
+			mv "${EVOKE_DEBUGDIR}/textdump.tar.0" "${EVOKE_DEBUGDIR}/textdump.tar"
+			mv "${EVOKE_DEBUGDIR}/info.0" "${EVOKE_DEBUGDIR}/info"
+			senddump "${EVOKE_DEBUGDIR}"
+		fi
 	fi
 	if [ "${SWAPLIST}" != "" ] ; then
 		for swap in ${SWAPLIST}
