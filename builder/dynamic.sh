@@ -32,6 +32,11 @@ CROSSTOOLSPATH=${MAKEOBJDIRPREFIX}/${TARGET}${WORKDIR}/usr/src/tmp/usr/bin
 # Overwrite rescue with Lazybox
 #cp ${BUILDDIR}/lazybox.dynamic ${WORKDIR}/usr/src/rescue/rescue/Makefile
 
+if [ -f "${BUILDDIR}/targets/FreeBSD/${RELEASE}/whitelist" ] ; then
+	# Add support for the 'whitelist' commands.
+	cp "${BUILDDIR}/targets/FreeBSD/${RELEASE}/whitelist" ${WORKDIR}/usr/src/rescue/rescue/Makefile
+fi
+
 # Copy kernel config to the source.
 cp ${BUILDDIR}/targets/FreeBSD/${RELEASE}/${TARGET}/kernconf ${WORKDIR}/usr/src/sys/${TARGET}/conf/${KERNCONF}
 
@@ -76,6 +81,8 @@ priv make hierarchy 1>&2
 # Keeps a bug in the rescue install from acting up.
 rm -r ${DESTDIR}/rescue 1>&2
 mkdir -p ${DESTDIR}/rescue 1>&2
+rm -r ${DESTDIR}/whitelist 1>&2
+mkdir -p ${DESTDIR}/whitelist 1>&2
 
 mkdir -p ${DESTDIR}${BOOTPATH}/defaults
 priv make distribution 1>&2
@@ -145,6 +152,8 @@ EOF
 
 	echo " * ${target} = Populating FSDIR"
 	cd ${DESTDIR}/libexec && tar -cf - * | tar -xvpf - -C ${FSDIR}${N_LIBEXEC}
+
+
 	mkdir -p ${DESTDIR}/mnt/bin
 	mkdir -p ${DESTDIR}/mnt/lib
 
@@ -302,4 +311,8 @@ EOF
 	# Grab the bootloader files, and place them in ${FSDIR}${N_BOOT}/
 
 	cd ${DESTDIR}/boot && tar -cf - boot mbr gptboot pmbr boot0 boot2 | tar -xvpf - -C ${FSDIR}${N_BOOT}/ 1>&2
+else
+	# Copy the whitelist contents.
+	mkdir -p "${FSDIR}${N_BIN}"
+	cd ${DESTDIR}/whitelist && tar -cf - * | tar -xvpf - -C "${FSDIR}${N_BIN}/"
 fi
