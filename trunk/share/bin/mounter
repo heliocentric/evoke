@@ -540,7 +540,15 @@ prep_transport () {
 			;;
 		esac
 		if [ "${M_STYPE}" = "GEOM" ] ; then
-			camcontrol load "${M_FILE}" 2>/dev/null
+			local TYPE="$(echo "${GEOMLIST}" | awk -v DEVICE="${M_FILE}" '{
+					if ($3 == DEVICE) {
+						print $2;
+					}
+				}'
+			)"
+			if [ "${TYPE}" = "DISK" ] ; then
+				camcontrol load "${M_FILE}" 2>/dev/null >/dev/null
+			fi
 		fi
 	fi
 }
@@ -1202,7 +1210,7 @@ eject_command () {
 		shift
 		if [ -c "${DEVICES}/${GEOM}" ] ; then
 			mounter unmount "${GEOM}"
-			camcontrol eject "${GEOM}"
+			camcontrol eject "${GEOM}" 2>/dev/null >/dev/null
 		fi
 	done
 }
