@@ -46,7 +46,7 @@ CRUNCH_BUILDOPTS+= CRUNCH_CFLAGS=-DRESCUE
 # regular lib entries from libc and friends.
 CRUNCH_LIBS+= ${.OBJDIR}/../librescue/*.o
 
-CRUNCH_LIBS+= -lkvm -lutil -lipx -lnetgraph -lmemstat
+CRUNCH_LIBS+= -lkvm -lm -lutil -lipx -lnetgraph -lmemstat -lcurses -ldevstat -lcam -lsbuf -lusb
 #CRUNCH_LIBS+= -lssh -lcrypt -ledit -lkvm -lm -lbsdxml -lcam -lcurses -lipsec -lipx -lsbuf -lufs -lz -ll -lgssapi -lbsm -lpam -lkrb5 -lroken -lasn1 -lcom_err -lbz2 -lgnuregex -lutil -lgeom -larchive -lcrypto -lutil -ltacplus -lradius -lypclnt -lopie -lmd -lwrap
 #CRUNCH_LIBS_SO+= -lgeom
 
@@ -56,8 +56,10 @@ CRUNCH_LIBS+= -lkvm -lutil -lipx -lnetgraph -lmemstat
 # WARNING: Changing this list may require adjusting
 # /usr/include/paths.h as well!  You were warned!
 #
-CRUNCH_SRCDIRS+= usr.bin
-CRUNCH_PROGS_usr.bin= netstat sockstat
+CRUNCH_SRCDIRS+= usr.bin usr.sbin sbin
+CRUNCH_PROGS_usr.bin= netstat sockstat systat
+CRUNCH_PROGS_usr.sbin= usbconfig
+CRUNCH_PROGS_sbin= camcontrol
 
 
 
