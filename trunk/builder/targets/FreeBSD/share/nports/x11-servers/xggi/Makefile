@@ -13,6 +13,16 @@ MASTER_SITES=  http://evoke.googlecode.com/files/
 
 WRKSRC=		${WRKDIR}/xggi
 MAINTAINER=    a134qaed@gmail.com
+BUILD_DEPENDS=	pkg-config:${PORTSDIR}devel/pkg-config
+LIB_DEPENDS=	ggi.2:${PORTSDIR}/graphics/jpeg
+
+USE_XORG=       x11 xf86driproto glproto randrproto renderproto fixesproto \
+                dri2proto damageproto xcmiscproto xtrans inputproto \
+                xf86bigfontproto scrnsaverproto bigreqsproto \
+                resourceproto fontsproto videoproto \
+                compositeproto trapproto recordproto \
+                xineramaproto xinerama evieproto xkbfile xfont \
+                xau xdmcp xext fontenc xv pixman
 
 do-configure:
 	cd ${WRKSRC} && ./build-release.sh --with-ggi=${LOCALBASE} ${LOCALBASE}/xggi configure
