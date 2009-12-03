@@ -20,7 +20,7 @@ MAINTAINER=    a134qaed@gmail.com
 #BUILD_DEPENDS+= xkbcomp:${PORTSDIR}/x11/xkbcomp
 #BUILD_DEPENDS+= mkfontscale:${PORTSDIR}/x11-fonts/mkfontscale
 
-#LIB_DEPENDS=	ggi.2:${PORTSDIR}/graphics/libggi
+LIB_DEPENDS=	ggi.2:${PORTSDIR}/graphics/libggi
 #LIB_DEPENDS+=	freetype.9:${PORTSDIR}/print/freetype2
 
 WRKSRC=		${WRKDIR}/xggi
