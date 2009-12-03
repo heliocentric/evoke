@@ -14,7 +14,7 @@ MASTER_SITES=  http://evoke.googlecode.com/files/
 WRKSRC=		${WRKDIR}/xggi
 MAINTAINER=    a134qaed@gmail.com
 BUILD_DEPENDS=	pkg-config:${PORTSDIR}devel/pkg-config
-LIB_DEPENDS=	ggi.2:${PORTSDIR}/graphics/jpeg
+LIB_DEPENDS=	ggi.2:${PORTSDIR}/graphics/libggi
 
 USE_XORG=       x11 xf86driproto glproto randrproto renderproto fixesproto \
                 dri2proto damageproto xcmiscproto xtrans inputproto \
