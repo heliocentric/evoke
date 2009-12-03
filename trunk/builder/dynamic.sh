@@ -32,9 +32,9 @@ CROSSTOOLSPATH=${MAKEOBJDIRPREFIX}/${TARGET}${WORKDIR}/usr/src/tmp/usr/bin
 # Overwrite rescue with Lazybox
 #cp ${BUILDDIR}/lazybox.dynamic ${WORKDIR}/usr/src/rescue/rescue/Makefile
 
-if [ -f "${BUILDDIR}/targets/FreeBSD/${RELEASE}/whitelist" ] ; then
+if [ -f "${BUILDDIR}/targets/FreeBSD/${RELEASE}/share/whitelist" ] ; then
 	# Add support for the 'whitelist' commands.
-	cp "${BUILDDIR}/targets/FreeBSD/${RELEASE}/whitelist" ${WORKDIR}/usr/src/rescue/rescue/Makefile
+	cp "${BUILDDIR}/targets/FreeBSD/${RELEASE}/share/whitelist" ${WORKDIR}/usr/src/rescue/rescue/Makefile
 fi
 
 # Copy kernel config to the source.

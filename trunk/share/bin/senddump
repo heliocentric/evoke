@@ -29,32 +29,31 @@
 DUMPDIR="${1}"
 
 create_message () {
-	printf "<?xml version='1.0' encoding='UTF-8'?>\n"
-	printf "<entry xmlns='http://www.w3.org/2005/Atom' xmlns:issues='http://schemas.google.com/projecthosting/issues/2009'>\n"
-	printf "  <title>this is an issue summary</title>\n"
-	printf "  <content type='html'>this is an issue description</content>\n"
-	printf "  <author>\n"
-	printf "    <name>${AUTHOR}</name>\n"
-	printf "  </author>\n"
-	printf "  <issues:status>Autosubmit</issues:status>\n"
-	printf "  <issues:owner>\n"
-	printf "    <issues:username>${AUTHOR}</issues:username>\n"
-	printf "  </issues:owner>\n"
-	printf "  <issues:label>Type-Panic</issues:label>\n"
-	printf "  <issues:label>Milestone-${EVOKE_VERSION}</issues:label>\n"
-	printf "  <issues:label>Priority-Medium</issues:label>\n"
-	printf "</entry>\n"
+	printf '<?xml version=\"1.0\" encoding=\"UTF-8\"?>'
+	printf "<entry xmlns='http://www.w3.org/2005/Atom' xmlns:issues='http://schemas.google.com/projecthosting/issues/2009'>"
+	printf "<title>this is an issue summary</title>"
+	printf "<content type='html'>this is an issue description</content>"
+	printf "<author>"
+	printf "<name>${AUTHOR}</name>"
+	printf "</author>"
+	printf "<issues:status>Autosubmit</issues:status>"
+	printf "<issues:owner>"
+	printf "<issues:username>${AUTHOR}</issues:username>"
+	printf "</issues:owner>"
+	printf "<issues:label>Type-Panic</issues:label>"
+	printf "<issues:label>Milestone-${EVOKE_VERSION}</issues:label>"
+	printf "<issues:label>Priority-Medium</issues:label>"
+	printf "</entry>"
 }
 
 submit_message () {
 	if [ -f "${1}" ] ; then
 		RESPONSE="$(curl -d "accountType=GOOGLE" -d "Email=${AUTHOR}" -d "Passwd=${PASSWORD}" -d "service=code" -d "source=evoke-senddump-v1.0" 'https://www.google.com/accounts/ClientLogin' 2>/dev/null)"
-		AUTHKEY="$(echo ${RESPONSE} | grep Auth= | cut -d = -f 2 | awk '{ print $1; }')"
+		AUTHKEY="$(echo ${RESPONSE} | awk '{ print $3; }' | cut -d = -f 2)"
 		CAPTCHA="$(echo ${RESPONSE} | grep ^Error=CaptchaRequired)"
-		echo "${AUTHKEY}"
 		if [ "${CAPTCHA}" = "" ] ; then
 			if [ "${AUTHKEY}" != "" ] ; then
-				curl --request POST --data "${1}" --header "Authorization: GoogleLogin auth=${AUTHKEY}" --header "Content-Type: application/atom+xml" 'http://code.google.com/feeds/issues/p/evoke/issues/full'
+				curl --request POST --header "Authorization: GoogleLogin auth=${AUTHKEY}" --header "Content-Type: application/atom+xml" --data "${1}" 'http://code.google.com/feeds/issues/p/evoke/issues/full' 2>/dev/null
 			else
 				echo "No auth key"
 			fi
