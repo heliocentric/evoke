@@ -15,7 +15,7 @@ WRKSRC=		${WRKDIR}/xggi
 MAINTAINER=    a134qaed@gmail.com
 
 do-configure:
-	cd ${WRKSRC} && ./build-release.sh --with-ggi=${LOCALBASE} ${LOCALBASE}/xxggi configure
+	cd ${WRKSRC} && ./build-release.sh --with-ggi=${LOCALBASE} ${LOCALBASE}/xggi configure
 do-build:
 	cd ${WRKSRC} && ./build-release.sh --with-ggi=${LOCALBASE} ${LOCALBASE}/xggi build
 do-install:
