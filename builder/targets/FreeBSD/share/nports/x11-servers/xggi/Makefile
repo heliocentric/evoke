@@ -1,6 +1,6 @@
 # New ports collection makefile for:   xggi
 # Date created:        3 December 2009
-# Whom:                a134qaed@gmail.com
+# Whom:                Dylan Cochran <a134qaed@gmail.com>
 #
 # $FreeBSD$
 # $Id$
@@ -16,8 +16,9 @@ MAINTAINER=    a134qaed@gmail.com
 
 do-configure:
 	cd ${WRKSRC} && ./build-release.sh --with-ggi=${LOCALBASE} ${LOCALBASE}/xxggi configure
-do-install:
-	cd ${WRKSRC} && ./build-release.sh --with-ggi=${LOCALBASE} ${LOCALBASE}/xggi install
 do-build:
 	cd ${WRKSRC} && ./build-release.sh --with-ggi=${LOCALBASE} ${LOCALBASE}/xggi build
+do-install:
+	cd ${WRKSRC} && ./build-release.sh --with-ggi=${LOCALBASE} ${LOCALBASE}/xggi install
+
 .include <bsd.port.mk>
