@@ -21,11 +21,9 @@ BUILD_DEPENDS=       ${LOCALBASE}/libdata/pkgconfig/fontconfig.pc:${PORTSDIR}/x1
 WRKSRC=		${WRKDIR}/xggi
 FAKEROOT=	${WRKDIR}/fakeroot
 
-CPPFLAGS=	-I${LOCALBASE}/xggi/include ${CPPFLAGS}
-LDFLAGS=	-L${LOCALBASE}/xggi/lib ${CPPFLAGS}
 
 do-build:
 	${MKDIR} ${FAKEROOT}
-	cd ${WRKSRC} && ./build-release.sh --with-ggi=${LOCALBASE} ${LOCALBASE}/xggi build
+	cd ${WRKSRC} && CPPFLAGS="-I${LOCALBASE}/xggi/include -I${LOCALBASE}/include" LDFLAGS="-L${LOCALBASE}/xggi/lib -L${LOCALBASE}/lib" ./build-release.sh --with-ggi=${LOCALBASE} ${LOCALBASE}/xggi build
 
 .include <bsd.port.mk>
