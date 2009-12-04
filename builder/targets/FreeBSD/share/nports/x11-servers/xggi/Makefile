@@ -16,7 +16,8 @@ MAINTAINER=    a134qaed@gmail.com
 
 LIB_DEPENDS=	ggi.2:${PORTSDIR}/graphics/libggi
 LIB_DEPENDS=	freetype.9:${PORTSDIR}/print/freetype2
-BUILD_DEPENDS=       ${LOCALBASE}/libdata/pkgconfig/fontconfig.pc:${PORTSDIR}/x11-fonts/fontconfig
+BUILD_DEPENDS=  ${LOCALBASE}/libdata/pkgconfig/fontconfig.pc:${PORTSDIR}/x11-fonts/fontconfig
+USE_AUTOTOOLS=  autoreconf:2.62
 
 WRKSRC=		${WRKDIR}/xggi
 FAKEROOT=	${WRKDIR}/fakeroot
