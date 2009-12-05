@@ -1,5 +1,5 @@
 --- build-release.sh	2009-12-05 15:46:55.000000000 +0000
-+++ build-release.sh	2009-12-05 16:17:47.000000000 +0000
++++ build-release.sh	2009-12-05 16:50:28.000000000 +0000
 @@ -34,29 +34,24 @@
  }
  
@@ -22,12 +22,12 @@
 +	    fi
 +
 +	    cd "$1"
-+	    TARDIR=`ls -1rt $2-* 2> /dev/null | tail -1`
-+	    echo "${TARDIR}"
++	    TARDIR=`echo $2-* 2> /dev/null | tail -1`
 +	    if [ ! -d "${TARDIR}" ] ; then
 +		cd "${STORDIR}"
 +		exit 2
 +	    fi
++	    echo "${1}/${TARDIR}"
 +	    cd $TARDIR
      fi
 -    TARDIR=`echo $TARBALL | sed "s,.tar.$COMPRESSION,,"`
