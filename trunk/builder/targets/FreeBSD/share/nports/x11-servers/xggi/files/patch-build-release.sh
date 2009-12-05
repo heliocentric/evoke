@@ -1,48 +1,33 @@
-diff -ruN build-release.sh build-release.sh
---- build-release.sh	2007-05-28 16:49:21.000000000 +0000
-+++ build-release.sh	2009-12-03 16:59:04.000000000 +0000
-@@ -34,29 +34,39 @@
+--- build-release.sh	2009-12-05 15:46:55.000000000 +0000
++++ build-release.sh	2009-12-05 16:17:47.000000000 +0000
+@@ -34,29 +34,24 @@
  }
  
  build() {
 -    cd $1
 -
 -    TARBALL=`ls -1rt $2-*.tar.$COMPRESSION 2> /dev/null | tail -1`
+-
+-    if test x"$TARBALL" = x; then
+-	echo "WARNING: $2 does not exist -- skipping"
+-	cd ..
+-	return
 +    STORDIR="`pwd`"
 +    if [ -d "${1}/${2}" ] ; then
 +	cd "${1}/${2}"
 +    else
 +	    if [ ! -d "${1}" ] ; then
 +		cd "${STORDIR}"
-+		echo "${STORDIR}/${1}"
 +		exit 2
 +	    fi
++
 +	    cd "$1"
-+
-+	    TARBALL=`ls -1rt $2-*.tar.$COMPRESSION 2> /dev/null | tail -1`
-+
-+	    if test x"$TARBALL" = x; then
-+		echo "WARNING: $2 does not exist -- skipping"
++	    TARDIR=`ls -1rt $2-* 2> /dev/null | tail -1`
++	    echo "${TARDIR}"
++	    if [ ! -d "${TARDIR}" ] ; then
 +		cd "${STORDIR}"
-+		return
++		exit 2
 +	    fi
-+	    TARDIR=`echo $TARBALL | sed "s,.tar.$COMPRESSION,,"`
-+
-+	    echo "Building $1 module component $TARDIR..."
-+
-+	    case $COMPRESSION in
-+		bz2)
-+		    tar xjf $TARBALL
-+		    break;;
-+		gz)
-+		    tar xvf $TARBALL
-+		    break;;
-+	    esac
- 
--    if test x"$TARBALL" = x; then
--	echo "WARNING: $2 does not exist -- skipping"
--	cd ..
--	return
 +	    cd $TARDIR
      fi
 -    TARDIR=`echo $TARBALL | sed "s,.tar.$COMPRESSION,,"`
@@ -62,7 +47,7 @@ diff -ruN build-release.sh build-release.sh
  
      if test "$1" = "xserver" && test "$2" = "xorg-server" && test -n "$MESAPATH"; then
  	MESA=-"-with-mesa-source=${MESAPATH}"
-@@ -64,38 +74,41 @@
+@@ -64,38 +59,41 @@
  	MESA=
      fi
  
@@ -117,7 +102,7 @@ diff -ruN build-release.sh build-release.sh
      build proto fixesproto
      build proto fontcacheproto
      build proto fontsproto
-@@ -110,7 +123,7 @@
+@@ -110,7 +108,7 @@
      build proto scrnsaverproto
      build proto trapproto
      build proto videoproto
@@ -126,7 +111,7 @@ diff -ruN build-release.sh build-release.sh
      build proto xcmiscproto
      build proto xextproto
      build proto xf86bigfontproto
-@@ -121,7 +134,7 @@
+@@ -121,7 +119,7 @@
      build proto xf86vidmodeproto
      build proto xineramaproto
      build proto xproto
@@ -135,7 +120,7 @@ diff -ruN build-release.sh build-release.sh
  }
  
  # bitmaps is needed for building apps, so has to be done separately first
-@@ -152,8 +165,8 @@
+@@ -152,8 +150,8 @@
      build lib libXdmcp
      build lib libX11
      build lib libXext
@@ -146,7 +131,7 @@ diff -ruN build-release.sh build-release.sh
      build lib libdmx
      build lib libfontenc
      build lib libFS
-@@ -171,7 +184,7 @@
+@@ -171,7 +169,7 @@
      build lib libXrender
      build lib libXdamage
      build lib libXcursor
@@ -155,7 +140,7 @@ diff -ruN build-release.sh build-release.sh
      build lib libXfont
      build lib libXfontcache
      build lib libXft
-@@ -299,7 +312,7 @@
+@@ -299,7 +297,7 @@
  # The server requires at least the following libraries:
  # Xfont, Xau, Xdmcp
  build_xserver() {
@@ -164,7 +149,7 @@ diff -ruN build-release.sh build-release.sh
  }
  
  build_driver_input() {
-@@ -556,6 +569,8 @@
+@@ -556,6 +554,8 @@
  	;;
      *)
  	PREFIX=$1
@@ -173,7 +158,7 @@ diff -ruN build-release.sh build-release.sh
  	;;
      esac
  
-@@ -566,9 +581,8 @@
+@@ -566,9 +566,8 @@
      usage
      exit
  fi
@@ -184,7 +169,7 @@ diff -ruN build-release.sh build-release.sh
  $SUDO mkdir -p ${ACLOCAL_LOCALDIR}
  
  # The following is required to make aclocal find our .m4 macros
-@@ -581,25 +595,25 @@
+@@ -581,25 +580,25 @@
  
  # The following is required to make pkg-config find our .pc metadata files
  if test x"$PKG_CONFIG_PATH" = x; then
@@ -216,7 +201,7 @@ diff -ruN build-release.sh build-release.sh
  fi
  export PATH
  
-@@ -610,7 +624,7 @@
+@@ -610,7 +609,7 @@
  fi
  
  # Create the log file directory
@@ -225,15 +210,12 @@ diff -ruN build-release.sh build-release.sh
  
  date
  
-@@ -621,9 +635,9 @@
+@@ -621,7 +620,7 @@
  build_proto
  build_lib
  build data xbitmaps
 -build_app
 +#build_app
  build_xserver
--#build_driver
-+#bbuild_driver
+ #build_driver
  build_data
- build_font
- build_util
