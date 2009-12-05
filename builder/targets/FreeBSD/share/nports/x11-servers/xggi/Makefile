@@ -7,7 +7,7 @@
 #
 
 PORTNAME=      xggi
-PORTVERSION=   200912031804
+PORTVERSION=   200912051535
 CATEGORIES=    x11-servers
 MASTER_SITES=  http://evoke.googlecode.com/files/
 
