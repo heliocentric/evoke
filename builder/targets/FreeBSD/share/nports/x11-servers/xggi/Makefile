@@ -19,6 +19,8 @@ LIB_DEPENDS=	freetype.9:${PORTSDIR}/print/freetype2
 BUILD_DEPENDS=  ${LOCALBASE}/libdata/pkgconfig/fontconfig.pc:${PORTSDIR}/x11-fonts/fontconfig
 USE_AUTOTOOLS=  autoconf:262 libtool22 aclocal:110 automake:110
 
+USE_GNOME= 	pkgconfig
+
 WRKSRC=		${WRKDIR}/xggi
 FAKEROOT=	${WRKDIR}/fakeroot
 
