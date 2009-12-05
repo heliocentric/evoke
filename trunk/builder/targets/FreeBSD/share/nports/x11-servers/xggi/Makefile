@@ -17,7 +17,7 @@ MAINTAINER=    a134qaed@gmail.com
 LIB_DEPENDS=	ggi.2:${PORTSDIR}/graphics/libggi
 LIB_DEPENDS=	freetype.9:${PORTSDIR}/print/freetype2
 BUILD_DEPENDS=  ${LOCALBASE}/libdata/pkgconfig/fontconfig.pc:${PORTSDIR}/x11-fonts/fontconfig
-USE_AUTOTOOLS=  autoconf:262 libtool22 aclocal:110 automake:110
+USE_AUTOTOOLS=  autoconf:262:env libtool:22:env aclocal:110:env automake:110:env
 
 USE_GNOME= 	pkgconfig
 
@@ -27,6 +27,6 @@ FAKEROOT=	${WRKDIR}/fakeroot
 
 do-build:
 	${MKDIR} ${FAKEROOT}
-	cd ${WRKSRC} && CPPFLAGS="-I${LOCALBASE}/xggi/include -I${LOCALBASE}/include" LDFLAGS="-L${LOCALBASE}/xggi/lib -L${LOCALBASE}/lib" ./build-release.sh --with-ggi=${LOCALBASE} ${LOCALBASE}/xggi build
+	cd ${WRKSRC} && CFLAGS='-Dft_isdigit=isdigit ${CFLAGS}' CPPFLAGS="-I${LOCALBASE}/xggi/include -I${LOCALBASE}/include" LDFLAGS="-L${LOCALBASE}/xggi/lib -L${LOCALBASE}/lib" ./build-release.sh --with-ggi=${LOCALBASE} ${LOCALBASE}/xggi build
 
 .include <bsd.port.mk>
