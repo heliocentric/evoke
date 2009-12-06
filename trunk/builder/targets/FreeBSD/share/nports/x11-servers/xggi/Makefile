@@ -27,6 +27,6 @@ FAKEROOT=	${WRKDIR}/fakeroot
 
 do-build:
 	${MKDIR} ${FAKEROOT}
-	cd ${WRKSRC} && CFLAGS='-Dft_isdigit=isdigit ${CFLAGS}' CPPFLAGS="-I${LOCALBASE}/xggi/include -I${LOCALBASE}/include" LDFLAGS="-L${LOCALBASE}/xggi/lib -L${LOCALBASE}/lib" ./build-release.sh --with-ggi=${LOCALBASE} ${LOCALBASE}/xggi build
+	cd ${WRKSRC} && CFLAGS='-Dft_isdigit=isdigit ${CFLAGS}' CPPFLAGS="-I${LOCALBASE}/xggi/include -I${LOCALBASE}/include" LDFLAGS="-L${LOCALBASE}/xggi/lib -L${LOCALBASE}/lib" LOCALBASE="${LOCALBASE}" ./build-release.sh --with-ggi=${LOCALBASE} ${LOCALBASE}/xggi build
 
 .include <bsd.port.mk>
