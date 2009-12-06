@@ -1,5 +1,5 @@
 --- build-release.sh	2009-12-05 15:46:55.000000000 +0000
-+++ build-release.sh	2009-12-06 02:27:33.000000000 +0000
++++ build-release.sh	2009-12-06 02:42:04.000000000 +0000
 @@ -34,29 +34,24 @@
  }
  
@@ -47,7 +47,7 @@
  
      if test "$1" = "xserver" && test "$2" = "xorg-server" && test -n "$MESAPATH"; then
  	MESA=-"-with-mesa-source=${MESAPATH}"
-@@ -64,38 +59,41 @@
+@@ -64,28 +59,31 @@
  	MESA=
      fi
  
@@ -90,56 +90,6 @@
  }
  
  # protocol headers have no build order dependencies
- build_proto() {
--    build proto applewmproto
-+#    build proto applewmproto
-     build proto bigreqsproto
-     build proto compositeproto
-     build proto damageproto
-     build proto dmxproto
--    build proto evieext
-+#    build proto evieext
-     build proto fixesproto
-     build proto fontcacheproto
-     build proto fontsproto
-@@ -110,7 +108,7 @@
-     build proto scrnsaverproto
-     build proto trapproto
-     build proto videoproto
--    build proto windowswmproto
-+#    build proto windowswmproto
-     build proto xcmiscproto
-     build proto xextproto
-     build proto xf86bigfontproto
-@@ -121,7 +119,7 @@
-     build proto xf86vidmodeproto
-     build proto xineramaproto
-     build proto xproto
--    build proto xproxymanagementprotocol
-+#    build proto xproxymanagementprotocol
- }
- 
- # bitmaps is needed for building apps, so has to be done separately first
-@@ -152,8 +150,8 @@
-     build lib libXdmcp
-     build lib libX11
-     build lib libXext
--    build lib libAppleWM
--    build lib libWindowsWM
-+#    build lib libAppleWM
-+#    build lib libWindowsWM
-     build lib libdmx
-     build lib libfontenc
-     build lib libFS
-@@ -171,7 +169,7 @@
-     build lib libXrender
-     build lib libXdamage
-     build lib libXcursor
--    build lib libXevie
-+#    build lib libXevie
-     build lib libXfont
-     build lib libXfontcache
-     build lib libXft
 @@ -299,7 +297,7 @@
  # The server requires at least the following libraries:
  # Xfont, Xau, Xdmcp
