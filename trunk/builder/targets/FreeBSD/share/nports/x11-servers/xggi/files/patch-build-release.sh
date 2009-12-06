@@ -1,5 +1,5 @@
 --- build-release.sh	2009-12-05 15:46:55.000000000 +0000
-+++ build-release.sh	2009-12-05 16:50:28.000000000 +0000
++++ build-release.sh	2009-12-05 19:10:04.000000000 +0000
 @@ -34,29 +34,24 @@
  }
  
@@ -71,7 +71,7 @@
 +		        AUTOGEN="sh autogen.sh"
 +		    fi
 +		    ${AUTOGEN} --prefix=${PREFIX} ${MESA} ${GGIROOT} --disable-xcsecurity ${QUIET:+--quiet} \
-+		        ${CACHE:+--cache-file=}${CACHE} ${CONFFLAGS} || failed autogen $1 $2
++		        ${CACHE:+--cache-file=}${CACHE} ${CONFFLAGS} --with-rgb-path="${LOCALBASE}/lib/X11/rgb" --with-xkb-path="${LOCALBASE}/lib/X11/xkb || failed autogen $1 $2
 +			make || failed make $1 $2
 +			make clean || failed clean $1 $2
 +			    $SUDO env LD_LIBRARY_PATH=$LD_LIBRARY_PATH DESTDIR="${FAKEROOT}" make install || \
