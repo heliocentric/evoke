@@ -1,5 +1,5 @@
 --- build-release.sh	2009-12-05 15:46:55.000000000 +0000
-+++ build-release.sh	2009-12-06 02:42:04.000000000 +0000
++++ build-release.sh	2009-12-06 03:07:16.000000000 +0000
 @@ -34,29 +34,24 @@
  }
  
@@ -160,3 +160,13 @@
  
  date
  
+@@ -621,7 +620,8 @@
+ build_proto
+ build_lib
+ build data xbitmaps
+-build_app
++build app rgb
++#build_app
+ build_xserver
+ #build_driver
+ build_data
