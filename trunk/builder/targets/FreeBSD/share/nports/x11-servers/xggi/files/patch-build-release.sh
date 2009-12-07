@@ -1,5 +1,5 @@
 --- build-release.sh	2009-12-05 15:46:55.000000000 +0000
-+++ build-release.sh	2009-12-06 22:35:04.000000000 +0000
++++ build-release.sh	2009-12-07 16:04:06.000000000 +0000
 @@ -34,29 +34,24 @@
  }
  
@@ -160,11 +160,19 @@
  
  date
  
-@@ -621,7 +620,11 @@
+@@ -621,7 +620,19 @@
  build_proto
  build_lib
  build data xbitmaps
 -build_app
++
++for pcfile in ${PREFIX}/lib/pkgconfig/*.pc
++do
++	REQUIRES="$(grep ^Requires.private: "${pcfile}" | cut -d : -f 2 | awk ' { print $1 }' )"
++	REQUIRESPRIVATE="$(grep ^Requires.private: "${pcfile}" | cut -d : -f 2 | awk ' { print $1 " " $2 " " $3 " " $4 " " $5 " " $6; }' )"
++	sed -i .bak "s_Requires: _Requires: ${REQUIRESPRIVATE}_g" ${pcfile}
++done
++
 +build app rgb
 +build app xcursorgen
 +build app xkbcomp
