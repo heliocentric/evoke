@@ -1,5 +1,5 @@
 --- build-release.sh	2009-12-05 15:46:55.000000000 +0000
-+++ build-release.sh	2009-12-06 16:02:27.000000000 +0000
++++ build-release.sh	2009-12-06 22:35:04.000000000 +0000
 @@ -34,29 +34,24 @@
  }
  
@@ -71,7 +71,7 @@
 +		        AUTOGEN="sh autogen.sh"
 +		    fi
 +		    ${AUTOGEN} --prefix=${PREFIX} ${MESA} ${GGIROOT} --disable-xcsecurity ${QUIET:+--quiet} \
-+		        ${CACHE:+--cache-file=}${CACHE} ${CONFFLAGS} --with-rgb-path="${LOCALBASE}/lib/X11/rgb" --with-xkb-path="${LOCALBASE}/lib/X11/xkb" || failed autogen $1 $2
++		        ${CACHE:+--cache-file=}${CACHE} ${CONFFLAGS} --with-rgb-path="${PREFIX}/lib/X11/rgb" --with-xkb-path="${PREFIX}/lib/X11/xkb" || failed autogen $1 $2
 +			make || failed make $1 $2
 +			make clean || failed clean $1 $2
 +			    $SUDO env LD_LIBRARY_PATH=$LD_LIBRARY_PATH DESTDIR="${FAKEROOT}" make install || \
@@ -160,12 +160,15 @@
  
  date
  
-@@ -621,7 +620,8 @@
+@@ -621,7 +620,11 @@
  build_proto
  build_lib
  build data xbitmaps
 -build_app
 +build app rgb
++build app xcursorgen
++build app xkbcomp
++build app mkfontscale
 +#build_app
  build_xserver
  #build_driver
