@@ -15,8 +15,11 @@ MAINTAINER=    a134qaed@gmail.com
 
 
 LIB_DEPENDS=	ggi.2:${PORTSDIR}/graphics/libggi
+LIB_DEPENDS+=	png.5:${PORTSDIR}/graphics/png
 LIB_DEPENDS+=	freetype.9:${PORTSDIR}/print/freetype2
+
 BUILD_DEPENDS=  ${LOCALBASE}/libdata/pkgconfig/fontconfig.pc:${PORTSDIR}/x11-fonts/fontconfig
+
 USE_AUTOTOOLS=  autoconf:262:env libtool:22:env aclocal:110:env automake:110:env
 
 USE_GNOME= 	pkgconfig
