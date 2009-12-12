@@ -92,7 +92,7 @@ if [ "${MODE}" = "init" ] ; then
 		*)
 			KERNEL_ABI="$(sysctl -n kern.osrelease | cut -d - -f 1)"
 			if [ "${EVOKE_SYSTEM_ABI}" != "" ] ; then
-				if [ "${EVOKE_SYSTEM_ABI}" -lt "${KERNEL_ABI}" ] ; then
+				if [ "$( echo ${EVOKE_SYSTEM_ABI} | cut -d -f 2)" -lt "${KERNEL_ABI}" ] ; then
 					if [ -f "/system/FreeBSD/${KERNEL_ABI}/bin/whiteout" ] ; then
 						mounter nullfs:/system/FreeBSD/${KERNEL_ABI}/bin /bin
 					fi

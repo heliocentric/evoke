@@ -161,7 +161,18 @@ real_update() {
 			for filespec in ${DEST_DIRECTORIES}
 			do
 				DIRNAME="$(echo "${filespec}" | cut -d ":" -f 2)"
+				UID="$(echo "${filespec}" | cut -d ":" -f 3)"
+				GID="$(echo "${filespec}" | cut -d ":" -f 4)"
+				USERMODE="$(echo "${filespec}" | cut -d ":" -f 5 | cut -b 2-4)"
+				GROUPMODE="$(echo "${filespec}" | cut -d ":" -f 5 | cut -b 5-7)"
+				WORLDMODE="$(echo "${filespec}" | cut -d ":" -f 5 | cut -b 8-10)"
 				mkdir -p "${STAGEDIR}/${DIRNAME}"
+				if [ "${UID}" != "" ] ; then
+					chown "${UID}:${GID}" "${STAGEDIR}/${DIRNAME}"
+				fi
+				if [ "${USERMODE}" != "" ] ; then
+					chmod "u=${USERMODE},g=${GROUPMODE},o=${WORLDMODE}" "${STAGEDIR}/${DIRNAME}"
+				fi
 			done
 			# No reference points? Just fetch!
 			if [ "${VERSIONLIST}" = "error" ] ; then
@@ -176,6 +187,14 @@ real_update() {
 					SIZE="$(echo "${filespec}" | cut -d ":" -f 4)"
 					HASH="$(echo "${filespec}" | cut -d ":" -f 3)"
 					FILENAME="$(echo "${filespec}" | cut -d ":" -f 2)"
+					local TUSERNAME="$(echo "${filespec}" | cut -d ":" -f 5)"
+					local TGROUPNAME="$(echo "${filespec}" | cut -d ":" -f 6)"
+					local TUSERMODE="$(echo "${filespec}" | cut -d ":" -f 7 | cut -b 2-4)"
+					local TGROUPMODE="$(echo "${filespec}" | cut -d ":" -f 7 | cut -b 5-7)"
+					local TWORLDMODE="$(echo "${filespec}" | cut -d ":" -f 7 | cut -b 8-10)"
+					local TCTIME="$(echo "${filespec}" | cut -d ":" -f 8)"
+					local TMTIME="$(echo "${filespec}" | cut -d ":" -f 9)"
+
 					PDESTDIR="${STAGEDIR}/$(dirname ${FILENAME})"
 					BASENAME="$(basename ${FILENAME})"
 					mkdir -p "${PDESTDIR}"
@@ -209,6 +228,13 @@ real_update() {
 					PDESTDIR="${STAGEDIR}/$(dirname ${FILENAME})"
 					BASENAME="$(basename ${FILENAME})"
 					PPATCHDIR="${PATCHDIR}/${HASH}"
+					local TUSERNAME="$(echo "${filespec}" | cut -d ":" -f 5)"
+					local TGROUPNAME="$(echo "${filespec}" | cut -d ":" -f 6)"
+					local TUSERMODE="$(echo "${filespec}" | cut -d ":" -f 7 | cut -b 1-3)"
+					local TGROUPMODE="$(echo "${filespec}" | cut -d ":" -f 7 | cut -b 4-6)"
+					local TWORLDMODE="$(echo "${filespec}" | cut -d ":" -f 7 | cut -b 7-9)"
+					local TCTIME="$(echo "${filespec}" | cut -d ":" -f 8)"
+					local TMTIME="$(echo "${filespec}" | cut -d ":" -f 9)"
 					mkdir -p "${PPATCHDIR}"
 					mkdir -p "${PDESTDIR}"
 					vecho "Starting ${FILENAME} \{\n"
@@ -510,6 +536,7 @@ getfile() {
 
 	filename="$(basename "${1}")"
 	realfile="${2}"
+
 	size="${3}"
 
 	case "${PROTOCOL}" in
@@ -535,6 +562,13 @@ getfile() {
 
 	if [ "${filesize}" != "${size}" ] ; then
 		rm "${filename}"
+	else
+		if [ "${TUSERNAME}" != "" ] ; then
+			chown "${TUSERNAME}:${TGROUPNAME}" "${filename}"
+		fi
+		if [ "${TUSERMODE}" != "" ] ; then
+			chmod "u=${TUSERMODE},g=${TGROUPMODE},o=${TWORLDMODE}" "${filename}"
+		fi
 	fi
 }
 
