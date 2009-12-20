@@ -55,13 +55,9 @@ options 	LINPROCFS
 options		LINSYSFS
 options 	COMPAT_LINUX
 device if_bridge
-options		ATA_CAM
 device		ahci
+options		atapicam
 nodevice	atapicd
-nodevice	atadisk
-nodevice	ataraid
-nodevice	atapifd
-nodevice	atapist
 options SW_WATCHDOG
 options         INCLUDE_CONFIG_FILE
 device		sound
