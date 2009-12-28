@@ -43,6 +43,10 @@
 >81      string          version=1.0             text/vnd.evoke.sysconfig.1.0
 >81      string          version=1.1             text/vnd.evoke.sysconfig.1.1
 
+65       string          format=rrstore		
+>80      string          version=1.2		text/vnd.evoke.rrstore.1.2
+
+
 9564	lelong		0x00011954	application/vnd.evoke.fs.ufs.1.le
 42332	lelong		0x19540119	application/vnd.evoke.fs.ufs.2.le
 66908	lelong		0x19540119	application/vnd.evoke.fs.ufs.2.le
