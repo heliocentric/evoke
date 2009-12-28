@@ -111,7 +111,7 @@ preprrstore () {
 				# the number of entries in the config log
 				export SC_LOGSIZE="$(grep -a ^log= ${SCRATCHDIR}/header | cut -d = -f 2)"
 				export SC_ARRAYOFFSET="$((${SC_PADSIZE} + 1))"
-				export SC_TARBALLSIZE="$(( (${SC_ENTRYSIZE} * 512) - 74))"
+				export SC_TARBALLSIZE="$(( (${SC_ENTRYSIZE} * ${SC_SECTORSIZE}) - 74))"
 	
 				export RECORDNUM=0
 				export TEMPOFFSET="${SC_ARRAYOFFSET}"
@@ -136,7 +136,7 @@ preprrstore () {
 						dd if=${SCRATCHDIR}/record${RECORDNUM}/record bs=64 count=1 conv=sync of=${SCRATCHDIR}/record${RECORDNUM}/hash 2>${DEVICES}/null
 						dd if=${SCRATCHDIR}/record${RECORDNUM}/record bs=1 skip=64 count=10 conv=sync of=${SCRATCHDIR}/record${RECORDNUM}/timestamp 2>${DEVICES}/null
 						dd if=${SCRATCHDIR}/record${RECORDNUM}/record bs=1 skip=74 count=${TAIL} conv=sync of=${SCRATCHDIR}/record${RECORDNUM}/tarball1 2>${DEVICES}/null
-						dd if=${SCRATCHDIR}/record${RECORDNUM}/record bs=512 skip=1 conv=sync of=${SCRATCHDIR}/record${RECORDNUM}/tarball2 2>${DEVICES}/null
+						dd if=${SCRATCHDIR}/record${RECORDNUM}/record bs="${SC_SECTORSIZE}" skip=1 conv=sync of=${SCRATCHDIR}/record${RECORDNUM}/tarball2 2>${DEVICES}/null
 						cat ${SCRATCHDIR}/record${RECORDNUM}/tarball1 ${SCRATCHDIR}/record${RECORDNUM}/tarball2 >${SCRATCHDIR}/record${RECORDNUM}/tarball.tgz
 
 						RHASH="$(cat ${SCRATCHDIR}/record${RECORDNUM}/timestamp ${SCRATCHDIR}/record${RECORDNUM}/tarball.tgz | sha256 -q)"
@@ -272,7 +272,7 @@ sysconfig () {
 			echo "${NDATE}" | dd of=${SCRATCHDIR}/newdate bs=10 count=1 conv=sync 2>${DEVICES}/null
 			cat ${SCRATCHDIR}/newdate ${SCRATCHDIR}/newrecord | sha256 -q | dd of=${SCRATCHDIR}/newhash bs=64 count=1 conv=sync 2>${DEVICES}/null	
 			SC_NEXTRECORDSEEK="$((${SC_NEXTRECORD_OFFSET}))"
-			cat ${SCRATCHDIR}/newhash ${SCRATCHDIR}/newdate ${SCRATCHDIR}/newrecord | dd of=${DEVICES}/${SC_DEVICE} bs=512 count=${SC_ENTRYSIZE} seek="${SC_NEXTRECORDSEEK}" conv=sync 2>${DEVICES}/null
+			cat ${SCRATCHDIR}/newhash ${SCRATCHDIR}/newdate ${SCRATCHDIR}/newrecord | dd of=${DEVICES}/${SC_DEVICE} bs=${SC_SECTORSIZE} count=${SC_ENTRYSIZE} seek="${SC_NEXTRECORDSEEK}" conv=sync 2>${DEVICES}/null
 		;;
 		[cC][lL][eE][aA][rR])
 			preprrstore "${2}"
@@ -310,8 +310,8 @@ sysconfig () {
 			# start of the array. If we don't add a pad, we'd have to have the nvram match the 
 			# arraysize * array entries + header sector exactly.
 			SC_PADSIZE=$((${SC_SECTORCOUNT} % ${CONFIGLOG}))
-	
-			printf "\nproto=sysconfig\nversion=1.1\nentrysize=${SC_ENTRYSIZE}\npad=${SC_PADSIZE}\nlog=${CONFIGLOG}\nuuid=${UUID}\ndescription=${LONGDESC}\n" | dd bs=${SC_HEADERSIZE} count=1 of=${SCRATCHDIR}/header conv=sync 2>${DEVICES}/null
+
+			printf "\nformat=rrstore\nversion=1.2\nentrysize=${SC_ENTRYSIZE}\npad=${SC_PADSIZE}\nlog=${CONFIGLOG}\nuuid=${UUID}\ndescription=${LONGDESC}\n" | dd bs=${SC_HEADERSIZE} count=1 of=${SCRATCHDIR}/header conv=sync 2>${DEVICES}/null
 			sha256 -q ${SCRATCHDIR}/header | dd bs=64 count=1 of=${SCRATCHDIR}/hash fillchar=" " conv=sync 2>${DEVICES}/null
 			cat ${SCRATCHDIR}/hash ${SCRATCHDIR}/header >${SCRATCHDIR}/headsect
 			cat ${SCRATCHDIR}/headsect | dd of=${DEVICES}/${SC_DEVICE} bs=${SC_SECTORSIZE} count=1 2>${DEVICES}/null
@@ -347,4 +347,3 @@ sysconfig () {
 }
 
 sysconfig $@
-
