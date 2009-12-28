@@ -402,6 +402,11 @@ mount_proto () {
 					prep_transport
 					fs_mount
 				;;
+				sysconfig)
+					M_PTYPE="DEV"
+					prep_transport
+					sysconfig_mount
+				;;
 				remount)
 					M_PTYPE="REMOUNT"
 					prep_transport
@@ -442,10 +447,10 @@ mount_proto () {
 					prep_transport
 					ssh_mount
 				;;
-				sysconfig)
+				rrstore)
 					M_PTYPE="DEV"
 					prep_transport
-					sysconfig_mount
+					rrstore_mount
 				;;
 				vac)
 					M_PTYPE="NET"
@@ -707,6 +712,17 @@ ipod_mount () {
 	fi
 }
 
+# sysconfig wrapper.
+
+sysconfig_mount () {
+	echo_config
+	if [ "${M_STYPE}" = "GEOM" ] ; then
+		sysconfig extract "${M_FILE}" "${M_DESTINATION}"
+	else
+		mexit 8
+	fi
+}
+
 # remounter wrapper.
 
 remount_mount () {
@@ -736,8 +752,8 @@ fs_mount () {
 		ERRNO=$?
 		if [ "${ERRNO}" = "0" ] ; then
 			case "${MIME_TYPE}" in
-				application/vnd.evoke.sysconfig*)
-					PROTO="sysconfig"
+				application/vnd.evoke.rrstore*)
+					PROTO="rrstore"
 				;;
 				application/vnd.evoke.fs.ufs*)
 					PROTO="ufs"
@@ -981,13 +997,13 @@ object_mount () {
 }
 
 
-# sysconfig basic wrapper.
+# rrstore basic wrapper.
 
-sysconfig_mount () {
+rrstore_mount () {
 	echo_config
 	if [ "${M_STYPE}" = "GEOM" ] ; then
 		if [ -c "${DEVICES}/${M_FILE}" ] ; then
-			sysconfig extract ${M_FILE} ${M_DESTINATION} >&2
+			rrstore extract ${M_FILE} ${M_DESTINATION} >&2
 		else
 			mexit 9
 		fi
@@ -1155,7 +1171,7 @@ list_proto () {
 	echo "swap"
 	echo "remount"
 	echo "entropy"
-	echo "sysconfig"
+	echo "rrstore"
 	echo "dump"
 	echo "object"
 	echo "dists"
