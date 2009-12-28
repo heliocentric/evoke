@@ -306,6 +306,19 @@ mounter () {
 					M_STYPE="ALL"
 				;;
 				*)
+					if [ "$(is_uuid "${M_SOURCE}")" = "yes" ] ; then
+						PARTLIST="$(mounter list sysconfig)"
+						if [ "${PARTLIST}" != "" ] ; then
+							for part in ${PARTLIST}
+							do
+								UUID="$(mounter info "${part}" | cut -d \- -f 1-5 | awk '{ print $1 }')"
+								echo "${part} - ${UUID}"
+								if [ "${UUID}" = "${M_SOURCE}" ] ; then
+									M_SOURCE="${part}"
+								fi
+							done
+						fi
+					fi
 					M_STYPE="GEOM"
 					M_FILE="${M_SOURCE}"
 				;;
