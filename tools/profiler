@@ -7,9 +7,22 @@ TMPDIR="/tmp/profiler/$(rand)"
 mkdir -p "${TMPDIR}"
 
 DESTINATION="${1}"
+
 if [ ! -d "${DESTINATION}" ] ; then
 	exit
+else
+	if [ ! -w "${DESTINATION}" ] ; then
+		exit
+	fi
 fi
+
+oblocksize () {
+	if [ "$(command -v blocksize)" = "" ] ; then
+		echo "$*"
+	else
+		blocksize "$*"
+	fi
+}
 profiler () {
 	local NUM=0
 	if [ -f "${1}" ] ; then
@@ -53,11 +66,11 @@ profiler () {
 		wait
 		cd "${TMPDIR}" && cat *  >"${TMPDIR}/collection"
 		ministat <"${TMPDIR}/collection" | grep -v ^x | grep -v Avg
-		MIN="$(blocksize "$(ministat <"${TMPDIR}/collection" | grep ^x | tail -n 1 | awk ' { print $3 }')")"
-		MAX="$(blocksize "$(ministat <"${TMPDIR}/collection" | grep ^x | tail -n 1 | awk ' { print $4 }')")"
-		MED="$(blocksize "$(ministat <"${TMPDIR}/collection" | grep ^x | tail -n 1 | awk ' { print $5 }')")"
-		AVG="$(blocksize "$(ministat <"${TMPDIR}/collection" | grep ^x | tail -n 1 | awk ' { print $6 }')")"
-		STDDEV="$(blocksize "$(ministat <"${TMPDIR}/collection" | grep ^x | tail -n 1 | awk ' { print $7 }')")"
+		MIN="$(oblocksize "$(ministat <"${TMPDIR}/collection" | grep ^x | tail -n 1 | awk ' { print $3 }')")"
+		MAX="$(oblocksize "$(ministat <"${TMPDIR}/collection" | grep ^x | tail -n 1 | awk ' { print $4 }')")"
+		MED="$(oblocksize "$(ministat <"${TMPDIR}/collection" | grep ^x | tail -n 1 | awk ' { print $5 }')")"
+		AVG="$(oblocksize "$(ministat <"${TMPDIR}/collection" | grep ^x | tail -n 1 | awk ' { print $6 }')")"
+		STDDEV="$(oblocksize "$(ministat <"${TMPDIR}/collection" | grep ^x | tail -n 1 | awk ' { print $7 }')")"
 		echo "Min: ${MIN}"
 		echo "Max: ${MAX}"
 		echo "Median: ${MED}"
