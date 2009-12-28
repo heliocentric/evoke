@@ -27,6 +27,10 @@
 >81      string           version=1.1            v1.1
 !:mime  text/vnd.evoke.sysconfig.1.1
 
+65       string          format=rrstore             Evoke Sysconfig
+>80      string          version=1.2            v1.2
+!:mime  text/vnd.evoke.rrstore.1.2
+
 
 
 3	string		NTFS		NTFS
