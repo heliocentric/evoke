@@ -1265,6 +1265,20 @@ mounter_command () {
 			shift
 			eject_command $@
 		;;
+		[iI][nN][fF][oO])
+			TYPE="$(OPTIONS="quiet" filetype "${DEVICES}/${2}")"
+			case "${TYPE}" in
+				application/vnd.evoke.rrstore.*)
+					rrstore info "${2}"
+				;;
+				text/vnd.evoke.sysconfig.*)
+					rrstore info "${2}"
+				;;
+				*)
+					echo "${2}"
+				;;
+			esac
+		;;
 	  	[lL][iI][sS][tT])
 	
 		# We silently drop if someone types 'mounter list', however, 
