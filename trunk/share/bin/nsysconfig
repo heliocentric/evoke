@@ -23,35 +23,63 @@
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-rrstore "$*"
 
 usage () {
 }
 
-command="${1}"
-shift
 
-case "${command}" in
-	[lL][iI][sS][tT])
-		PARTLIST=$(mounter list sysconfig)
-		if [ ! "${PARTLIST}" = "" ] ; then
-			for i in ${PARTLIST}
-			do
-				TYPE=$(stat -f "%HT" "${DEVICES}/${i}")
-				case "${TYPE}" in
-					Character*)
-						export SC_GEOM="$(sysctl -b kern.geom.conftxt | grep -a ${i})"
-						export SC_SECTORSIZE="$(echo ${SC_GEOM} | cut -d " " -f 5)"
-						UUID=$(dd if=${DEVICES}/${i} bs=${SC_SECTORSIZE} count=1 2>/dev/null | grep -a ^uuid= | cut -d = -f 2)
-						DESC=$(dd if=${DEVICES}/${i} bs=${SC_SECTORSIZE} count=1 2>/dev/null | grep -a ^description= | cut -d = -f 2)
-						echo "${UUID} - ${DESC}"
+sysconfig () {
+	command="${1}"
+	shift
+	case "${command}" in
+		[cC][oO][mM][mM][iI][tT])
+			TYPE="$(OPTIONS="quiet" filetype "${DEVICES}/${2}")"
+			case "${TYPE}" in
+				application/vnd.evoke.rrstore.*)
+					rrstore info "${1}" "${2}"
+				;;
+				text/vnd.evoke.sysconfig.*)
+					rrstore commit "${1}" "${2}"
+				;;
+				*)
+					echo "Nothing to do."
+				;;
+			esac
+		;;
+		[eE][xX][tT][rR][aA][cC][tT])
+			mounter "fs:${1}" "${2}"
+		;;
+		[lL][iI][sS][tT])
+			PARTLIST=$(mounter list sysconfig)
+			if [ ! "${PARTLIST}" = "" ] ; then
+				for i in ${PARTLIST}
+				do
+					mounter info "${i}"
+				done
+			fi		
+		;;
+		[mM][eE][nN][uU])
+			CONFIGLIST=$(sysconfig list)
+			CONFIGNUM="$(echo "${CONFIGLIST}" | wc -l | awk '{ print $1 }')"
+			. $(command -v menu)
+			if [ "${CONFIGNUM}" = "1" ] ; then
+				case "${EVOKE_USEONLY}" in
+					[yY][eE][sS])
+						CHOICE="${CONFIGLIST}"
 					;;
 					*)
-						echo "Not a character device"
-						exit 2
+						CHOICE=$(menu "Available Configurations" "$(echo "${CONFIGLIST}" ; echo None)")
 					;;
 				esac
-			done
-		fi		
-	;;
-esac
+			else
+				CHOICE=$(menu "Available Configurations" "$(echo "${CONFIGLIST}" ; echo None)")
+			fi
+			DEVICE="$(echo "${CHOICE}" | awk '{ print $1 }')"
+			if [ "${DEVICE}" != "" ] ; then
+				echo "${DEVICE}"
+			fi
+		;;
+	esac
+}
+
+sysconfig "${@}"

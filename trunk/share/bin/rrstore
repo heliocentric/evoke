@@ -227,22 +227,25 @@ sysconfig () {
 			if [ ! "${PARTLIST}" = "" ] ; then
 				for i in ${PARTLIST}
 				do
-					TYPE=$(stat -f "%HT" "${DEVICES}/${i}")
-					case "${TYPE}" in
-						Character*)
-							export SC_GEOM="$(sysctl -b kern.geom.conftxt | grep -a ${i})"
-							export SC_SECTORSIZE="$(echo ${SC_GEOM} | cut -d " " -f 5)"
-							UUID=$(dd if=${DEVICES}/${i} bs=${SC_SECTORSIZE} count=1 2>/dev/null | grep -a ^uuid= | cut -d = -f 2)
-							DESC=$(dd if=${DEVICES}/${i} bs=${SC_SECTORSIZE} count=1 2>/dev/null | grep -a ^description= | cut -d = -f 2)
-							echo "${UUID} - ${DESC}"
-						;;
-						*)
-							echo "Not a character device"
-							exit 2
-						;;
-					esac
+					sysconfig info "${i}"
 				done
 			fi
+		;;
+		[iI][nN][fF][oO])
+			TYPE=$(stat -f "%HT" "${DEVICES}/${2}")
+			case "${TYPE}" in
+				Character*)
+					export SC_GEOM="$(sysctl -b kern.geom.conftxt | grep -a ${2})"
+					export SC_SECTORSIZE="$(echo ${SC_GEOM} | cut -d " " -f 5)"
+					UUID=$(dd if=${DEVICES}/${2} bs=${SC_SECTORSIZE} count=1 2>/dev/null | grep -a ^uuid= | cut -d = -f 2)
+					DESC=$(dd if=${DEVICES}/${2} bs=${SC_SECTORSIZE} count=1 2>/dev/null | grep -a ^description= | cut -d = -f 2)
+					echo "${UUID} - ${DESC}"
+				;;
+				*)
+					echo "Not a character device"
+					exit 2
+				;;
+			esac
 		;;
 		[cC][oO][mM][mM][iI][tT])
 			preprrstore "${2}"
