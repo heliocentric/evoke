@@ -208,7 +208,8 @@ do
 	sed -i .bak "s@libmd@libmd libevoke@g" ${DESTDIR}/usr/src/lib/Makefile
 
 	cd ${DESTDIR}/usr/src
-	find . -not -path \*.svn\* -not -type d -exec sed -i .bak "s@%%ABI%%@FreeBSD-${RELEASE}@g" '{}' \;
+	find . -not -path \*.svn\* -not -type d -exec sed -i .bak "s@%%KERNEL%%@FreeBSD@g" '{}' \;
+	find . -not -path \*.svn\* -not -type d -exec sed -i .bak "s@%%ABI%%@${RELEASE}@g" '{}' \;
 	find . -not -path \*.svn\* -not -type d -exec sed -i .bak "s@%%ARCH%%@${TARGET}@g"  '{}' \;
 	find . -not -path \*.svn\* -not -type d -exec sed -i .bak "s@%%VERSION%%@${VERSION}@g"  '{}' \;
 	find . -not -path \*.svn\* -not -type d -exec sed -i .bak "s@%%REVISION%%@${REVISION}@g"  '{}' \;

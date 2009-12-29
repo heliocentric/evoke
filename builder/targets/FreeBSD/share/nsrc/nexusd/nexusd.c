@@ -93,12 +93,12 @@ int startsystem(pid_t * systartpid, int mode);
 #define MULTIUSER 5
 
 
-#define BINPATH "/system/%%ABI%%/%%ARCH%%/bin"
-#define SHPATH "/system/%%ABI%%/%%ARCH%%/bin/sh"
-#define TCSHPATH "/system/%%ABI%%/%%ARCH%%/bin/tcsh"
-#define LIBPATH "/system/%%ABI%%/%%ARCH%%/lib"
-#define LIBEXECPATH "/system/%%ABI%%/%%ARCH%%/libexec"
-#define BOOTPATH "/system/%%ABI%%/%%ARCH%%/boot"
+#define BINPATH "/system/%%KERNEL%%-%%ABI%%/%%ARCH%%/bin"
+#define SHPATH "/system/%%KERNEL%%-%%ABI%%/%%ARCH%%/bin/sh"
+#define TCSHPATH "/system/%%KERNEL%%-%%ABI%%/%%ARCH%%/bin/tcsh"
+#define LIBPATH "/system/%%KERNEL%%-%%ABI%%/%%ARCH%%/lib"
+#define LIBEXECPATH "/system/%%KERNEL%%-%%ABI%%/%%ARCH%%/libexec"
+#define BOOTPATH "/system/%%KERNEL%%-%%ABI%%/%%ARCH%%/boot"
 
 #define ARCH "%%ARCH%%"
 
@@ -174,11 +174,11 @@ int realmain(int mode, int tracemode) {
 		sysctl(mib, 2, &architecture, &length, NULL, 0);
 
 		setctty("/dev/console");
-		printf("Initializing FreeBSD/%s: %d (FreeBSD/%%ARCH%%: %d)\n", architecture, realversion, __FreeBSD_version);
+		printf("Initializing FreeBSD/%s: %d (%%KERNEL%%/%%ARCH%%: %d)\n", architecture, realversion, __FreeBSD_version);
 
 
 		/* Set some important environment variables */
-		setenv("EVOKE_SYSTEM_OS", "FreeBSD", 1);
+		setenv("EVOKE_SYSTEM_OS", "%%KERNEL%%", 1);
 		setenv("EVOKE_SYSTEM_ABI", "%%ABI%%", 1);
 		setenv("EVOKE_SYSTEM_ARCH", "%%ARCH%%", 1);
 		setenv("TERM", "cons25", 1);

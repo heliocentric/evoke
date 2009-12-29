@@ -287,7 +287,7 @@ main()
 	
 			sigprocmask(SIG_SETMASK, &nsa.sa_mask, (sigset_t *) 0);
 	
-			execv("/system/%%ABI%%/%%ARCH%%/bin/sh", nargv);
+			execv("/system/%%KERNEL%%-%%ABI%%/%%ARCH%%/bin/sh", nargv);
 			stall("can't exec systart");
 			_exit(1);	/* force single user mode */
 		}
