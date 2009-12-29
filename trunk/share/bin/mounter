@@ -1032,38 +1032,40 @@ rmount () {
 	if [ "${M_PROTO}" = "ufs" ] ; then
 		ROPTIONS="${ROPTIONS},acls"
 	fi
-	for option in "${OPTIONS}"
-	do
-		case "${option}" in
-			[rR][eE][aA][dD][oO][nN][lL][yY])
-				ROPTIONS="${ROPTIONS},ro"
-			;;
-			[uU][nN][iI][oO][nN])
-				ROPTIONS="${ROPTIONS},union"
-			;;
-			[sS][yY][nN][cC])
-				ROPTIONS="${ROPTIONS},sync"
-			;;
-			[aA][sS][yY][nN][cC])
-				ROPTIONS="${ROPTIONS},async"
-			;;
-			[nN][oO][eE][xX][eE][cC])
-				ROPTIONS="${ROPTIONS},noexec"
-			;;
-			[nN][oO][sS][uU][iI][dD])
-				ROPTIONS="${ROPTIONS},nosuid"
-			;;
-			[sS][uU][iI][dD][dD][iI][rR])
-				ROPTIONS="${ROPTIONS},suiddir"
-			;;
-			[nN][oO][sS][yY][mM][lL][iI][nN][kK])
-				ROPTIONS="${ROPTIONS},nosymfollow"
-			;;
-			[mM][uU][lL][tT][iI][lL][aA][bB][eE][lL]])
-				ROPTIONS="${ROPTIONS},multilabel"
-			;;
-		esac
-	done
+	if [ "${OPTIONS}" != "" ] ; then
+		for option in ${OPTIONS}
+		do
+			case "${option}" in
+				[rR][eE][aA][dD][oO][nN][lL][yY])
+					ROPTIONS="${ROPTIONS},ro"
+				;;
+				[uU][nN][iI][oO][nN])
+					ROPTIONS="${ROPTIONS},union"
+				;;
+				[sS][yY][nN][cC])
+					ROPTIONS="${ROPTIONS},sync"
+				;;
+				[aA][sS][yY][nN][cC])
+					ROPTIONS="${ROPTIONS},async"
+				;;
+				[nN][oO][eE][xX][eE][cC])
+					ROPTIONS="${ROPTIONS},noexec"
+				;;
+				[nN][oO][sS][uU][iI][dD])
+					ROPTIONS="${ROPTIONS},nosuid"
+				;;
+				[sS][uU][iI][dD][dD][iI][rR])
+					ROPTIONS="${ROPTIONS},suiddir"
+				;;
+				[nN][oO][sS][yY][mM][lL][iI][nN][kK])
+					ROPTIONS="${ROPTIONS},nosymfollow"
+				;;
+				[mM][uU][lL][tT][iI][lL][aA][bB][eE][lL]])
+					ROPTIONS="${ROPTIONS},multilabel"
+				;;
+			esac
+		done
+	fi
 	mount -o ${ROPTIONS} $@
 }
 

@@ -67,7 +67,7 @@ if [ "${MODE}" = "init" ] ; then
 	export EVOKE_SYSTEM_OS=$(uname)
 	case "${EVOKE_SYSTEM_OS}" in
 		OpenBSD)
-			export EVOKE_SYSTEM_ABI="$(sysctl -n kern.osrelease)"
+			export EVOKE_SYSTEM_ABI="$(sysctl -n kern.osrelease | cut -d \- -f 1)"
 			export EVOKE_SYSTEM_MACHINE="$(machine)"
 			export EVOKE_SYSTEM_ARCH="$(machine -a)"
 		;;
@@ -90,11 +90,11 @@ if [ "${MODE}" = "init" ] ; then
 			export EVOKE_SYSTEM_ARCH="$(sysctl -n hw.machine_arch)"
 		;;
 		*)
-			KERNEL_ABI="$(sysctl -n kern.osrelease | cut -d - -f 1)"
+			KERNEL_ABI="$(sysctl -n kern.osrelease | cut -d \- -f 1)"
 			if [ "${EVOKE_SYSTEM_ABI}" != "" ] ; then
-				if [ "$( echo ${EVOKE_SYSTEM_ABI} | cut -d -f 2)" -lt "${KERNEL_ABI}" ] ; then
-					if [ -f "/system/FreeBSD/${KERNEL_ABI}/bin/whiteout" ] ; then
-						mounter nullfs:/system/FreeBSD/${KERNEL_ABI}/bin /bin
+				if [ "${EVOKE_SYSTEM_ABI}" -lt "${KERNEL_ABI}" ] ; then
+					if [ -f "/system/FreeBSD-${KERNEL_ABI}/bin/whiteout" ] ; then
+						OPTIONS="union readonly" mounter nullfs:/system/FreeBSD-${KERNEL_ABI}/${EVOKE_SYSTEM_ARCH}/bin /bin
 					fi
 				fi
 			fi
