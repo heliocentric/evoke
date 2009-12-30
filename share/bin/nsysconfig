@@ -33,13 +33,13 @@ sysconfig () {
 	shift
 	case "${command}" in
 		[cC][oO][mM][mM][iI][tT])
-			TYPE="$(OPTIONS="quiet" filetype "${DEVICES}/${2}")"
+			TYPE="$(OPTIONS="quiet" filetype "${DEVICES}/${1}")"
 			case "${TYPE}" in
 				application/vnd.evoke.rrstore.*)
-					rrstore info "${1}" "${2}"
+					rrstore info "${@}"
 				;;
 				text/vnd.evoke.sysconfig.*)
-					rrstore commit "${1}" "${2}"
+					rrstore commit "${@}"
 				;;
 				*)
 					echo "Nothing to do."
@@ -47,7 +47,11 @@ sysconfig () {
 			esac
 		;;
 		[eE][xX][tT][rR][aA][cC][tT])
+		if [ -d "${EVOKE_SYSCONFIG_DIR}" ] ; then
+			mounter "fs:${1}" "${EVOKE_SYSCONFIG_DIR}"
+		else
 			mounter "fs:${1}" "${2}"
+		fi
 		;;
 		[lL][iI][sS][tT])
 			PARTLIST=$(mounter list sysconfig)
