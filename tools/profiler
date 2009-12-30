@@ -83,21 +83,20 @@ profiler () {
 		else
 			FILELIST="${TMPDIR}/run.col"
 		fi
-		ministat "${FILELIST}"
 		if [ "${COMPAREBASE}" = "no" ] ; then
-			ministat "${FILELIST}" | grep -v ^x | grep -v Avg
-			MIN="$(oblocksize "$(ministat "${FILELIST}" | grep ^x | tail -n 1 | awk ' { print $3 }')")"
-			MAX="$(oblocksize "$(ministat "${FILELIST}" | grep ^x | tail -n 1 | awk ' { print $4 }')")"
-			MED="$(oblocksize "$(ministat "${FILELIST}" | grep ^x | tail -n 1 | awk ' { print $5 }')")"
-			AVG="$(oblocksize "$(ministat "${FILELIST}" | grep ^x | tail -n 1 | awk ' { print $6 }')")"
-			STDDEV="$(oblocksize "$(ministat "${FILELIST}" | grep ^x | tail -n 1 | awk ' { print $7 }')")"
+			ministat ${FILELIST} | grep -v ^x | grep -v Avg
+			MIN="$(oblocksize "$(ministat ${FILELIST} | grep ^x | tail -n 1 | awk ' { print $3 }')")"
+			MAX="$(oblocksize "$(ministat ${FILELIST} | grep ^x | tail -n 1 | awk ' { print $4 }')")"
+			MED="$(oblocksize "$(ministat ${FILELIST} | grep ^x | tail -n 1 | awk ' { print $5 }')")"
+			AVG="$(oblocksize "$(ministat ${FILELIST} | grep ^x | tail -n 1 | awk ' { print $6 }')")"
+			STDDEV="$(oblocksize "$(ministat ${FILELIST} | grep ^x | tail -n 1 | awk ' { print $7 }')")"
 			echo "Min: ${MIN}"
 			echo "Max: ${MAX}"
 			echo "Median: ${MED}"
 			echo "Average: ${AVG}"
 			echo "Std Deviation: ${STDDEV}"
 		else
-			ministat "${FILELIST}"
+			ministat ${FILELIST}
 		fi
 	fi
 }
