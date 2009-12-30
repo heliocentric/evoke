@@ -60,7 +60,7 @@ profiler () {
 					local COUNT="16"
 				;;
 			esac
-			DESTFILE="${DESTINATION}/$(rand).pcol"
+			DESTFILE="${DESTINATION}/$(rand)"
 			RATE="$(dd if=/dev/zero bs="${SIZE}" count="${COUNT}" of="${DESTFILE}" 2>&1 | tail -n 1 | cut -d \( -f 2 | awk ' { print $1; }')"
 			echo "${RATE}"
 			NUM="$((${NUM} + 1))"
@@ -69,7 +69,7 @@ profiler () {
 	else
 		while [ "${NUM}" -lt 40 ]
 		do
-			STATFILE="${TMPDIR}/$(rand)"
+			STATFILE="${TMPDIR}/$(rand).pcol"
 			touch "${STATFILE}"
 			profiler "${STATFILE}" &
 			NUM="$((${NUM} + 1))"
