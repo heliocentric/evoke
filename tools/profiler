@@ -79,7 +79,7 @@ profiler () {
 		wait
 		cd "${TMPDIR}" && cat *.pcol  >"${TMPDIR}/run.col"
 		if [ -f "${TMPDIR}/baseline.col" ] ; then
-			FILELIST="${TMPDIR}/run.col ${TMPDIR}/baseline.col"
+			FILELIST="${TMPDIR}/baseline.col ${TMPDIR}/run.col"
 		else
 			FILELIST="${TMPDIR}/run.col"
 		fi
