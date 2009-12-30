@@ -16,6 +16,19 @@ else
 	fi
 fi
 
+printf "Compare to baseline? [y/N]: "
+read CHECKBASE
+case "${CHECKBASE}" in
+	[yY])
+		COMPAREBASE="yes"
+		cd "${TMPDIR}"
+		fetch http://evoke.googlecode.com/svn/info/baseline.col
+	;;
+	*)
+		COMPAREBASE="no"
+	;;
+esac
+
 oblocksize () {
 	if [ "$(command -v blocksize)" = "" ] ; then
 		echo "$*"
@@ -47,7 +60,7 @@ profiler () {
 					local COUNT="16"
 				;;
 			esac
-			DESTFILE="${DESTINATION}/$(rand)"
+			DESTFILE="${DESTINATION}/$(rand).pcol"
 			RATE="$(dd if=/dev/zero bs="${SIZE}" count="${COUNT}" of="${DESTFILE}" 2>&1 | tail -n 1 | cut -d \( -f 2 | awk ' { print $1; }')"
 			echo "${RATE}"
 			NUM="$((${NUM} + 1))"
@@ -64,18 +77,28 @@ profiler () {
 			PIDLIST="$(printf "${PIDLIST}\n${PID}")"
 		done
 		wait
-		cd "${TMPDIR}" && cat *  >"${TMPDIR}/collection"
-		ministat <"${TMPDIR}/collection" | grep -v ^x | grep -v Avg
-		MIN="$(oblocksize "$(ministat <"${TMPDIR}/collection" | grep ^x | tail -n 1 | awk ' { print $3 }')")"
-		MAX="$(oblocksize "$(ministat <"${TMPDIR}/collection" | grep ^x | tail -n 1 | awk ' { print $4 }')")"
-		MED="$(oblocksize "$(ministat <"${TMPDIR}/collection" | grep ^x | tail -n 1 | awk ' { print $5 }')")"
-		AVG="$(oblocksize "$(ministat <"${TMPDIR}/collection" | grep ^x | tail -n 1 | awk ' { print $6 }')")"
-		STDDEV="$(oblocksize "$(ministat <"${TMPDIR}/collection" | grep ^x | tail -n 1 | awk ' { print $7 }')")"
-		echo "Min: ${MIN}"
-		echo "Max: ${MAX}"
-		echo "Median: ${MED}"
-		echo "Average: ${AVG}"
-		echo "Std Deviation: ${STDDEV}"
+		cd "${TMPDIR}" && cat *.pcol  >"${TMPDIR}/run.col"
+		if [ -f "${TMPDIR}/baseline.col" ] ; then
+			FILELIST="${TMPDIR}/run.col ${TMPDIR}/baseline.col"
+		else
+			FILELIST="${TMPDIR}/run.col"
+		fi
+		ministat "${FILELIST}"
+		if [ "${COMPAREBASE}" = "no" ] ; then
+			ministat "${FILELIST}" | grep -v ^x | grep -v Avg
+			MIN="$(oblocksize "$(ministat "${FILELIST}" | grep ^x | tail -n 1 | awk ' { print $3 }')")"
+			MAX="$(oblocksize "$(ministat "${FILELIST}" | grep ^x | tail -n 1 | awk ' { print $4 }')")"
+			MED="$(oblocksize "$(ministat "${FILELIST}" | grep ^x | tail -n 1 | awk ' { print $5 }')")"
+			AVG="$(oblocksize "$(ministat "${FILELIST}" | grep ^x | tail -n 1 | awk ' { print $6 }')")"
+			STDDEV="$(oblocksize "$(ministat "${FILELIST}" | grep ^x | tail -n 1 | awk ' { print $7 }')")"
+			echo "Min: ${MIN}"
+			echo "Max: ${MAX}"
+			echo "Median: ${MED}"
+			echo "Average: ${AVG}"
+			echo "Std Deviation: ${STDDEV}"
+		else
+			ministat "${FILELIST}"
+		fi
 	fi
 }
 
