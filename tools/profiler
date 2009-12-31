@@ -98,6 +98,15 @@ profiler () {
 		else
 			ministat ${FILELIST}
 		fi
+		printf "Save collection data? [y/N]: "
+		read SAVE
+		case "${SAVE}" in
+			[yY])
+				printf "Filename: "
+				read FILENAME
+				cp "${TMPDIR}/run.col" "${FILENAME}"				
+			;;
+		esac
 	fi
 }
 
