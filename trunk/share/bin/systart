@@ -263,12 +263,12 @@ fi
 SC_PART=${EVOKE_SCDEVICE}
 
 if [ "$(is_uuid ${SC_PART})" = "no" ] ; then
-	SC_PART=$(nsysconfig menu)
+	SC_PART=$(sysconfig menu)
 	export EVOKE_SYSCONFIG=${SC_PART} >/dev/null
 fi
 
 if [ "${SC_PART}" != "" ] ; then
-	nsysconfig extract ${EVOKE_SYSCONFIG}
+	sysconfig extract ${EVOKE_SYSCONFIG}
 fi
 
 DEFUSER=${EVOKE_USERCONFIG}
