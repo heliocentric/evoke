@@ -387,7 +387,6 @@ evoke.fingerprint="${FINGERPRINT}"
 evoke.moused="yes"
 evoke.version="${VERSION}/${REVISION}"
 evoke.misc.message="YES"
-boot_multicons="YES"
 kern.hz=100
 EOF
 
