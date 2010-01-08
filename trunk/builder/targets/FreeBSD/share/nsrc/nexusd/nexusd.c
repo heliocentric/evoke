@@ -47,10 +47,12 @@
 #include <stdlib.h>
 #include <sys/reboot.h>
 #include <errno.h>
+#include <err.h>
 #include <kenv.h>
 #include <sys/ktrace.h>
 #include <ctype.h>
 #include <osreldate.h>
+#include <sys/resource.h>
 #if defined(__FreeBSD__)
 #	include <sys/watchdog.h>
 #endif
@@ -69,10 +71,37 @@ int realmain(int mode, int tracemode);
 int checkhash(void);
 
 int startpowerd(pid_t * powerdpid);
+int powerd_main();
 
-#define DEFAULT_ACTIVE_PERCENT  75
-#define DEFAULT_IDLE_PERCENT    50
-#define DEFAULT_POLL_INTERVAL   250     /* Poll interval in milliseconds */
+/* ----------------------------------------------------------------------------------------------------------------- 
+	Import from powerd
+*/
+
+#define DEFAULT_ACTIVE_PERCENT	75
+#define DEFAULT_IDLE_PERCENT	50
+#define DEFAULT_POLL_INTERVAL	250	/* Poll interval in milliseconds */
+
+static int	read_usage_times(int *load);
+static int	read_freqs(int *numfreqs, int **freqs, int **power);
+static int	set_freq(int freq);
+static void	usage(void);
+
+/* Sysctl data structures. */
+static int	cp_times_mib[2];
+static int	freq_mib[4];
+static int	levels_mib[4];
+static int	acline_mib[4];
+static size_t	acline_mib_len;
+
+/* Configuration */
+static int	cpu_running_mark;
+static int	cpu_idle_mark;
+static int	poll_ival;
+
+
+/* ----------------------------------------------------------------------------------------------------------------- 
+	End Import from powerd
+*/
 
 int startwatchdogd(pid_t * watchdogdpid);
 #if defined(__FreeBSD__)
@@ -354,6 +383,25 @@ int fmount(const char *fstype, const char *sourcepath, const char *destpath, int
 }
 
 int startpowerd(pid_t * powerdpid) {
+	*powerdpid = fork();
+	struct rtprio rtp;
+
+	switch (*powerdpid) {
+		case 0:
+			setproctitle("powerd thread");
+			rtp.type = RTP_PRIO_REALTIME;
+			rtp.prio = 0;
+			if (rtprio(RTP_SET, 0, &rtp) == -1) {
+				printf("powerd: Unable to set realtime mode\n");
+				exit(3);
+			}
+			powerd_main();
+			exit(2);
+		break;
+		case -1:
+			return 2;
+		break;
+	}
 	return 0;
 }
 
@@ -484,4 +532,244 @@ int startsystem(pid_t * systartpid, int mode) {
 		}
 	}
 	return 1;
+}
+
+/* ---------------------------------------------------------------------------------------------------- */
+
+/*-
+ * Copyright (c) 2004 Colin Percival
+ * Copyright (c) 2005 Nate Lawson
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted providing that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR``AS IS'' AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
+ * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+ * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
+ * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+
+static int
+read_usage_times(int *load)
+{
+	static long *cp_times = NULL, *cp_times_old = NULL;
+	static int ncpus = 0;
+	size_t cp_times_len;
+	int error, cpu, i, total;
+
+	if (cp_times == NULL) {
+		cp_times_len = 0;
+		error = sysctl(cp_times_mib, 2, NULL, &cp_times_len, NULL, 0);
+		if (error)
+			return (error);
+		if ((cp_times = malloc(cp_times_len)) == NULL)
+			return (errno);
+		if ((cp_times_old = malloc(cp_times_len)) == NULL) {
+			free(cp_times);
+			cp_times = NULL;
+			return (errno);
+		}
+		ncpus = cp_times_len / (sizeof(long) * CPUSTATES);
+	}
+
+	cp_times_len = sizeof(long) * CPUSTATES * ncpus;
+	error = sysctl(cp_times_mib, 2, cp_times, &cp_times_len, NULL, 0);
+	if (error)
+		return (error);
+		
+	if (load) {
+		*load = 0;
+		for (cpu = 0; cpu < ncpus; cpu++) {
+			total = 0;
+			for (i = 0; i < CPUSTATES; i++) {
+			    total += cp_times[cpu * CPUSTATES + i] -
+				cp_times_old[cpu * CPUSTATES + i];
+			}
+			if (total == 0)
+				continue;
+			*load += 100 - (cp_times[cpu * CPUSTATES + CP_IDLE] - 
+			    cp_times_old[cpu * CPUSTATES + CP_IDLE]) * 100 / total;
+		}
+	}
+
+	memcpy(cp_times_old, cp_times, cp_times_len);
+
+	return (0);
+}
+
+static int
+read_freqs(int *numfreqs, int **freqs, int **power)
+{
+	char *freqstr, *p, *q;
+	int i;
+	size_t len = 0;
+
+	if (sysctl(levels_mib, 4, NULL, &len, NULL, 0))
+		return (-1);
+	if ((freqstr = malloc(len)) == NULL)
+		return (-1);
+	if (sysctl(levels_mib, 4, freqstr, &len, NULL, 0))
+		return (-1);
+
+	*numfreqs = 1;
+	for (p = freqstr; *p != '\0'; p++)
+		if (*p == ' ')
+			(*numfreqs)++;
+
+	if ((*freqs = malloc(*numfreqs * sizeof(int))) == NULL) {
+		free(freqstr);
+		return (-1);
+	}
+	if ((*power = malloc(*numfreqs * sizeof(int))) == NULL) {
+		free(freqstr);
+		free(*freqs);
+		return (-1);
+	}
+	for (i = 0, p = freqstr; i < *numfreqs; i++) {
+		q = strchr(p, ' ');
+		if (q != NULL)
+			*q = '\0';
+		if (sscanf(p, "%d/%d", &(*freqs)[i], &(*power)[i]) != 2) {
+			free(freqstr);
+			free(*freqs);
+			free(*power);
+			return (-1);
+		}
+		p = q + 1;
+	}
+
+	free(freqstr);
+	return (0);
+}
+
+static int
+get_freq(void)
+{
+	size_t len;
+	int curfreq;
+	
+	len = sizeof(curfreq);
+	if (sysctl(freq_mib, 4, &curfreq, &len, NULL, 0) != 0) {
+		curfreq = 0;
+	}
+	return (curfreq);
+}
+
+static int
+set_freq(int freq)
+{
+
+	if (sysctl(freq_mib, 4, NULL, NULL, &freq, sizeof(freq))) {
+		if (errno != EPERM)
+			return (-1);
+	}
+
+	return (0);
+}
+
+static int
+get_freq_id(int freq, int *freqs, int numfreqs)
+{
+	int i = 1;
+	
+	while (i < numfreqs) {
+		if (freqs[i] < freq)
+			break;
+		i++;
+	}
+	return (i - 1);
+}
+
+
+int powerd_main() {
+	struct timeval timeout;
+	fd_set fdset;
+	int nfds;
+	struct pidfh *pfh = NULL;
+	const char *pidfile = NULL;
+	int freq, curfreq, initfreq, *freqs, i, j, *mwatts, numfreqs, load;
+	int ch, mode, mode_ac, mode_battery, mode_none;
+	uint64_t mjoules_used;
+	size_t len;
+
+	cpu_running_mark = DEFAULT_ACTIVE_PERCENT;
+	cpu_idle_mark = DEFAULT_IDLE_PERCENT;
+	poll_ival = DEFAULT_POLL_INTERVAL;
+
+	/* Poll interval is in units of ms. */
+	poll_ival *= 1000;
+
+	/* Look up various sysctl MIBs. */
+	len = 2;
+	if (sysctlnametomib("kern.cp_times", cp_times_mib, &len))
+		err(1, "lookup kern.cp_times");
+	len = 4;
+	if (sysctlnametomib("dev.cpu.0.freq", freq_mib, &len))
+		err(1, "lookup freq");
+	len = 4;
+	if (sysctlnametomib("dev.cpu.0.freq_levels", levels_mib, &len))
+		err(1, "lookup freq_levels");
+
+	/* Check if we can read the load and supported freqs. */
+	if (read_usage_times(NULL))
+		err(1, "read_usage_times");
+	if (read_freqs(&numfreqs, &freqs, &mwatts))
+		err(1, "error reading supported CPU frequencies");
+
+	freq = initfreq = get_freq();
+	if (freq < 1)
+		freq = 1;
+	/* Main loop. */
+	for (;;) {
+		FD_ZERO(&fdset);
+		nfds = 0;
+		timeout.tv_sec = poll_ival / 1000000;
+		timeout.tv_usec = poll_ival % 1000000;
+		select(nfds, &fdset, NULL, &fdset, &timeout);
+
+
+		/* Read the current frequency. */
+		if ((curfreq = get_freq()) == 0)
+			continue;
+
+		i = get_freq_id(curfreq, freqs, numfreqs);
+	
+		/* Adaptive mode; get the current CPU usage times. */
+		if (read_usage_times(&load)) {
+			continue;
+		}
+		
+		if (load > cpu_running_mark) {
+			if (load > 95 || load > cpu_running_mark * 2)
+				freq *= 2;
+			else
+				freq = freq * load / cpu_running_mark;
+			if (freq > freqs[0])
+				freq = freqs[0];
+		} else if (load < cpu_idle_mark && curfreq * load < freqs[get_freq_id(freq * 7 / 8, freqs, numfreqs)] * cpu_running_mark) {
+			freq = freq * 7 / 8;
+			if (freq < freqs[numfreqs - 1])
+				freq = freqs[numfreqs - 1];
+		}
+		j = get_freq_id(freq, freqs, numfreqs);
+		if (i != j) {
+			set_freq(freqs[j]);
+		}
+	}
+	set_freq(initfreq);
+	free(freqs);
 }
