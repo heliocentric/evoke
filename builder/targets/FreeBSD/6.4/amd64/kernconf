@@ -3,6 +3,9 @@ include		GENERIC
 ident		EVOKE
 options         ROOTDEVNAME=\"ufs:md0\"
 options		MAC
+options		GDB
+options		KDB
+options		DDB
 options		AUDIT
 options		MAC
 options         SC_PIXEL_MODE
