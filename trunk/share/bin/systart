@@ -90,17 +90,17 @@ if [ "${MODE}" = "init" ] ; then
 			export EVOKE_SYSTEM_ARCH="$(sysctl -n hw.machine_arch)"
 		;;
 		*)
+			export EVOKE_SYSTEM_ARCH="$(sysctl -n hw.machine_arch)"
 			KERNEL_ABI="$(sysctl -n kern.osrelease | cut -d \- -f 1)"
 			if [ "${EVOKE_SYSTEM_ABI}" != "" ] ; then
 				if [ "$( echo ${EVOKE_SYSTEM_ABI} | cut -d . -f 1)" -lt "$( echo "${KERNEL_ABI}" | cut -d . -f 1)" ] ; then
-					if [ -f "/system/FreeBSD-${KERNEL_ABI}/bin/whitelist" ] ; then
+					if [ -f "/system/FreeBSD-${KERNEL_ABI}/${EVOKE_SYSTEM_ARCH}/bin/whitelist" ] ; then
 						OPTIONS="union readonly" mounter nullfs:/system/FreeBSD-${KERNEL_ABI}/${EVOKE_SYSTEM_ARCH}/bin /bin
 					fi
 				fi
 			fi
 			export EVOKE_SYSTEM_ABI="${KERNEL_ABI}"
 			export EVOKE_SYSTEM_MACHINE="$(sysctl -n hw.machine)"
-			export EVOKE_SYSTEM_ARCH="$(sysctl -n hw.machine_arch)"
 			export EVOKE_SYSTEM_MODEL="$(kenv -q smbios.system.serial)"
 			case "${EVOKE_SYSTEM_MODEL}" in
 				EeePC-1234567890)
