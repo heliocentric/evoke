@@ -250,13 +250,6 @@ if [ "${MODE}" = "init" ] ; then
 	if [ -f "/system/share/lib/zoneinfo/${EVOKE_TIMEZONE_TCODE}" ] ; then
 		ln -s /system/share/lib/zoneinfo/${EVOKE_TIMEZONE_TCODE} /config/localtime
 	fi
-
-	echo "Starting system daemons"
-	# Always start powerd if available, some machines do not have proper heat management
-	# and it can be an issue. 
-	#
-	# Do not remove under penalty of death!
-	powerd >${DEVICES}/null 2>${DEVICES}/null
 	echo "" >/var/run/utmp
 fi
 
