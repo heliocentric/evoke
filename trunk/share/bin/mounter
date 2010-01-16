@@ -1032,6 +1032,9 @@ rmount () {
 	if [ "${M_PROTO}" = "ufs" ] ; then
 		ROPTIONS="${ROPTIONS},acls"
 	fi
+	if [ "${M_PROTO}" = "msdosfs" ] ; then
+		ROPTIONS="${ROPTIONS},large"
+	fi
 	if [ "${OPTIONS}" != "" ] ; then
 		for option in ${OPTIONS}
 		do
