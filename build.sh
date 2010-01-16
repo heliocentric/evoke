@@ -45,7 +45,7 @@ cat chmod cp csh date dconschat dd devfs df dhclient disklabel dmesg echo
 ee expr fdisk fsck_ffs fsck_msdosfs ftp ftpd fwcontrol geli getty grep 
 groups gunzip gzcat gzip halt head id ifconfig jail jexec jls kenv kill init kenv
 kldconfig kldload kldstat kldunload less link ln login ls md5 mdconfig 
-mdmfs mkdir more mount moused mv nc newfs pciconf ping powerd ps pwd cut uname mount_nullfs
+mdmfs mkdir more mount moused mv nc newfs pciconf ping ps pwd cut uname mount_nullfs
 printf pwd_mkdb reboot rm route sed sh sha1 sha256 ssh ssh-keygen sshd stty 
 swapon swapoff swapinfo syslogd tail tar tcsh tftp top umount sysctl
 uniq unlink usbdevs vidcontrol whoami zcat sort pfctl du makefs 
