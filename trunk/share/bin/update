@@ -1030,13 +1030,21 @@ media_menu() {
 			;;
 			CD/DVD\ ROM)
 				clear
-				CHOICE="$(menu "CD Drives" "$(mounter list cd9660)" "$(printf "b:Back")")"
-				if [ "${CHOICE}" != "Back" ] ; then
-					if [ "$(mounter list cd9660 | grep "${CHOICE}")" = "" ] ; then
-						echo "Drive not found!"
+				LIST="$(mounter list cd9660)"
+				COUNTLIST="$(echo "${LIST}" | wc -l)"
+				if [ "${LIST}" != "" ] ; then
+					if [ "${COUNTLIST}" = "1" ] ; then
+						echo "cd9660:${LIST}" >${TEMPDIR}/mirrorlist
 					else
-						echo "cd9660:${CHOICE}" >${TEMPDIR}/mirrorlist
-						break
+						CHOICE="$(menu "CD Drives" "$(mounter list cd9660)" "$(printf "b:Back")")"
+						if [ "${CHOICE}" != "Back" ] ; then
+							if [ "$(mounter list cd9660 | grep "${CHOICE}")" = "" ] ; then
+								echo "Drive not found!"
+							else
+								echo "cd9660:${CHOICE}" >${TEMPDIR}/mirrorlist
+								break
+							fi
+						fi
 					fi
 				fi
 			;;
