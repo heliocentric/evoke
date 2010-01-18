@@ -904,7 +904,7 @@ update_menu() {
 	while [ 1 != 2 ]
 	do
 		clear
-		OPTION="$(menu "Evoke System Manager" "$(printf "Install New Version\nDeinstall Version\nSelect Media\nActivate")" "$(printf "o:Options\nq:Quit")")"
+		OPTION="$(menu "Evoke System Manager" "$(printf "Install New Version\nDeinstall Version\nVerify Install\nSelect Media\nActivate")" "$(printf "o:Options\nq:Quit")")"
 		case "${OPTION}" in
 			Quit)
 				break
@@ -916,10 +916,13 @@ update_menu() {
 				option_menu
 			;;
 			Install\ New\ Version)
-				revision_menu
+				revision_menu "${DESTDIR}"
 			;;
 			Deinstall\ Version)
 				deinstall_menu "${DESTDIR}"
+			;;
+			Verify\ Install)
+				verify_menu "${DESTDIR}"
 			;;
 			Select\ Media)
 				media_menu
@@ -928,6 +931,44 @@ update_menu() {
 	done
 }
 
+verify_menu() {
+	LDESTDIR="${1}/evoke"
+	VERSIONLIST="$(list_versions ${LDESTDIR})"
+	for version in ${VERSIONLIST}
+	do
+		printf "Evoke ${version} - Checking...."
+		cd "${LDESTDIR}/${version}"
+		TRACKFILE="trackfile" OPTIONS="quiet" verify
+		RETVAL=$?
+		if [ "${RETVAL}" = "0" ] ; then
+			printf "           PASSED\n"
+		else
+			printf "           FAILED\n"
+		fi
+	done
+	if [ -f "${LDESTDIR}/misc/site.conf" ] ; then
+	fi
+	if [ -f "${LDESTDIR}/misc/local.conf" ] ; then
+	fi
+	BOOTFILE="$(cat ${1}/boot.config)"
+	MATCH="0"
+	for version in $(echo "${VERSIONLIST}")
+	do
+		trackfile="${LDESTDIR}/${version}/trackfile"
+		for filespec in $(grep -a ^F: "${trackfile}")
+		do
+			FILENAME="$(echo "${filespec}" | cut -d : -f 2)"
+			if [ "/evoke/${version}/${FILENAME}" = "${BOOTFILE}" ] ; then
+				MATCH=1
+				break 2
+			fi
+		done
+	done
+	if [ "${MATCH}" = "0" ] ; then
+		echo "Warning - boot.config does not point to a valid Evoke install."
+	fi
+	read BLAH
+}
 deinstall_menu() {
 	LDESTDIR="${1}/evoke"
 	VERSIONLIST="$(list_versions ${LDESTDIR})"
