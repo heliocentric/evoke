@@ -1,0 +1,19 @@
+--- lib/libc/Versions.def	2009-12-01 11:10:59.000000000 +0000
++++ lib/libc/Versions.def	2010-01-22 01:49:37.000000000 +0000
+@@ -1,4 +1,4 @@
+-# $FreeBSD$
++# $FreeBSD: src/lib/libc/Versions.def,v 1.8.2.1.2.1 2009/10/25 01:10:29 kensmith Exp $
+ 
+ # This is our first version; it depends on no other.
+ # This version was first added to 7.0-current.
+@@ -9,6 +9,10 @@
+ FBSD_1.1 {
+ } FBSD_1.0;
+ 
++# Bump up libc...
++FBSD_1.1.1 {
++} FBSD_1.1;
++
+ # This is our private namespace.  Any global interfaces that are
+ # strictly for use only by other FreeBSD applications and libraries
+ # are listed here.  We use a separate namespace so we can write
