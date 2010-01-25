@@ -115,6 +115,7 @@ real_update() {
 	find_mirror "evoke/${VERSION}/trackfile" "${TEMPDIR}/trackfile"
 	TRACKFILE="${TEMPDIR}/trackfile" OPTIONS="quiet trackfile_onlyrsa" verify
 	ERRORCODE="$?"
+	FMODE="normal"
 
 	if [ "${ERRORCODE}" = 0 ] ; then
 		DEST_TRACKFILE="$(grep -a ^F: ${TEMPDIR}/trackfile)"
@@ -176,44 +177,62 @@ real_update() {
 			done
 			# No reference points? Just fetch!
 			if [ "${VERSIONLIST}" = "error" ] ; then
-				for filespec in ${DEST_TRACKFILE}
-				do
-					unset RETVAL
-					cd "${DESTDIR}/evoke/"
+				unset RETVAL
+				cd "${DESTDIR}/evoke/"
+				case "${PROTOCOL}" in
+					http)
+						FMODE="normal"
+					;;
+					ftp)
+						FMODE="normal"
+					;;
+					tftp)
+						FMODE="normal"
+					;;
+					*)
+						FMODE="full"
+					;;
+				esac
+				if [ "${FMODE}" = "normal" ] ; then
+					for filespec in ${DEST_TRACKFILE}
+					do
 
-					vecho "Starting ${FILENAME} \{\n"
-					vecho "\tFetching full files \{\n"
+						vecho "Starting ${FILENAME} \{\n"
+						vecho "\tFetching full files \{\n"
+	
+						SIZE="$(echo "${filespec}" | cut -d ":" -f 4)"
+						HASH="$(echo "${filespec}" | cut -d ":" -f 3)"
+						FILENAME="$(echo "${filespec}" | cut -d ":" -f 2)"
+						local TUSERNAME="$(echo "${filespec}" | cut -d ":" -f 5)"
+						local TGROUPNAME="$(echo "${filespec}" | cut -d ":" -f 6)"
+						local TUSERMODE="$(echo "${filespec}" | cut -d ":" -f 7 | cut -b 2-4)"
+						local TGROUPMODE="$(echo "${filespec}" | cut -d ":" -f 7 | cut -b 5-7)"
+						local TWORLDMODE="$(echo "${filespec}" | cut -d ":" -f 7 | cut -b 8-10)"
+						local TCTIME="$(echo "${filespec}" | cut -d ":" -f 8)"
+						local TMTIME="$(echo "${filespec}" | cut -d ":" -f 9)"
 
-					SIZE="$(echo "${filespec}" | cut -d ":" -f 4)"
-					HASH="$(echo "${filespec}" | cut -d ":" -f 3)"
-					FILENAME="$(echo "${filespec}" | cut -d ":" -f 2)"
-					local TUSERNAME="$(echo "${filespec}" | cut -d ":" -f 5)"
-					local TGROUPNAME="$(echo "${filespec}" | cut -d ":" -f 6)"
-					local TUSERMODE="$(echo "${filespec}" | cut -d ":" -f 7 | cut -b 2-4)"
-					local TGROUPMODE="$(echo "${filespec}" | cut -d ":" -f 7 | cut -b 5-7)"
-					local TWORLDMODE="$(echo "${filespec}" | cut -d ":" -f 7 | cut -b 8-10)"
-					local TCTIME="$(echo "${filespec}" | cut -d ":" -f 8)"
-					local TMTIME="$(echo "${filespec}" | cut -d ":" -f 9)"
-
-					PDESTDIR="${STAGEDIR}/$(dirname ${FILENAME})"
-					BASENAME="$(basename ${FILENAME})"
-					mkdir -p "${PDESTDIR}"
-					vecho "\tHASH=${HASH}\n"
-					vecho "\tFILENAME=${FILENAME}\n"
-					vecho "\tPDESTDIR=${PDESTDIR}\n"
-					vecho "\tBASENAME=${BASENAME}\n"
+						PDESTDIR="${STAGEDIR}/$(dirname ${FILENAME})"
+						BASENAME="$(basename ${FILENAME})"
+						mkdir -p "${PDESTDIR}"
+						vecho "\tHASH=${HASH}\n"
+						vecho "\tFILENAME=${FILENAME}\n"
+						vecho "\tPDESTDIR=${PDESTDIR}\n"
+						vecho "\tBASENAME=${BASENAME}\n"
 
 
-					RETVAL="$(fetch_full_file "${HASH}" "${FILENAME}" "${PDESTDIR}" "${BASENAME}" "${SIZE}")"
+						RETVAL="$(fetch_full_file "${HASH}" "${FILENAME}" "${PDESTDIR}" "${BASENAME}" "${SIZE}")"
 
-					if [ "${RETVAL}" != "0" ] ; then
-						unset RETVAL
-						echo "File corrupted in transit, bailing out"
-						exit 65
-					else
-						unset RETVAL
-					fi
-				done
+						if [ "${RETVAL}" != "0" ] ; then
+							unset RETVAL
+							echo "File corrupted in transit, bailing out"
+							exit 65
+						else
+							unset RETVAL
+						fi
+					done
+				else
+					local_copy "${VERSION}" "${DESTDIR}/evoke/${VERSION}"
+				fi
 			else
 				for filespec in ${DEST_TRACKFILE}
 				do
@@ -346,18 +365,32 @@ real_update() {
 			cd "${STAGEDIR}"
 
 			FILELIST="$(echo ${DEST_TRACKFILE} | cut -d : -f 2)"
-			mv "${TEMPDIR}/trackfile" "${STAGEDIR}/"
-			TRACKFILE="${STAGEDIR}/trackfile" OPTIONS="quiet" verify ${FILELIST}
-			RETVAL=$?
-			if [ "${RETVAL}" != "0" ] ; then
-				unset RETVAL
-				echo "The trackfile is incomplete"
-				exit 65
+			if [ "${FMODE}" = "normal" ] ; then
+				mv "${TEMPDIR}/trackfile" "${STAGEDIR}/"
+				TRACKFILE="${STAGEDIR}/trackfile" OPTIONS="quiet" verify ${FILELIST}
+				RETVAL=$?
+				if [ "${RETVAL}" != "0" ] ; then
+					unset RETVAL
+					echo "The trackfile is incomplete"
+					exit 65
+				else
+					unset RETVAL
+				fi
+				mkdir -p "${DESTDIR}/evoke/${VERSION}"
+				tar -cf - * | tar -xpf - -C "${DESTDIR}/evoke/${VERSION}" 2>${DEVICES}/null
 			else
-				unset RETVAL
+				mv "${TEMPDIR}/trackfile" "${DESTDIR}/evoke/${VERSION}/"
+				cd ${DESTDIR}/evoke/${VERSION}
+				TRACKFILE="${DESTDIR}/evoke/${VERSION}/trackfile" OPTIONS="quiet" verify ${FILELIST}
+				RETVAL=$?
+				if [ "${RETVAL}" != "0" ] ; then
+					unset RETVAL
+					echo "The trackfile is incomplete"
+					exit 65
+				else
+					unset RETVAL
+				fi
 			fi
-			mkdir -p "${DESTDIR}/evoke/${VERSION}"
-			tar -cf - * | tar -xpf - -C "${DESTDIR}/evoke/${VERSION}" 2>${DEVICES}/null
 			# run verify, but this time, let it write the extended attribute out.
 			cd "${DESTDIR}/evoke/${VERSION}"
 			unset TRACKFILE
@@ -530,8 +563,17 @@ piper() {
 	fi
 }
 
-# Wrapper, as our main mirror doesn't support wdfs, so we have to fall back to fetch
 
+# Quick, full copy (via tar) if it's a local filesystem. 
+# Much more memory efficient if installing from a cd.
+
+local_copy() {
+	mkdir -p ${DESTDIR}/evoke/${1}/
+	cd ${MIRROR_MOUNTPOINT}/evoke/${1}
+	tar -cf - * | piper | tar -xpf - -C ${DESTDIR}/evoke/${1}/
+}
+
+# Wrapper, as our main mirror doesn't support wdfs, so we have to fall back to fetch
 getfile() {
 
 	filename="$(basename "${1}")"
@@ -557,7 +599,7 @@ getfile() {
 			
 		;;
 	esac
-
+	
 	filesize="$(stat -f '%z' ${filename} 2>/dev/null)"
 
 	if [ "${filesize}" != "${size}" ] ; then
