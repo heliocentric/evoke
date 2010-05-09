@@ -202,6 +202,7 @@ real_update() {
 	
 						SIZE="$(echo "${filespec}" | cut -d ":" -f 4)"
 						HASH="$(echo "${filespec}" | cut -d ":" -f 3)"
+						TYPE="$(echo "${filespec}" | cut -d ":" -f 10)"
 						FILENAME="$(echo "${filespec}" | cut -d ":" -f 2)"
 						local TUSERNAME="$(echo "${filespec}" | cut -d ":" -f 5)"
 						local TGROUPNAME="$(echo "${filespec}" | cut -d ":" -f 6)"
@@ -224,14 +225,28 @@ real_update() {
 
 						if [ "${RETVAL}" != "0" ] ; then
 							unset RETVAL
-							echo "File corrupted in transit, bailing out"
-							exit 65
+							if [ "$(OPTIONS="quiet" filetype "${FILENAME}")" = "text/html" ] ; then
+								echo "A proxy server is corrupting files sent in transit"
+								echo "Please add ${server} to your proxy whitelist, or contact your network administrator"
+								exit 65
+							else
+								echo "File corrupted in transit, bailing out"
+								exit 65
+							fi
 						else
 							unset RETVAL
 						fi
 					done
 				else
 					local_copy "${VERSION}" "${DESTDIR}/evoke/${VERSION}"
+					cd "${DESTDIR}/evoke/${VERSION}"
+					TRACKFILE=trackfile OPTIONS=quiet verify
+					RETVAL=$?
+					if [ "${RETVAL}" = "0" ] ; then
+					else
+						echo "File corrupted in transit, bailing out"
+						exit 65
+					fi
 				fi
 			else
 				for filespec in ${DEST_TRACKFILE}
@@ -243,6 +258,7 @@ real_update() {
 
 					SIZE="$(echo "${filespec}" | cut -d ":" -f 4)"
 					HASH="$(echo "${filespec}" | cut -d ":" -f 3)"
+					TYPE="$(echo "${filespec}" | cut -d ":" -f 10)"
 					FILENAME="$(echo "${filespec}" | cut -d ":" -f 2)"
 					PDESTDIR="${STAGEDIR}/$(dirname ${FILENAME})"
 					BASENAME="$(basename ${FILENAME})"
@@ -354,8 +370,14 @@ real_update() {
 					vecho "\t}\n"
 					if [ "${RETVAL}" != "0" ] ; then
 						unset RETVAL
-						echo "File corrupted in transit, bailing out"
-						exit 65
+						if [ "$(OPTIONS="quiet" filetype "${FILENAME}")" = "text/html" ] ; then
+							echo "A proxy server is corrupting files sent in transit"
+							echo "Please add ${server} to your proxy whitelist, or contact your network administrator"
+							exit 65
+						else
+							echo "File corrupted in transit, bailing out"
+							exit 65
+						fi
 					else
 						unset RETVAL
 					fi
@@ -420,6 +442,12 @@ fetch_full_file() {
 	vecho "\t\tFetching ${FILENAME} {\n" 1>&2
 	getfile "evoke/${VERSION}/${FILENAME}" "${FILENAME}" "${SIZE}"
 
+	local ERRORCODE="$?"
+	if [ ! -f "${BASENAME}" ] ; then
+		vecho "\t\t\tError! file not found.\n" 1>&2
+		echo 1
+		return
+	fi
 	cp "${BASENAME}" "${PDESTDIR}/"
 	cd "${STAGEDIR}"
 
@@ -580,6 +608,7 @@ getfile() {
 	realfile="${2}"
 
 	size="${3}"
+	type="${4}"
 
 	case "${PROTOCOL}" in
 		http)

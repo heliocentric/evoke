@@ -30,6 +30,29 @@
 CONFIGFILE="${1}"
 shift
 
-if [ ! -f "${CONFIGFILE}" ] ; then
 
+usage() {
+	echo "repobuild configfile"
+	echo ""
+	echo ""
+}
+
+if [ ! -f "${CONFIGFILE}" ] ; then
+	usage
+	exit
 fi
+
+
+REALCONF="$(cat ${CONFIGFILE})"
+
+if [ "${REALCONF}" = "" ] ; then
+	usage
+	exit
+fi
+
+REPODIRECTORY="$(echo "${REALCONF}" | grep ^R: | head -n 1 | cut -d : -f 2)"
+WORKDIRECTORY="$(echo "${REALCONF}" | grep ^W: | head -n 1 | cut -d : -f 2)"
+
+cd "${REPODIRECTORY}"
+pwd
+echo *-*-*-*-*
