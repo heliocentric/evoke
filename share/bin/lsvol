@@ -103,6 +103,10 @@ freebsd_disk_list() {
 				print "dists:"$3;
 				print "fs:" $3;
 			}
+			if ($11 ~ /302b5157-67bf-4680-8bc6-bccf28566786/) {
+				print "ovl:"$3;
+				print "fs:" $3;
+			}
 			if ($11 ~ /12f31621-10a0-4a3c-a0e8-9406c2e485f0/) {
 				print "ds:"$3;
 				print "fs:" $3;
