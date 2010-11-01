@@ -107,6 +107,9 @@ freebsd_disk_list() {
 				print "ovl:"$3;
 				print "fs:" $3;
 			}
+			if ($11 ~ /60c9169e-4dbb-49d9-b9e6-4c396628bb0e/) {
+				print "tag:"$3;
+			}
 			if ($11 ~ /12f31621-10a0-4a3c-a0e8-9406c2e485f0/) {
 				print "ds:"$3;
 				print "fs:" $3;
