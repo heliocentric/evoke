@@ -1,0 +1,96 @@
+#!/bin/sh
+#
+# $FreeBSD: src/etc/rc.d/mountcritlocal,v 1.19 2010/05/19 19:03:19 dougb Exp $
+#
+
+# PROVIDE: remount-usr_start
+# BEFORE: mountcritlocal
+# REQUIRE: root hostid_save
+# KEYWORD: nojail
+
+. /etc/rc.subr
+
+name="remount-usr"
+start_cmd="remount-usr_start"
+stop_cmd=":"
+
+remount-usr_start()
+{
+	export PATH="/sbin:/usr/sbin:${PATH}"
+        LOADDEVICE="$(kenv -q loaddev | cut -d : -f 1)"
+	STOREFILE="$(kenv -q backing_store)"
+        case "${LOADDEVICE}" in
+                cd*)
+                        DEVICE="/dev/a${LOADDEVICE}"
+                        TYPE="cd9660"
+                ;;
+                *) 
+                        TYPE="ufs"
+			GPTDEVNAME="/dev/gpt/$(kenv -q evoke.system.name)-boot"
+			echo "${GPTDEVNAME}"
+                        if [ -c "${GPTDEVNAME}" ] ; then
+				DEVICE="${GPTDEVNAME}"
+			fi
+                ;;
+        esac
+        mount -t "${TYPE}" -o rw,noatime,acls,multilabel "${DEVICE}" "/store"
+	mount -t nullfs /store/boot /boot
+	STORE_MODE="null"
+	if [ -f "/store/${STOREFILE}" ] ; then
+		STORE_MODE="FS"
+	else
+		if [ -f "/store/${STOREFILE}.uzip" ] ; then
+			STORE_MODE="UZIP"
+		else
+			echo "Error, backing store not found"
+			reboot
+		fi
+		
+	fi
+	case "${STORE_MODE}" in
+		FS)
+			MDDEVICE="$(mdconfig -af "/store/${STOREFILE}")"
+			mount -o ro,noatime,acls,multilabel "/dev/${MDDEVICE}" /usr
+		;;
+		UZIP)
+			MDDEVICE="$(mdconfig -af "/store/${STOREFILE}.uzip")"
+			mount -o ro,noatime,acls,multilabel "/dev/${MDDEVICE}.uzip" /usr
+		;;
+	esac
+	OVERLAY="$(lsvol | grep ^ovl:)"
+	TAG="$(lsvol | grep ^tag: | cut -d : -f 2 | head -n 1)"
+	
+	if [ "${OVERLAY}" = "" ] ; then
+		RUNPREP="1"
+	fi
+	if [ "${TAG}" = "" ] ; then
+		RUNPREP="1"
+	else
+		CHUNK="$(dd if=/dev/${TAG} bs=512 count=1 2>/dev/null | sha256 -q)"
+		if [ "${CHUNK}" != "076a27c79e5ace2a3d47f9dd2e83e4ff6ea8872b3c2218f66c92b89b55f36560" ] ; then
+			RUNPREP="1"
+		fi
+	fi
+	if [ "${RUNPREP}" != "" ] ; then
+		prepdisk
+	fi
+	OVERLAY="$(lsvol | grep ^ovl: | cut -d : -f 2 | head -n 1)"
+	if [ "${OVERLAY}" != "" ] ; then
+		fsck_ffs -y "/dev/${OVERLAY}"
+		mount -t ufs -o rw,noatime,acls,multilabel "/dev/${OVERLAY}" /ovl
+	else
+		mdmfs -s 128m md /ovl
+	fi
+	mdmfs -s 20m md /tmp
+	chmod a+rwx /tmp
+	chmod +t /tmp
+	mkdir /ovl/etc 2>/dev/null
+	mkdir /ovl/usr 2>/dev/null
+	mkdir /ovl/var 2>/dev/null
+	mount -t unionfs "/ovl/etc" "/etc"
+	mount -t unionfs "/ovl/usr" "/usr"
+	mount -t unionfs "/ovl/var" "/var"
+}
+
+load_rc_config $name
+run_rc_command "$1"

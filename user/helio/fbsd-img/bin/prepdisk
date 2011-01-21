@@ -1,0 +1,51 @@
+#!/bin/sh
+
+SYSNAME="$(kenv -q evoke.system.name)"
+SYSVERSION="$(kenv -q evoke.system.version)"
+SYSTAG="$(kenv -q evoke.system.tag)"
+STOREFILE="$(kenv -q backing_store)"
+
+real_prepdisk() {
+	echo "Warning, this disk will be completely erased"
+	printf "Disks found: "
+	lsvol | grep real-disk: | cut -d : -f 2 | paste - - - - - - - - - - - - - - - -
+	read -p "Please enter the name of the disk to use: " DISK
+	read -p "Please enter the size of the boot partition (minimal 512M): " SIZE
+	read -p "Enable swap? [y/N]: " SWAP
+	if [ -c "/dev/${DISK}" ] ; then
+		dd if=/dev/zero of=/dev/${DISK} bs=4m count=1 2>/dev/null
+		gpart create -s GPT ${DISK}
+		gpart add -t freebsd-boot -s 128 ${DISK}
+		gpart bootcode -b /boot/pmbr -p /boot/gptboot -i 1 ${DISK}
+		gpart add -t \!ac4b7c4a-9c4c-4687-b55f-f51a731d36d2 -s 8 ${DISK}
+		gpart add -t \!60c9169e-4dbb-49d9-b9e6-4c396628bb0e -s 1 ${DISK}
+		gpart add -t freebsd-ufs -l "${SYSNAME}-boot" -s "${SIZE}" ${DISK}
+		OFFSET=5
+		case "${SWAP}" in
+			[yY])
+				gpart add -t freebsd-swap -s 4194304 ${DISK}
+				OFFSET=6
+			;;
+		esac
+		gpart add -t \!302b5157-67bf-4680-8bc6-bccf28566786 ${DISK}
+		dd if=/dev/zero of=/dev/${DISK}p3 bs=512 count=1 2>/dev/null
+		newfs "/dev/${DISK}p4"
+		newfs "/dev/${DISK}p${OFFSET}"
+		mount "/dev/${DISK}p4" /mnt
+		cd "/store" && tar -cf - --exclude="${STOREFILE}" --exclude="${STOREFILE}.uzip" * | tar -xpf - -C "/mnt/"
+		umount /mnt
+	fi
+	return 0
+}
+
+
+echo "Would you like to prepare a disk for ${SYSNAME}?"
+read -p "[y/n] " ANSWER
+case "${ANSWER}" in 
+	[yY])
+		real_prepdisk
+	;;
+	*)
+		return 1
+	;;
+esac

@@ -1,0 +1,7 @@
+XORG_ENABLED="$(kenv -q evoke.x11.enabled)"
+if [ "${XORG_ENABLED}" = "yes" ] ; then
+	echo "X11 enabled"
+	startx
+else
+	echo "X11 disabled"
+fi

@@ -1,0 +1,36 @@
+#!/bin/sh
+SOURCEDIR="$(pwd)"
+
+TARBALL="${1}"
+shift
+
+RELEASENAME="${1}"
+shift
+
+DIRECTORYNAME="${1}"
+shift
+
+export UNAME_r="${RELEASENAME}"
+export PACKAGESITE="ftp://ftp.freebsd.org/pub/FreeBSD/ports/i386/packages-$(echo "${RELEASENAME}" | tr A-Z a-z)/Latest/"
+sysctl kern.bootfile=/boot/kernel/kernel
+export FTP_PASSIVE_MODE=""
+
+cd "${DIRECTORYNAME}"
+chflags -R noschg .
+rm -rf *
+tar -xvpf "${TARBALL}" --exclude "usr/src" -C "${DIRECTORYNAME}"
+chflags -R noschg "${DIRECTORYNAME}"
+mount -t devfs devfs "${DIRECTORYNAME}/dev"
+rmdir "${DIRECTORYNAME}/boot/kernel"
+mv  "${DIRECTORYNAME}/boot/GENERIC" "${DIRECTORYNAME}/boot/kernel"
+cp /etc/resolv.conf "${DIRECTORYNAME}/etc/resolv.conf"
+chroot "${DIRECTORYNAME}" "/usr/sbin/freebsd-update" "fetch"
+chroot "${DIRECTORYNAME}" "/usr/sbin/freebsd-update" "install"
+for pkg in $(cat "${SOURCEDIR}/pkg-list")
+do
+	chroot "${DIRECTORYNAME}" "/usr/sbin/pkg_add" "-r" "${pkg}"	
+done
+
+chroot "${DIRECTORYNAME}" /usr/sbin/pw groupadd 999 -n nonpriv
+chroot "${DIRECTORYNAME}" /usr/sbin/pw useradd 999 -n nonpriv -c "Autologin User" -d "/home/nonpriv" -g nonpriv -L default -m -s tcsh -h -
+umount "${DIRECTORYNAME}/dev"

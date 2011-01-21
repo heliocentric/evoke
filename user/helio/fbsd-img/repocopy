@@ -1,0 +1,29 @@
+#!/bin/sh
+
+NAME="${1}"
+shift
+DIRECTORY="${1}"
+shift
+
+DESTDIR="/repo"
+REPODIR="${DESTDIR}/hash"
+FSDIR="${DESTDIR}/fs"
+for directory in $(find "${DIRECTORY}" -type d | sed s@${DIRECTORY}/@@g)
+do
+	mkdir -p "${FSDIR}/${NAME}/${directory}"
+done
+
+for file in $(find "${DIRECTORY}" -not -type d)
+do
+	SRCFILE="${file}"
+	DESTINATIONDIR="$(echo "${file}" | sed s@${DIRECTORY}/@@g)"
+	SHA256="$(sha256 -q ${file})"
+	HEADER="$(echo "${SHA256}" | cut -b 1-2)"
+	TRAILER="$(echo "${SHA256}" | cut -b 3-64)"
+	echo "${SRCFILE}"
+	if [ ! -f "${REPODIR}/${HEADER}/${TRAILER}" ] ; then
+		mkdir -p "${REPODIR}/${HEADER}"
+		cp "${SRCFILE}" "${REPODIR}/${HEADER}/${TRAILER}"
+	fi
+	ln "${REPODIR}/${HEADER}/${TRAILER}" "${FSDIR}/${NAME}/${DESTINATIONDIR}"
+done

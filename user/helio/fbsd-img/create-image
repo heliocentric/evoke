@@ -1,0 +1,112 @@
+#!/bin/sh
+SOURCEDIR="$(pwd)"
+
+DIRECTORYNAME="${1}"
+shift
+ISOFILE="${1}"
+shift
+NAME="Phoenix"
+VERSION="1.0"
+TAG="Alpha"
+
+SCRATCHDIR="/tmp/fbsd-img/$(dd if=/dev/urandom bs=4m count=1 2>/dev/null | sha256 -q)"
+
+ROOTDIR="${SCRATCHDIR}/rootdir"
+BOOTDIR="${SCRATCHDIR}/bootdir"
+FSDIR="${SCRATCHDIR}/fsdir"
+
+mkdir -p "${ROOTDIR}"
+mkdir -p "${BOOTDIR}"
+mkdir -p "${FSDIR}"
+
+cd "${DIRECTORYNAME}"
+tar -cf - --exclude=boot --exclude=usr --exclude=rescue --exclude=var/db/freebsd-update * |  tar -xvpf - -C "${ROOTDIR}"
+
+cd "${ROOTDIR}"
+mkdir -p usr/boot
+mkdir boot
+mkdir ovl
+mkdir store
+mkdir /repo
+mkdir tmp
+chmod a+rwx tmp
+chmod +t tmp
+cd "${DIRECTORYNAME}"
+tar -cf - --exclude *.symbols --exclude kernel.old boot | tar -xvpf - -C "${BOOTDIR}"
+
+cd "${DIRECTORYNAME}/usr"
+tar -cf - --exclude=src/* --exclude=local/include/* --exclude=include/* --exclude=*.a --exclude=*.la --exclude=*.o * | tar -xvpf - -C "${FSDIR}"
+mkdir -p "${FSDIR}/repo"
+
+cd "${SOURCEDIR}/repo"
+tar -cf - * | tar -xvpf - -C "${FSDIR}/repo"
+
+chflags -R noschg "${FSDIR}"
+chflags -R noschg "${ROOTDIR}"
+
+
+echo "/dev/md0                /       ufs     ro,noatime      1       1" >>${ROOTDIR}/etc/fstab
+echo "ifconfig_DEFAULT=\"dhcp\"" >>${ROOTDIR}/etc/rc.conf
+echo "hald_enable=\"YES\"" >>${ROOTDIR}/etc/rc.conf
+echo "dbus_enable=\"YES\"" >>${ROOTDIR}/etc/rc.conf
+echo "defaultroute_delay=\"0\"" >>${ROOTDIR}/etc/rc.conf
+echo "linux_enable=\"YES\"" >>${ROOTDIR}/etc/rc.conf
+
+cd "${SOURCEDIR}/etc"
+tar -cf - * | tar -xvpf - -C ${ROOTDIR}/etc/
+
+
+cd "${SOURCEDIR}/rc.d"
+tar -cf - * | tar -xvpf - -C ${ROOTDIR}/etc/rc.d/
+cd "${SOURCEDIR}/bin"
+tar -cf - * | tar -xvpf - -C ${ROOTDIR}/bin/
+
+
+cp "${DIRECTORYNAME}/usr/bin/grep" ${ROOTDIR}/bin/
+rm "${FSDIR}/bin/grep"
+cp "${DIRECTORYNAME}/usr/bin/cut" ${ROOTDIR}/bin/
+rm "${FSDIR}/bin/cut"
+cp "${DIRECTORYNAME}/usr/bin/awk" ${ROOTDIR}/bin/
+rm "${FSDIR}/bin/awk"
+cat login >>{FSDIR}/home/nonpriv/.login
+echo "#!/bin/sh" >>${FSDIR}/home/nonpriv/.xinitrc
+echo "ratpoison" >>${FSDIR}/home/nonpriv/.xinitrc
+chmod a+x ${FSDIR}/home/nonpriv/.xinitrc
+
+cd ${ROOTDIR}/bin
+fetch http://evoke.googlecode.com/svn/trunk/share/bin/lsvol
+chmod a+x lsvol
+fetch http://evoke.googlecode.com/svn/trunk/share/bin/verify
+chmod a+x verify
+fetch http://evoke.googlecode.com/svn/trunk/share/bin/filetype
+chmod a+x filetype
+fetch http://evoke.googlecode.com/svn/trunk/share/bin/is_uuid
+chmod a+x is_uuid
+
+
+makefs "${BOOTDIR}/boot/mfsroot.fs" "${ROOTDIR}"
+gzip -9 "${BOOTDIR}/boot/mfsroot.fs"
+makefs "${BOOTDIR}/boot/usr.fs" "${FSDIR}"
+mkuzip "${BOOTDIR}/boot/usr.fs"
+rm "${BOOTDIR}/boot/usr.fs"
+
+echo "mfsroot_load=\"YES\"" >>${BOOTDIR}/boot/loader.conf
+echo "mfsroot_type=\"mfs_root\"" >>${BOOTDIR}/boot/loader.conf
+echo "mfsroot_name=\"/boot/mfsroot.fs\"" >>${BOOTDIR}/boot/loader.conf
+echo "kern.hz=\"100\"" >>${BOOTDIR}/boot/loader.conf
+echo "atapicam_load=\"YES\"" >>${BOOTDIR}/boot/loader.conf
+echo "ahci_load=\"YES\"" >>${BOOTDIR}/boot/loader.conf
+echo "tmpfs_load=\"YES\"" >>${BOOTDIR}/boot/loader.conf
+echo "nullfs_load=\"YES\"" >>${BOOTDIR}/boot/loader.conf
+echo "unionfs_load=\"YES\"" >>${BOOTDIR}/boot/loader.conf
+echo "geom_uzip_load=\"YES\"" >>${BOOTDIR}/boot/loader.conf
+echo "backing_store=\"boot/usr.fs\"" >>${BOOTDIR}/boot/loader.conf
+echo "evoke.system.name=\"${NAME}\"" >>${BOOTDIR}/boot/loader.conf
+echo "evoke.system.version=\"${VERSION}\"" >>${BOOTDIR}/boot/loader.conf
+echo "evoke.system.tag=\"${TAG}\"" >>${BOOTDIR}/boot/loader.conf
+echo "snd_driver_load=\"YES\"" >>${BOOTDIR}/boot/loader.conf
+
+mkisofs -b boot/cdboot -no-emul-boot -r -J -V "${NAME}_${VERSION}-${TAG}" -publisher "Dylan Cochran" -o "${ISOFILE}" "${BOOTDIR}"
+
+
+
