@@ -87,9 +87,35 @@ remount-usr_start()
 	mkdir /ovl/etc 2>/dev/null
 	mkdir /ovl/usr 2>/dev/null
 	mkdir /ovl/var 2>/dev/null
+	mkdir /ovl/tmp 2>/dev/null
+	mkdir /ovl/mnt 2>/dev/null
+	mkdir /ovl/bin 2>/dev/null
+	mkdir /ovl/sbin 2>/dev/null
+	mkdir /ovl/media 2>/dev/null
+	mkdir /ovl/cdrom 2>/dev/null
+	mkdir /ovl/compat 2>/dev/null
+	mkdir /ovl/dist 2>/dev/null
+	mkdir /ovl/lib 2>/dev/null
+	mkdir /ovl/libexec 2>/dev/null
+	mkdir /ovl/proc 2>/dev/null
+	mkdir /ovl/rescue 2>/dev/null
+	mkdir /ovl/root 2>/dev/null
 	mount -t unionfs "/ovl/etc" "/etc"
 	mount -t unionfs "/ovl/usr" "/usr"
 	mount -t unionfs "/ovl/var" "/var"
+	mount -t unionfs "/ovl/tmp" "/var"
+	mount -t unionfs "/ovl/mnt" "/var"
+	mount -t unionfs "/ovl/bin" "/var"
+	mount -t unionfs "/ovl/sbin" "/var"
+	mount -t unionfs "/ovl/media" "/var"
+	mount -t unionfs "/ovl/cdrom" "/var"
+	mount -t unionfs "/ovl/compat" "/var"
+	mount -t unionfs "/ovl/dist" "/var"
+	mount -t unionfs "/ovl/lib" "/var"
+	mount -t unionfs "/ovl/libexec" "/var"
+	mount -t unionfs "/ovl/proc" "/var"
+	mount -t unionfs "/ovl/rescue" "/var"
+	mount -t unionfs "/ovl/root" "/var"
 }
 
 load_rc_config $name

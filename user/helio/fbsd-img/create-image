@@ -26,6 +26,7 @@ cd "${ROOTDIR}"
 mkdir -p usr/boot
 mkdir boot
 mkdir ovl
+mkdir data
 mkdir store
 mkdir /repo
 mkdir tmp
