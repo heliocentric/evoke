@@ -72,11 +72,12 @@ rm "${FSDIR}/bin/cut"
 cp "${DIRECTORYNAME}/usr/bin/awk" ${ROOTDIR}/bin/
 rm "${FSDIR}/bin/awk"
 
-cat "${SOURCEDIR}/login" >>${FSDIR}/home/nonpriv/.login
+cat "${SOURCEDIR}/login" >>${FSDIR}/home/root/.login
 
-echo "#!/bin/sh" >>${FSDIR}/home/nonpriv/.xinitrc
-echo "rox" >>${FSDIR}/home/nonpriv/.xinitrc
-chmod a+x ${FSDIR}/home/nonpriv/.xinitrc
+echo "#!/bin/sh" >>${FSDIR}/home/root/.xinitrc
+echo "rox" >>${FSDIR}/home/root/.xinitrc
+echo "fluxbox" >>${FSDIR}/home/root/.xinitrc
+chmod a+x ${FSDIR}/home/root/.xinitrc
 
 cd ${ROOTDIR}/bin
 fetch http://evoke.googlecode.com/svn/trunk/share/bin/lsvol

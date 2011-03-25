@@ -1,3 +1,4 @@
+
 # $FreeBSD: src/etc/gettytab,v 1.27 2010/07/12 19:09:18 bcr Exp $
 #	from: @(#)gettytab	5.14 (Berkeley) 3/27/91
 #
@@ -217,6 +218,9 @@ al.230400:\
 
 nonpriv:\
 	:al=nonpriv:tc=std.230400:
+
+root:\
+	:al=root:tc=std.230400:
 
 #
 # Entries for 3-wire serial terminals.  These don't supply carrier, so
