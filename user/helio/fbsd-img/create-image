@@ -14,10 +14,12 @@ SCRATCHDIR="/tmp/fbsd-img/$(dd if=/dev/urandom bs=4m count=1 2>/dev/null | sha25
 ROOTDIR="${SCRATCHDIR}/rootdir"
 BOOTDIR="${SCRATCHDIR}/bootdir"
 FSDIR="${SCRATCHDIR}/fsdir"
+REALFSDIR="${SCRATCHDIR}/realfsdir"
 
 mkdir -p "${ROOTDIR}"
 mkdir -p "${BOOTDIR}"
 mkdir -p "${FSDIR}"
+mkdir -p "${REALFSDIR}"
 
 cd "${DIRECTORYNAME}"
 tar -cf - --exclude=boot --exclude=usr --exclude=rescue --exclude=var/db/freebsd-update * |  tar -xvpf - -C "${ROOTDIR}"
@@ -69,9 +71,11 @@ cp "${DIRECTORYNAME}/usr/bin/cut" ${ROOTDIR}/bin/
 rm "${FSDIR}/bin/cut"
 cp "${DIRECTORYNAME}/usr/bin/awk" ${ROOTDIR}/bin/
 rm "${FSDIR}/bin/awk"
-cat login >>{FSDIR}/home/nonpriv/.login
+
+cat "${SOURCEDIR}/login" >>${FSDIR}/home/nonpriv/.login
+
 echo "#!/bin/sh" >>${FSDIR}/home/nonpriv/.xinitrc
-echo "ratpoison" >>${FSDIR}/home/nonpriv/.xinitrc
+echo "rox" >>${FSDIR}/home/nonpriv/.xinitrc
 chmod a+x ${FSDIR}/home/nonpriv/.xinitrc
 
 cd ${ROOTDIR}/bin
@@ -84,10 +88,13 @@ chmod a+x filetype
 fetch http://evoke.googlecode.com/svn/trunk/share/bin/is_uuid
 chmod a+x is_uuid
 
-
+chflags -R noschg "${SCRATCHDIR}"
 makefs "${BOOTDIR}/boot/mfsroot.fs" "${ROOTDIR}"
 gzip -9 "${BOOTDIR}/boot/mfsroot.fs"
-makefs "${BOOTDIR}/boot/usr.fs" "${FSDIR}"
+
+
+OPTIONS="verbose" ${SOURCEDIR}/repocopy ROOTFS "${FSDIR}" "${REALFSDIR}"
+makefs "${BOOTDIR}/boot/usr.fs" "${REALFSDIR}"
 mkuzip "${BOOTDIR}/boot/usr.fs"
 rm "${BOOTDIR}/boot/usr.fs"
 
@@ -105,9 +112,7 @@ echo "backing_store=\"boot/usr.fs\"" >>${BOOTDIR}/boot/loader.conf
 echo "evoke.system.name=\"${NAME}\"" >>${BOOTDIR}/boot/loader.conf
 echo "evoke.system.version=\"${VERSION}\"" >>${BOOTDIR}/boot/loader.conf
 echo "evoke.system.tag=\"${TAG}\"" >>${BOOTDIR}/boot/loader.conf
+echo "evoke.x11.enabled=\"YES\"" >>${BOOTDIR}/boot/loader.conf
 echo "snd_driver_load=\"YES\"" >>${BOOTDIR}/boot/loader.conf
 
 mkisofs -b boot/cdboot -no-emul-boot -r -J -V "${NAME}_${VERSION}-${TAG}" -publisher "Dylan Cochran" -o "${ISOFILE}" "${BOOTDIR}"
-
-
-

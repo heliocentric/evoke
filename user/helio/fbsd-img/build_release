@@ -1,6 +1,11 @@
 #!/bin/sh
 SOURCEDIR="$(pwd)"
 
+if [ "${3}" = "" ] ; then
+	echo "Error, requires arguments"
+	exit
+fi
+
 TARBALL="${1}"
 shift
 

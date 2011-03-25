@@ -4,14 +4,36 @@ NAME="${1}"
 shift
 DIRECTORY="${1}"
 shift
+SECONDDIRECTORY="${1}"
+shift
 
-DESTDIR="/repo"
-REPODIR="${DESTDIR}/hash"
-FSDIR="${DESTDIR}/fs"
-for directory in $(find "${DIRECTORY}" -type d | sed s@${DIRECTORY}/@@g)
+if [ "${SECONDDIRECTORY}" != "" ] ; then
+	DESTDIR="${SECONDDIRECTORY}"
+	REPODIR="${DESTDIR}/repo"
+	FSDIRTWO="${REPODIR}/fs/${NAME}"
+	mkdir -p "${FSDIRTWO}"
+	FSDIR="${DESTDIR}"	
+else
+	DESTDIR="/"
+	REPODIR="/repo"
+	FSDIR="${REPODIR}/fs/${NAME}"
+fi
+HASHDIR="${REPODIR}/hash"
+
+mkdir -p "${HASHDIR}"
+
+for directory in $(find "${DIRECTORY}" -type d | sed s@${DIRECTORY}@@g)
 do
-	mkdir -p "${FSDIR}/${NAME}/${directory}"
+	echo "${directory}"
+	mkdir -p "${FSDIR}/${directory}"
 done
+if [ "${FSDIRTWO}" != "" ] ; then
+	for directory in $(find "${DIRECTORY}" -type d | sed s@${DIRECTORY}@@g)
+	do
+		echo "${directory}"
+		mkdir -p "${FSDIRTWO}/${directory}"
+	done
+fi
 
 for file in $(find "${DIRECTORY}" -not -type d)
 do
@@ -20,10 +42,20 @@ do
 	SHA256="$(sha256 -q ${file})"
 	HEADER="$(echo "${SHA256}" | cut -b 1-2)"
 	TRAILER="$(echo "${SHA256}" | cut -b 3-64)"
-	echo "${SRCFILE}"
-	if [ ! -f "${REPODIR}/${HEADER}/${TRAILER}" ] ; then
-		mkdir -p "${REPODIR}/${HEADER}"
-		cp "${SRCFILE}" "${REPODIR}/${HEADER}/${TRAILER}"
+	echo "${file}"
+	if [ ! -f "${HASHDIR}/${HEADER}/${TRAILER}" ] ; then
+	
+		mkdir -p "${HASHDIR}/${HEADER}"
+		cp "${SRCFILE}" "${HASHDIR}/${HEADER}/${TRAILER}"
 	fi
-	ln "${REPODIR}/${HEADER}/${TRAILER}" "${FSDIR}/${NAME}/${DESTINATIONDIR}"
+	if [ "${OPTIONS}" = "verbose" ] ; then
+		echo "Linking ${SRCFILE} \(${SHA256}\) to ${FSDIR}"
+	fi
+	ln "${HASHDIR}/${HEADER}/${TRAILER}" "${FSDIR}/${DESTINATIONDIR}"
+	if [ "${FSDIRTWO}" != "" ] ; then
+		if [ "${OPTIONS}" = "verbose" ] ; then
+			echo "Linking ${SRCFILE} \(${SHA256}\) to ${FSDIRTWO}"
+		fi
+		ln "${HASHDIR}/${HEADER}/${TRAILER}" "${FSDIRTWO}/${DESTINATIONDIR}"
+	fi
 done

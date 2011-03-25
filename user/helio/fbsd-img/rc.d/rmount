@@ -21,7 +21,7 @@ remount-usr_start()
 	STOREFILE="$(kenv -q backing_store)"
         case "${LOADDEVICE}" in
                 cd*)
-                        DEVICE="/dev/a${LOADDEVICE}"
+                        DEVICE="/dev/${LOADDEVICE}"
                         TYPE="cd9660"
                 ;;
                 *) 
